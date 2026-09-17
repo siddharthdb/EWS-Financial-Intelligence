@@ -1,225 +1,231 @@
-# EWS 2.0 — Architecture Blueprint
+# EWS 2.0 — Global Financial Risk Intelligence Architecture Blueprint
 
-**Status:** Draft / Part I  
+**Status:** Draft / Part I — coherence-normalized  
 **Primary Domain:** Corporate Counterparty Risk  
-**Future Domain:** Retail Risk  
+**Future Domain:** Retail Risk using shared infrastructure but independently governed models/policies  
+**Reference implementations:** India, United States, United Kingdom  
 **Target:** Event-driven Financial Risk Intelligence Platform
 
 ## 1. Architectural Objective
 
-Build an event-driven Financial Risk Intelligence Platform that continuously observes counterparties, detects deterioration, correlates evidence, predicts emerging risk, proposes explainable early-warning signals and allows authorized analysts to validate those signals before they affect the official EWS risk state.
+Build a jurisdiction-neutral, event-driven Financial Risk Intelligence Platform that continuously observes counterparties, preserves evidence and point-in-time knowledge, detects deterioration, correlates evidence, predicts emerging risk, proposes explainable early-warning signals and allows authorized humans to validate material outcomes before they affect official EWS risk state.
 
-The formal EWS is therefore a governed output of a broader intelligence platform.
+The formal EWS is a governed output of a broader intelligence platform. Accounting, prudential, supervisory and legal classifications are separately governed outputs of jurisdiction/institution adapters; they are not aliases of EWS signals or scores.
+
+Core principle:
+
+> AI does not own the risk state. Evidence does.
 
 ## 2. Level-0 Logical Architecture
 
 ```text
-+---------------------------------------------------------------+
-| 9. EXPERIENCE                                                 |
-| Portfolio Cockpit | Counterparty 360 | Analyst Workbench      |
-| Investigation | Audit | Explainability | Administration       |
-+---------------------------------------------------------------+
-| 8. EWS & DECISION                                             |
-| Signal Validation | Risk Scoring | Cases | Workflow           |
-| Notifications | Escalation | Human Decisions                  |
-+---------------------------------------------------------------+
-| 7. AI INTELLIGENCE                                            |
-| GenAI | Predictive ML | Anomaly | NLP | Graph | Time Series   |
-| Peer Analysis | Signal Correlation | AI Agents                |
-+---------------------------------------------------------------+
-| 6. RISK & FEATURE                                             |
-| Features | Rules | Ratios | Trends | Indicators | Scores      |
-+---------------------------------------------------------------+
-| 5. EVENT PROCESSING                                           |
-| Streaming | Enrichment | Windows | CEP | Entity Resolution    |
-+---------------------------------------------------------------+
-| 4. FINANCIAL DATA PLATFORM                                    |
-| Operational | Temporal | Documents | Search | Graph | Lake    |
-| Feature Store | Evidence Store                                |
-+---------------------------------------------------------------+
-| 3. CANONICAL INFORMATION MODEL                                |
-| Counterparty | Facility | Financial | Event | Evidence        |
-| Relationship | Signal | Risk | Decision                       |
-+---------------------------------------------------------------+
-| 2. INGESTION                                                  |
-| APIs | CDC | Events | Files | Documents | External Feeds      |
-+---------------------------------------------------------------+
-| 1. DATA SOURCES                                               |
-| CBS | LOS | LMS | Financials | Markets | News | Bureau        |
-| MCA | SEBI | RBI | Legal | Ratings | GST | External Intel     |
-+---------------------------------------------------------------+
++-------------------------------------------------------------------+
+| 9. EXPERIENCE                                                     |
+| Portfolio Cockpit | Counterparty 360 | Analyst Workbench          |
+| Investigation | Audit | Explainability | Administration           |
++-------------------------------------------------------------------+
+| 8. EWS, DECISION & CLASSIFICATION                                 |
+| Signal Validation | Risk Assessment | Cases | Workflow            |
+| Human Decisions | Official EWS | Jurisdiction Classification      |
++-------------------------------------------------------------------+
+| 7. RISK INTELLIGENCE                                              |
+| Rules | Statistics | Predictive ML | Anomaly | Graph | NLP        |
+| Peer Analysis | Signal Correlation | Governed GenAI Reasoning      |
++-------------------------------------------------------------------+
+| 6. FEATURE & ANALYTICAL STATE                                     |
+| Features | Ratios | Trends | Indicators | Model Outputs           |
++-------------------------------------------------------------------+
+| 5. EVENT PROCESSING                                               |
+| Streaming | Enrichment | Windows | Entity/Security Resolution     |
+| Corrections | Replay | Point-in-Time Reconstruction               |
++-------------------------------------------------------------------+
+| 4. FINANCIAL DATA PLATFORM                                        |
+| Operational | Temporal | Documents | Search | Graph | Analytics   |
+| Feature State | Evidence Ledger | Object Storage                  |
++-------------------------------------------------------------------+
+| 3. CANONICAL INFORMATION MODEL                                    |
+| Entity | Facility | Account | Relationship | Evidence             |
+| Observation/Event | Feature | Signal | Risk | Classification      |
+| Decision                                                           |
++-------------------------------------------------------------------+
+| 2. SOURCE ADAPTERS & INGESTION                                    |
+| Streams | Incremental APIs | Snapshot+Change | Licensed Feeds     |
+| Bulk/File | CDC where appropriate | Documents | Manual Verification|
++-------------------------------------------------------------------+
+| 1. DATA SOURCES                                                   |
+| Internal Banking | Financial Statements | Registries | Markets    |
+| Ratings | Legal/Insolvency | Regulatory | News | Macro | Bureau   |
++-------------------------------------------------------------------+
 
 Cross-cutting:
-Security | IAM | Governance | Lineage | Audit | Observability
-Model Risk | Data Quality | AI Gateway | Secrets | Compliance
+Security | IAM | Source Rights | Governance | Lineage | Audit
+Observability | Model Risk | Data Quality | AI Gateway | Secrets
+Jurisdiction Policy | Entity Resolution | Compliance
 ```
+
+India, US and UK source systems are adapters to this architecture, not hard-coded layers in the global core. Examples include Indian corporate/regulatory/tax sources where legally applicable, US SEC/UCC/court/market sources, and UK Companies House/insolvency/market sources.
 
 ## 3. Source Architecture
 
-### 3.1 Counterparty Sources
+### 3.1 Internal counterparty and relationship sources
 
-Customer master, group structure, directors, promoters, beneficial owners, KYC, industry classification, geography, relationship management and internal ratings.
+Customer/legal-entity master, group structure, directors/officers, beneficial owners/controllers, KYC, industry classification, geography, relationship management and internal ratings.
 
-### 3.2 Credit Sources
+### 3.2 Credit and servicing sources
 
-LOS, LMS, limits, facilities, sanctions, covenants, collateral, guarantees, restructuring, collections, DPD and default information.
+LOS/LMS or equivalent origination/servicing platforms, limits, facilities, commitments, covenants, collateral, guarantees, restructuring, collections, repayment status, DPD and default information.
 
-### 3.3 Transaction Sources
+### 3.3 Transaction and account sources
 
-Account transactions, cash flows, credits/debits, cheque returns, payment failures, utilization, overdraft behaviour, fund transfers and abnormal movement.
+Account transactions, cash flows, credits/debits, returned payment instructions, payment failures, utilization, overdraft behaviour, transfers and abnormal movement.
 
-### 3.4 Financial Statements
+### 3.4 Financial statements and documents
 
-Audited and interim financial statements, balance sheet, P&L, cash flow, schedules, notes, auditor reports and management commentary.
+Audited and interim financial statements, balance sheet, income statement, cash flow, schedules, notes, auditor reports and management commentary. Existing financial-statement extraction capability evolves into a governed document-to-financial-data gateway.
 
-Existing financial-statement extraction capability can evolve into the document-to-financial-data gateway.
+### 3.5 External structured intelligence
 
-### 3.5 External Structured Intelligence
+Approved credit bureaus, rating providers, exchanges/market feeds, bond/reference data, corporate/beneficial-owner registries, regulatory sources, tax sources where lawfully available, courts, insolvency systems, security-interest registries and licensed financing datasets.
 
-Credit bureau, rating agencies, stock exchanges, market prices, bond information, FX, commodities, corporate registries, regulatory sources, tax/GST where legally and operationally available, courts and insolvency sources.
+### 3.6 External unstructured intelligence
 
-### 3.6 External Unstructured Intelligence
+News, issuer announcements, regulatory disclosures, annual reports, press releases, company websites and other approved intelligence sources. NLP/LLM extraction never removes the requirement to retain original evidence, source spans and extraction confidence.
 
-News, company announcements, regulatory disclosures, annual reports, press releases, company websites and other approved intelligence sources.
+### 3.7 Macroeconomic sources
 
-### 3.7 Macroeconomic Sources
+GDP, interest rates, inflation, FX, commodities, sector indices, property prices and relevant trade/economic statistics.
 
-GDP, interest rates, inflation, FX, commodity prices, sector indices, property prices and relevant trade/economic statistics.
+### 3.8 Derived internal intelligence
 
-### 3.8 Derived Internal Intelligence
+Historical signals, analyst decisions, investigation findings, defaults, collections outcomes and credit decisions become governed feedback/evaluation sources. Analyst acceptance is not automatically ground truth for model training.
 
-Historical EWS signals, analyst comments, investigation findings, accepted/rejected signals, historical defaults, collections outcomes and credit decisions.
+## 4. Acquisition and Ingestion Architecture
 
-These datasets become important governed feedback and evaluation sources.
-
-## 4. Ingestion Architecture
-
-Four primary ingestion patterns are expected:
-
-1. Real-time API/event ingestion.
-2. Change Data Capture for suitable operational sources.
-3. Batch/file/API ingestion for systems that cannot publish events.
-4. Document ingestion and extraction.
-
-All paths converge on governed canonical events.
+Acquisition mode is a property of the source/connector rather than a global assumption. Supported logical modes include:
 
 ```text
-Sources
-  |
-  +--> Real-time APIs / Events ----+
-  |                                |
-  +--> CDC ------------------------+--> Ingestion Gateway --> Event Backbone
-  |                                |
-  +--> Batch / SFTP / APIs --------+
-  |
-  +--> Documents --> Validation --> Object Store
-                       |
-                       +--> Document Processing --> Canonical Events
+PUSH_STREAM
+POLL_INCREMENTAL
+BULK_SNAPSHOT_PLUS_STREAM
+BULK_SCHEDULED
+LICENSED_FEED
+ON_DEMAND
+MANUAL_VERIFICATION
+CDC where operationally appropriate
 ```
 
-The ingestion gateway is responsible for schema validation, source authentication, metadata enrichment, classification, deduplication and policy enforcement.
+All paths converge on governed evidence plus canonical observations/domain events.
 
-Large documents and binary artefacts are stored in object storage. Events carry references and metadata rather than large binary payloads.
+```text
+Source
+  ↓
+Source Adapter / Connector
+  ↓
+Rights + Authentication + Checkpointing
+  ↓
+Raw Evidence / Document Reference
+  ↓
+Validation + Normalization + Entity/Security Resolution
+  ↓
+Canonical Observation / Domain Event
+  ↓
+Event Backbone
+```
+
+Large documents and binary artefacts remain in governed object/evidence storage; events carry references and metadata rather than binary payloads.
+
+External sources carry rights metadata including permitted use, retention, redistribution, model/LLM processing and cross-border constraints where applicable.
 
 ## 5. Canonical Information Model
 
-The canonical model is vendor-neutral and precedes physical database design.
+The canonical model is vendor- and jurisdiction-neutral and precedes physical database design. It is a graph/DAG of governed records rather than a single object hierarchy.
 
 ```text
-COUNTERPARTY
-   |
-   +-- FACILITY
-   |      |
-   |      +-- COLLATERAL
-   |
-   +-- ACCOUNT
-   |      |
-   |      +-- TRANSACTION
-   |
-   +-- RELATIONSHIP
-   |      |
-   |      +-- PERSON / ENTITY
-   |
-   +-- FINANCIAL PROFILE
-          |
-          +-- FINANCIAL PERIOD
-                 |
-                 +-- METRIC
-                        |
-                        +-- FEATURE
-                               |
-                               +-- EVENT
-                                      |
-                                      +-- EVIDENCE
-                                             |
-                                             +-- SIGNAL
-                                                    |
-                                                    +-- RISK ASSESSMENT
-                                                           |
-                                                           +-- DECISION
-                                                                  |
-                                                                  +-- CASE
+SOURCE
+  ↓
+EVIDENCE ──────────────────────────────┐
+  ↓                                   │
+OBSERVATION / DOMAIN EVENT             │
+  ↓                                   │
+FEATURE ← entity / facility / account / relationship context
+  ↓
+RULE / STATISTICS / ML / GRAPH / NLP
+  ↓
+SIGNAL
+  ↓
+CORRELATION / RISK ASSESSMENT
+  ├────────→ HUMAN DECISION → OFFICIAL EWS
+  │
+  └────────→ JURISDICTION / POLICY ADAPTER → CLASSIFICATION STATE
 ```
 
-This representation is conceptual; actual relationships will not necessarily form a single hierarchy.
+Counterparties, legal entities, people, groups, facilities, accounts, collateral, securities and relationships are independently addressable entities connected to this analytical chain.
 
-## 6. Event, Evidence, Signal, Risk and Decision
+## 6. Semantic Boundaries
 
 These concepts are intentionally separate.
 
-### Event
+**Evidence** — immutable/addressable support for a fact or extraction, including source and provenance.
 
-A fact or observation that something occurred, e.g. `PAYMENT_RETURNED`.
+**Observation / Domain Event** — factual statement that something occurred or was observed, e.g. `payment.instruction.returned`.
 
-### Evidence
+**Feature** — governed point-in-time derived value, e.g. `returned_payment_count_30d`.
 
-The source record supporting an event, e.g. a CBS transaction and return code.
+**Signal** — economic-risk interpretation, e.g. `REPEATED_PAYMENT_RETURN`.
 
-### Signal
+**Risk Assessment** — aggregated analytical assessment of one or more governed risk dimensions.
 
-A risk interpretation derived from one or more events/features, e.g. `REPEATED_PAYMENT_FAILURE`.
+**Classification State** — namespaced institution/accounting/prudential/supervisory/legal state produced under a separately versioned policy.
 
-### Risk Assessment
+**Decision** — authorized human/policy action such as accept, reject, modify, escalate, investigate, mitigate or close.
 
-An aggregated assessment of a risk dimension or overall counterparty state.
+Canonical naming convention:
 
-### Decision
-
-An authorized human or policy decision, including accept, reject, modify, escalate, mitigate or close.
+```text
+Domain event:          payment.instruction.returned
+Feature:               returned_payment_count_30d
+Signal semantic:       REPEATED_PAYMENT_RETURN
+Risk dimension:        LIQUIDITY
+Classification:        UK_IFRS9_STAGE / US_ACCRUAL_STATUS / IN_SMA_NPA / ...
+```
 
 ## 7. Canonical Event Envelope
 
-The initial event contract will include at least:
+Part I defines the conceptual requirements only. The executable Avro contract in Part III is authoritative for serialization.
 
-```json
-{
-  "eventId": "01993fa7-c4...",
-  "eventType": "PAYMENT_RETURNED",
-  "eventVersion": "1.0",
-  "entity": {
-    "type": "COUNTERPARTY",
-    "id": "CP-918271"
-  },
-  "eventTime": "2026-09-17T09:32:18Z",
-  "observedTime": "2026-09-17T09:32:20Z",
-  "ingestedTime": "2026-09-17T09:32:21Z",
-  "source": {
-    "system": "CBS",
-    "recordId": "TXN-98271882"
-  },
-  "classification": {
-    "domain": "TRANSACTION",
-    "sensitivity": "CONFIDENTIAL"
-  },
-  "correlationId": "...",
-  "causationId": "...",
-  "payload": {}
-}
+The envelope preserves at minimum:
+
+```text
+eventId
+eventType
+eventVersion
+producer
+entity + optional resolution lineage
+aggregateSequence where applicable
+partitionKey
+eventTime
+effectiveTime
+knowledgeTime
+ingestedAt
+jurisdiction / market where applicable
+source + authority + evidence + rights reference
+correlationId / causationId / traceId
+data classification
+execution/replay metadata
 ```
 
-Event time, observed time and ingestion time are intentionally distinct to support late-arriving data, temporal reconstruction and audit.
+Temporal meanings are distinct:
 
-## 8. Event Taxonomy — Initial Domains
+- `eventTime` — when the source/domain occurrence happened or was recorded as occurring;
+- `effectiveTime` — when the fact became economically/legal/domain effective where different;
+- `knowledgeTime` — when the institution/platform could legitimately know/use the information;
+- `ingestedAt` — when the platform ingested the event.
+
+This separation supports late data, correction, replay, backtesting and the audit question: **what did the institution know at that point in time?**
+
+## 8. Event Domains
+
+Initial domain families include:
 
 ```text
 counterparty.*
@@ -236,31 +242,28 @@ news.*
 regulatory.*
 legal.*
 management.*
+ownership.*
 relationship.*
+security_interest.*
+insolvency.*
 sector.*
 macro.*
-risk.*
+feature.*
 signal.*
+risk.*
+classification.*
 case.*
 decision.*
 model.*
 ```
 
-Detailed event and signal catalogues are defined in later blueprint stages.
+Detailed event names and schemas are governed in Part III.
 
 ## 9. Financial Data Platform
 
-Different workloads require different storage characteristics. The logical data platform contains:
+Different workloads require different storage characteristics. The logical platform contains operational state, temporal/history state, object/document storage, search indexes, relationship/graph state, online/offline analytical features, and evidence/provenance.
 
-- operational state;
-- historical/analytical state;
-- object/document storage;
-- search indexes;
-- relationship/graph state;
-- online/offline features;
-- evidence and provenance.
-
-The initial implementation should avoid unnecessary technology proliferation. A practical Phase-1 baseline is:
+A pragmatic Phase-1 baseline is:
 
 ```text
 Kafka
@@ -270,477 +273,300 @@ Redis
 S3-compatible object storage
 ```
 
-Dedicated graph, stream-processing, analytical and feature-store technologies are introduced based on validated workload requirements.
+Dedicated graph, analytical or feature-store products are introduced only where validated workloads justify them. Kafka is operational event infrastructure, not the 7–10 year evidence archive.
 
 ## 10. Temporal Financial Model
 
-Financial observations require temporal context. A financial metric should preserve fields such as:
+Financial observations preserve economic and knowledge time. A financial fact/feature can carry:
 
 ```text
-Metric
-Value
-Financial Period
-Effective Date
-Reported Date
-Received Date
-Source
-Revision
-Extraction Version
-Confidence
+metric / feature definition
+value + unit/currency
+financial period
+accounting basis
+effective date
+reported/published date
+knowledge time
+source + evidence
+revision/supersession
+extraction/transformation version
+quality/confidence
 ```
 
-This permits reconstruction of both economic state and information state: what was true for a financial period and what the institution knew at a specific historical point.
+This enables both economic-state reconstruction and information-state reconstruction.
 
 ## 11. Stream Intelligence
 
-The stream-processing layer performs:
-
-- validation;
-- deduplication;
-- normalization;
-- enrichment;
-- entity resolution;
-- aggregation;
-- event-time windows;
-- trend calculation;
-- feature generation;
-- complex pattern detection.
+The stream-processing layer performs validation, deduplication, normalization, enrichment, entity/security resolution, aggregation, event-time windows, trend calculation, feature generation, correction handling and pattern detection.
 
 Example:
 
 ```text
-PAYMENT_RETURNED
-PAYMENT_RETURNED
-PAYMENT_RETURNED
-        |
-        | rolling 30-day window
-        v
-REPEATED_PAYMENT_RETURNS_DETECTED
+payment.instruction.returned
+payment.instruction.returned
+payment.instruction.returned
+        ↓ rolling 30-day feature
+returned_payment_count_30d
+        ↓ governed signal policy
+REPEATED_PAYMENT_RETURN
 ```
 
-Kafka is the initial event backbone. Kafka Streams can support early stateful/event-driven processing. Apache Flink is a North-Star candidate for complex stateful streaming, event-time processing and larger-scale CEP requirements. The final choice is workload-driven and will be captured through an ADR.
+Kafka is the event backbone. Kafka Streams is the Phase-1 default for stateful event processing under ADR-004. Flink remains a future option where validated CEP/event-time/state workloads justify the additional platform complexity.
 
 ## 12. Feature Architecture
 
-AI and risk engines consume governed features rather than querying arbitrary production systems.
-
-Example feature groups:
+AI and risk engines consume governed features rather than querying arbitrary production systems. Feature definitions are versioned contracts with semantic scope:
 
 ```text
-Counterparty CP001
-|
-+-- liquidity
-|   +-- current_ratio
-|   +-- quick_ratio
-|   +-- wc_utilization_30d_avg
-|   +-- cash_balance_trend_90d
-|
-+-- leverage
-|   +-- debt_equity
-|   +-- debt_ebitda
-|
-+-- behaviour
-|   +-- payment_returns_30d
-|   +-- max_dpd_90d
-|   +-- utilization_change_30d
-|
-+-- external
-|   +-- adverse_news_30d
-|   +-- rating_change_90d
-|
-+-- relationships
-    +-- distressed_entities
-    +-- director_risk_score
+GLOBAL_CORE
+GLOBAL_PRODUCT_SPECIFIC
+JURISDICTION_EXTENSION
+INSTITUTION_POLICY_SPECIFIC
 ```
 
-Each feature requires a versioned definition, calculation, source, owner, timestamp, quality state and lineage.
+Feature examples include financial ratios/trends, repayment conduct, utilization/headroom, transaction behaviour, refinancing/funding, ratings, market-implied credit, legal/insolvency, governance, relationship/contagion and peer-relative measures.
+
+Every feature preserves definition version, entity grain, time semantics, source/evidence lineage, quality, source-rights lineage where relevant, and revision/supersession state.
 
 ## 13. Risk Intelligence Architecture
 
-Risk intelligence uses multiple analytical engines.
+Risk intelligence uses independent governed analytical engines:
 
 ```text
-                         FEATURE STREAM
-                              |
-       +--------------+-------+--------+---------------+
-       |              |       |        |               |
-       v              v       v        v               v
-     RULES          ANOMALY   ML     GRAPH            NLP
-       |              |       |        |               |
-       +--------------+-------+--------+---------------+
-                              |
-                              v
-                       SIGNAL CANDIDATES
-                              |
-                              v
-                      SIGNAL CORRELATION
-                              |
-                              v
-                        GenAI REASONING
-                              |
-                              v
-                       PROPOSED SIGNAL
+FEATURE / OBSERVATION STREAM
+          ↓
++---------+---------+---------+---------+---------+---------+
+| RULES   | STATS   | ML      | ANOMALY | GRAPH  | NLP     |
++---------+---------+---------+---------+---------+---------+
+          ↓
+SIGNAL CANDIDATES
+          ↓
+SIGNAL POLICY + QUALITY GATE
+          ↓
+SIGNAL INSTANCES
+          ↓
+CORRELATION / RISK ASSESSMENT
+          ↓
+GENAI CONTEXT / EXPLANATION where approved
+          ↓
+HUMAN VALIDATION / DECISION
 ```
 
-This supports prediction, anomaly detection, correlation/reasoning and analyst explanation without making a single AI model authoritative.
+GenAI can correlate and explain governed evidence/features/model outputs but cannot invent authoritative facts, silently modify feature values or own the official risk state.
 
-## 14. Proposed Signal Model
+## 14. Signal Model
 
-A signal is a first-class governed entity containing at minimum:
+A signal is a first-class governed entity containing signal identity/type, semantic scope, entity, lifecycle status, severity, confidence, materiality, temporal fields, policy/version, feature/evidence references, source-rights/entity-resolution lineage where applicable, analytical outputs, proposed risk impact and human disposition history.
 
-- signal ID;
-- counterparty/entity ID;
-- signal type;
-- lifecycle status;
-- severity;
-- confidence;
-- detection timestamp;
-- drivers/features;
-- evidence references;
-- rule/model identities and versions;
-- proposed risk impact;
-- generated explanation where applicable;
-- analyst decisions and history.
+Severity, confidence, materiality and risk impact are independent concepts.
 
-AI explanation is an attribute of the signal, not the source of truth for the signal.
+## 15. Signal Lifecycle and Dispositions
 
-## 15. Signal Lifecycle
-
-Initial lifecycle:
+Canonical lifecycle state describes the operational life of a signal. Human/system dispositions describe why an action was taken; they are not regulatory classifications.
 
 ```text
 DETECTED
-   |
+   ↓
 PROPOSED
-   |
-   +-----------> REJECTED
-   |
+   ├────────→ REJECTED
+   ↓
 ACCEPTED
-   |
+   ↓
 ACTIVE
-   |
-   +--> ESCALATED
-   +--> MITIGATED
-   +--> CLOSED
+   ├────────→ MITIGATED
+   ├────────→ CLOSED
+   ├────────→ EXPIRED
+   └────────→ SUPERSEDED
 ```
 
-Additional states/classifications include `FALSE_POSITIVE`, `DUPLICATE`, `SUPERSEDED` and `EXPIRED`.
+A previously closed/resolved signal may be reopened through an explicit event where policy allows.
 
-These outcomes form important governed feedback labels.
+Disposition/action metadata can include concepts such as:
+
+```text
+FALSE_POSITIVE
+DUPLICATE
+INSUFFICIENT_EVIDENCE
+ESCALATE
+INVESTIGATE
+REQUEST_INFORMATION
+```
+
+`ESCALATE` is an action/disposition, not a competing economic-risk state. `FALSE_POSITIVE`, `DUPLICATE` and `INSUFFICIENT_EVIDENCE` are not accounting/prudential classifications.
+
+Immutable `signal.disposition.recorded` events preserve human decision history.
 
 ## 16. Human-in-the-Loop
 
-Analysts must be able to inspect a proposed signal and drill from conclusion to original evidence:
+Analysts drill from conclusion to original evidence:
 
 ```text
-AI Explanation
-      |
+Explanation / hypothesis
+      ↓
 Signal
-      |
-Model / Rule Output
-      |
+      ↓
+Rule / model / correlation output
+      ↓
 Features
-      |
-Events
-      |
-Original Transaction / Document / External Source
+      ↓
+Observations / domain events
+      ↓
+Evidence
+      ↓
+Original transaction / document / external source
 ```
 
-Analysts can accept, reject, modify, escalate or request investigation subject to role and policy.
+Material overrides require role authorization, reason, timestamp, before/after values and review/expiry where appropriate.
 
-## 17. Risk-Score Architecture
+## 17. Risk Assessment Architecture
 
-Risk scoring is multidimensional rather than an arbitrary score produced by an LLM.
-
-Candidate dimensions include:
-
-- Financial;
-- Behavioural;
-- Credit;
-- External;
-- Management/Governance;
-- Relationship/Group;
-- Sector/Macroeconomic.
+Risk assessment is multidimensional. The canonical dimension vocabulary is governed in Part II and includes financial/operating, liquidity, leverage/solvency, cash-flow/debt-service, repayment conduct, covenant/documentation, collateral/security, refinancing/funding, management/governance, fraud/integrity, external/market/reputation, legal/regulatory, relationship/contagion and sector/macro dimensions.
 
 The lifecycle is:
 
 ```text
-Raw Analytical Score
-        |
-Policy Adjustments
-        |
-Proposed Risk Score
-        |
-Human Validation
-        |
-Approved Risk Score
-        |
+Raw Analytical Assessment
+        ↓
+Policy Adjustment
+        ↓
+Proposed Risk Assessment
+        ↓
+Human Validation / Authorized Adjustment
+        ↓
+Approved Risk Assessment
+        ↓
 Official EWS State
 ```
 
-Each transition is retained for audit.
+Raw, proposed and approved states are persisted separately and never overwritten by later judgement.
 
-## 18. Model Lifecycle
+## 18. Classification Architecture
+
+Classification is a separate namespaced state model. Reference namespaces include:
 
 ```text
-Data -> Features -> Training -> Validation -> Backtest
-                                      |
-                                      v
-                                Model Registry
-                                      |
-                                Approval Gate
-                                      |
-                                      v
-                                Model Serving
-                                      |
-                                      v
-                                 Monitoring
-                                      |
-                           Drift / Performance
-                                      |
-                                      v
-                                  Retraining
+ANALYTICAL_EWS
+INTERNAL_CREDIT_GRADE
+WATCHLIST
+WORKOUT
+IN_SMA_NPA
+US_SUPERVISORY_CLASSIFICATION
+US_ACCRUAL_STATUS
+US_CECL
+UK_SICR
+UK_IFRS9_STAGE
+UK_PRUDENTIAL_DEFAULT
+UK_IRB
 ```
 
-MLflow is an initial candidate for model registry, lineage and AI/ML tracing. Product selection remains an ADR rather than a locked architectural requirement.
+The detailed multi-jurisdiction classification/adaptation model is normative in `02f-multi-jurisdiction-risk-model.md`. No one-to-one equivalence between an EWS signal/score and an accounting/prudential classification is assumed.
 
-## 19. AI Gateway
+## 19. Model Lifecycle and Use Governance
+
+Models move through governed data/features, training, validation, backtesting, registry, approval, serving, monitoring and retirement. Approval is use-case, jurisdiction/market, population and calibration specific; a model validated for one population is not assumed portable to another.
+
+MLflow is an implementation candidate rather than an architectural dependency.
+
+## 20. AI Gateway
 
 Applications do not directly call arbitrary foundation-model APIs.
 
 ```text
 Application
-    |
-    v
-+-----------------------+
-| AI Gateway            |
-| Authentication        |
-| Authorization         |
-| Data policy           |
-| Redaction             |
-| Prompt registry       |
-| Model routing         |
-| Rate limiting         |
-| Guardrails            |
-| Audit / tracing       |
-| Token/cost accounting |
-+-----------+-----------+
-            |
-     +------+------+ 
-     |             |
-     v             v
- Private LLM   Approved Cloud AI
+    ↓
+AI Gateway
+  authentication / authorization
+  data classification / redaction
+  source-rights and cross-border policy
+  prompt registry
+  model routing
+  token/rate/cost controls
+  guardrails
+  audit/tracing
+    ↓
+Private Model and/or Approved Cloud AI
 ```
 
-The gateway provides the primary control plane for hybrid AI consumption and vendor portability.
+The gateway is the control plane for hybrid AI consumption and provider portability.
 
-## 20. Hybrid Deployment Direction
+## 21. Hybrid Deployment Direction
 
-Core financial records, evidence, official risk state, feature state and analyst decisions remain inside the enterprise trust boundary.
+Core financial records, evidence, official risk state, feature state and analyst decisions remain within the institution's approved trust boundary. Approved cloud capabilities can be consumed selectively through controlled interfaces when data classification, source rights, jurisdiction policy and cross-border rules permit.
 
-Approved cloud capabilities can be consumed selectively through controlled interfaces.
+Hybrid is therefore a deployment capability, not a requirement to move sensitive data outside institutional control.
 
-```text
-Public / External Sources
-          |
-          v
-External Ingestion
-          |
-          v
-================================================
-        ENTERPRISE TRUST BOUNDARY
+## 22. Audit and Evidence Invariant
 
-Kafka -> Stream Processing -> Data Platform
-                    |
-          +---------+---------+
-          |         |         |
-        Rules       ML       Graph
-          |         |         |
-          +---------+---------+
-                    |
-                Risk Engine
-                    |
-                AI Gateway
-                 /      \
-                /        \
-        Private Model   Approved Cloud Model
-```
-
-Hybrid is therefore an architectural capability, not a requirement that sensitive data leave the controlled environment.
-
-## 21. Audit and Lineage
-
-The required provenance chain is:
+The platform must reconstruct:
 
 ```text
-Raw Source
-   |
-Event
-   |
-Transformation Version
-   |
-Feature Version
-   |
-Rule / Model Version
-   |
-Prediction
-   |
+Raw Source / Document
+   ↓
+Evidence
+   ↓
+Observation / Event
+   ↓
+Transformation + Feature Definition
+   ↓
+Feature Snapshot
+   ↓
+Rule / Model / Correlation Version
+   ↓
 Signal
-   |
-AI Explanation / Correlation
-   |
-Analyst Decision
-   |
-Risk Score Change
+   ↓
+Risk Assessment and/or Classification Adapter
+   ↓
+AI Explanation where used
+   ↓
+Human Decision
+   ↓
+Approved EWS / Classification State
 ```
 
-The system must preserve enough information to reconstruct why a material signal or risk-state change occurred and what information was available at the relevant point in time.
+The reconstruction must preserve knowledge time, revisions/corrections, model/policy versions and the evidence available at the historical decision point.
 
-## 22. Logical Service Boundaries
+## 23. Logical Service Boundaries
 
-Candidate domains/services include:
+Candidate logical domains include ingestion/connectors, counterparty/facility/relationship core, stream processing, financial-statement intelligence, feature computation, rules/signals/risk, anomaly/prediction/graph/NLP/correlation, AI gateway/reasoning, workflow/case/notification, evidence/audit/model governance, jurisdiction adapters and experience APIs.
+
+These are logical boundaries, not a mandate for one microservice/deployment unit per item.
+
+## 24. Evolution from Existing EWS
+
+The target architecture is defined independently of current implementation constraints, then reached incrementally. Existing Spring Boot services, financial-statement extraction, case/workflow capability and institutional data sources can be reused where they fit the target contracts.
+
+Migration should establish the event/evidence spine first, then governed features/signals, then risk/correlation/AI capabilities. Existing EWS remains operational during transition until official risk-state ownership is deliberately migrated.
+
+## 25. Phase-1 Architecture Spine
 
 ```text
-ingestion/
-  connector-service
-  document-ingestion-service
-
-core/
-  counterparty-service
-  facility-service
-  relationship-service
-
-streaming/
-  event-normalization
-  financial-feature-stream
-  behavioural-feature-stream
-
-financial/
-  financial-statement-service
-  ratio-engine
-  trend-engine
-  peer-analysis-service
-
-risk/
-  rules-engine
-  feature-service
-  signal-service
-  risk-scoring-service
-
-intelligence/
-  anomaly-service
-  prediction-service
-  graph-intelligence-service
-  nlp-intelligence-service
-  correlation-service
-
-ai/
-  ai-gateway
-  reasoning-service
-  explanation-service
-
-workflow/
-  validation-service
-  case-management-service
-  notification-service
-
-governance/
-  evidence-service
-  audit-service
-  model-governance-service
-
-experience/
-  portfolio-api
-  counterparty-360-api
+Internal + approved external sources
+        ↓
+Adapters / Outbox / APIs / Files / Feeds
+        ↓
+Evidence + Canonical Events
+        ↓
+Kafka
+        ↓
+Kafka Streams feature processing
+        ↓
+Governed features
+        ↓
+Rules / anomaly / initial ML
+        ↓
+Signal policy + correlation
+        ↓
+Proposed risk assessment + explanation
+        ↓
+Human validation
+        ↓
+Official EWS + case/workflow/dashboard
 ```
 
-These are logical boundaries, not a mandate for one deployment unit per item.
+Structured external intelligence can be introduced in parallel where portfolio value, source authority, source rights and entity-resolution quality justify it.
 
-## 23. Evolution from Existing EWS
+## 26. Strategic Direction
 
-The target architecture is designed to evolve existing capabilities rather than require a big-bang rewrite.
+The 3–6 month objective is a pragmatic EWS 2.0 event/evidence/feature/signal spine with human-controlled official risk state. The 2–3 year objective is a broader Financial Intelligence Platform with richer external intelligence, graph analytics, predictive models, portfolio intelligence and governed AI reasoning.
 
-```text
-Existing EWS                 Target Domain
------------------------------------------------------
-customer-service          -> Counterparty Domain
-analytics-services        -> Risk / Feature Domain
-case-mgmt-service         -> Validation / Case Domain
-notification-service      -> Notification Domain
-auth-service              -> IAM integration
-api-gateway               -> API / Experience Gateway
-```
-
-New platform capabilities are introduced around these domains: canonical events, event streaming, feature computation, evidence/provenance, ML, signal correlation, AI Gateway and relationship intelligence.
-
-## 24. Initial Architecture Decisions
-
-| Concern | Direction |
-|---|---|
-| Primary paradigm | Event-driven |
-| Primary entity | Corporate Counterparty |
-| AI role | Advisory / intelligence |
-| Formal EWS | Human validated |
-| AI risk score | Proposed, not authoritative |
-| Evidence | Immutable/provenance-driven |
-| Event backbone | Kafka |
-| Stream processing | Kafka Streams initially; evaluate Flink |
-| Core backend | Spring Boot |
-| AI/ML implementation | Python |
-| Operational data | PostgreSQL candidate |
-| Search | Elasticsearch candidate |
-| Cache/state | Redis candidate |
-| Documents | S3-compatible object storage |
-| Graph | Introduce based on relationship use cases |
-| Model governance | MLflow candidate |
-| GenAI access | AI Gateway only |
-| Deployment | Hybrid-capable |
-| Retail | Shared platform, separate domain intelligence |
-| Audit | End-to-end lineage |
-
-## 25. Scale Assumptions for Architecture Stress Testing
-
-Until actual sizing is available, architecture exercises may use the following non-contractual assumptions:
-
-| Metric | Working Assumption |
-|---|---:|
-| Corporate counterparties | 100,000 |
-| Retail customers | 10 million |
-| Corporate facilities | 1 million |
-| Financial/business events | 10–50 million/day |
-| External intelligence events | up to 1 million/day |
-| Documents | 10 million+ |
-| Relationships | 100 million+ |
-| Peak event rate | 5,000–10,000/sec |
-| Analysts | 500–2,000 |
-| Risk history | 7–10 years |
-| Critical-event processing target | <5 sec |
-| Normal signal-generation target | <30 sec |
-
-These numbers are design stress assumptions, not capacity commitments. They will be replaced by measured workload and NFRs.
-
-## 26. Next Blueprint Stage
-
-Part II will define the **Canonical Risk Information Model and Corporate Signal Taxonomy**.
-
-Initial signal domains:
-
-```text
-Financial
-Transactional
-Repayment / Conduct
-Credit
-Covenant
-Collateral
-Management / Governance
-Rating
-Market
-Legal / Regulatory
-News / Reputation
-Relationship / Group
-Sector
-Macroeconomic
-Fraud / Integrity
-```
-
-For each signal the catalogue will define source, detection logic, analytical method, severity, confidence, evidence, feature impact, risk dimension, AI involvement, human-validation policy, score impact/weighting strategy, decay/expiry behaviour, false-positive feedback and audit requirements.
+The architecture remains stable by keeping global economic-risk semantics separate from institution policy, jurisdiction/accounting/prudential adapters, market/source adapters and technology implementation choices.
