@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ews-financial-intelligence/schemas/features/feature-definition-v1.schema.json",
+  "title": "EWS Feature Definition v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["definitionId", "featureName", "version", "semanticScope", "entityGrain", "valueType", "calculation", "effectiveFrom", "owner"],
+  "properties": {
+    "definitionId": {"type": "string", "minLength": 1},
+    "featureName": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"},
+    "version": {"type": "string", "minLength": 1},
+    "semanticScope": {"type": "string", "enum": ["GLOBAL_CORE", "GLOBAL_PRODUCT_SPECIFIC", "JURISDICTION_EXTENSION", "INSTITUTION_POLICY_SPECIFIC"]},
+    "description": {"type": "string"},
+    "entityGrain": {"type": "string", "enum": ["COUNTERPARTY", "FACILITY", "ACCOUNT", "COLLATERAL", "RELATIONSHIP", "GROUP", "SECURITY", "PORTFOLIO_SEGMENT", "FINANCIAL_PERIOD"]},
+    "valueType": {"type": "string", "enum": ["DECIMAL", "INTEGER", "BOOLEAN", "STRING", "DATE", "TIMESTAMP"]},
+    "unit": {"type": ["string", "null"]},
+    "currencySemantics": {"type": "string", "enum": ["NONE", "VALUE_CURRENCY_REQUIRED", "NORMALIZED_BASE_CURRENCY", "SOURCE_CURRENCY_PRESERVED"]},
+    "window": {"type": ["string", "null"]},
+    "applicability": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "jurisdictions": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Z]{2}$"}},
+        "markets": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "products": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "segments": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
+      }
+    },
+    "calculation": {
+      "type": "object", "additionalProperties": false, "required": ["method", "transformationVersion"],
+      "properties": {
+        "method": {"type": "string", "enum": ["DIRECT", "RULE", "AGGREGATION", "RATIO", "STATISTICAL", "MODEL", "GRAPH", "NLP", "HYBRID"]},
+        "expressionRef": {"type": ["string", "null"]},
+        "transformationVersion": {"type": "string"},
+        "inputFeatures": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "inputObservationTypes": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "peerCohortDefinitionRef": {"type": ["string", "null"]},
+        "marketNormalizationRef": {"type": ["string", "null"]}
+      }
+    },
+    "timeSemantics": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "effectiveTimeRequired": {"type": "boolean"},
+        "knowledgeTimeRequired": {"type": "boolean"},
+        "pointInTimeSafe": {"type": "boolean"},
+        "lateDataPolicyRef": {"type": ["string", "null"]}
+      }
+    },
+    "qualityPolicyRef": {"type": ["string", "null"]},
+    "sourceRightsPolicyRef": {"type": ["string", "null"]},
+    "effectiveFrom": {"type": "string", "format": "date-time"},
+    "effectiveTo": {"type": ["string", "null"], "format": "date-time"},
+    "owner": {"type": "string"},
+    "approvalRef": {"type": ["string", "null"]}
+  }
+}
