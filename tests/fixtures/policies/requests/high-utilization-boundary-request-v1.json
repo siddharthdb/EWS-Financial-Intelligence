@@ -1,0 +1,9 @@
+{
+  "evaluationId":"EVAL-UTL-BOUNDARY-001",
+  "policy":{"policyId":"POL-CORP-HIGH-UTILIZATION-001","version":1},
+  "entity":{"type":"FACILITY","id":"FAC-TEST-001"},
+  "institutionId":"REFERENCE_INSTITUTION","jurisdiction":null,
+  "knowledgeTime":"2026-09-17T10:00:00Z","executionMode":"COUNTERFACTUAL_BACKTEST","runId":"TEST-RUN-001",
+  "features":[{"featureName":"utilization_ratio","featureValueId":"FV-UTL-001","state":"VALUE","value":0.85,"knowledgeTime":"2026-09-17T09:59:00Z","qualityState":"COMPLETE"}],
+  "observationIds":[],"evidenceIds":["EVIDENCE-TEST-001"],"requestedAt":"2026-09-17T10:00:01Z","correlationId":"CORR-TEST-001","traceId":"TRACE-TEST-001"
+}
