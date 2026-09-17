@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "SignalDispositionRecordedV1",
+  "namespace": "com.ews.events.decision",
+  "doc": "Immutable human/governance disposition of a proposed signal.",
+  "fields": [
+    {"name": "decisionId", "type": "string"},
+    {"name": "signalId", "type": "string"},
+    {"name": "counterpartyId", "type": "string"},
+    {"name": "decision", "type": {"type": "enum", "name": "SignalDisposition", "symbols": ["ACCEPT", "REJECT", "ESCALATE", "REQUEST_MORE_INFORMATION", "MARK_FALSE_POSITIVE", "MARK_DUPLICATE"]}},
+    {"name": "reasonCode", "type": "string"},
+    {"name": "reasonText", "type": ["null", "string"], "default": null},
+    {"name": "actorId", "type": "string"},
+    {"name": "actorRole", "type": "string"},
+    {"name": "caseId", "type": ["null", "string"], "default": null},
+    {"name": "previousSignalSnapshotRef", "type": "string"},
+    {"name": "resultingSignalSnapshotRef", "type": ["null", "string"], "default": null}
+  ]
+}
