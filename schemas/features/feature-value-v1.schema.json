@@ -2,84 +2,25 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ews-financial-intelligence/schemas/features/feature-value-v1.schema.json",
   "title": "EWS Global Feature Value v1",
-  "type": "object",
-  "additionalProperties": false,
+  "type": "object", "additionalProperties": false,
   "required": ["featureValueId", "definition", "entity", "state", "knowledgeTime", "calculatedAt", "quality", "lineage"],
   "properties": {
     "featureValueId": {"type": "string", "minLength": 1},
-    "definition": {
-      "type": "object", "additionalProperties": false, "required": ["featureName", "definitionId", "version"],
-      "properties": {
-        "featureName": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"},
-        "definitionId": {"type": "string", "minLength": 1},
-        "version": {"type": "string", "minLength": 1},
-        "semanticScope": {"type": "string", "enum": ["GLOBAL_CORE", "GLOBAL_PRODUCT_SPECIFIC", "JURISDICTION_EXTENSION", "INSTITUTION_POLICY_SPECIFIC"]}
-      }
-    },
-    "entity": {
-      "type": "object", "additionalProperties": false, "required": ["type", "id"],
-      "properties": {
-        "type": {"type": "string", "enum": ["COUNTERPARTY", "FACILITY", "ACCOUNT", "COLLATERAL", "FINANCIAL_PERIOD", "RELATIONSHIP", "GROUP", "PORTFOLIO_SEGMENT", "SECURITY", "LEGAL_ENTITY", "PERSON"]},
-        "id": {"type": "string", "minLength": 1}
-      }
-    },
-    "jurisdictionContext": {
-      "type": "object", "additionalProperties": false,
-      "properties": {
-        "primaryJurisdiction": {"type": ["string", "null"], "pattern": "^[A-Z]{2}$"},
-        "market": {"type": ["string", "null"]},
-        "accountingBasis": {"type": ["string", "null"]}
-      }
-    },
+    "definition": {"type": "object", "additionalProperties": false, "required": ["featureName", "definitionId", "version"], "properties": {"featureName": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"}, "definitionId": {"type": "string", "minLength": 1}, "version": {"type": "string", "minLength": 1}, "semanticScope": {"type": "string", "enum": ["GLOBAL_CORE", "GLOBAL_PRODUCT_SPECIFIC", "JURISDICTION_EXTENSION", "INSTITUTION_POLICY_SPECIFIC"]}}},
+    "entity": {"type": "object", "additionalProperties": false, "required": ["type", "id"], "properties": {"type": {"type": "string", "enum": ["COUNTERPARTY", "FACILITY", "ACCOUNT", "COLLATERAL", "FINANCIAL_PERIOD", "RELATIONSHIP", "GROUP", "PORTFOLIO_SEGMENT", "SECURITY", "LEGAL_ENTITY", "PERSON"]}, "id": {"type": "string", "minLength": 1}}},
+    "jurisdictionContext": {"type": "object", "additionalProperties": false, "properties": {"primaryJurisdiction": {"type": ["string", "null"], "pattern": "^[A-Z]{2}$"}, "market": {"type": ["string", "null"]}, "accountingBasis": {"type": ["string", "null"]}}},
     "state": {"type": "string", "enum": ["VALUE", "ZERO", "NULL_UNKNOWN", "NOT_APPLICABLE", "NOT_AVAILABLE", "STALE", "INVALID"]},
-    "value": {},
-    "unit": {"type": ["string", "null"]},
-    "currency": {"type": ["string", "null"], "pattern": "^[A-Z]{3}$"},
-    "effectiveFrom": {"type": ["string", "null"], "format": "date-time"},
-    "effectiveTo": {"type": ["string", "null"], "format": "date-time"},
-    "knowledgeTime": {"type": "string", "format": "date-time"},
-    "calculatedAt": {"type": "string", "format": "date-time"},
-    "windowStart": {"type": ["string", "null"], "format": "date-time"},
-    "windowEnd": {"type": ["string", "null"], "format": "date-time"},
-    "sourceAsOf": {"type": ["string", "null"], "format": "date-time"},
-    "revision": {"type": "integer", "minimum": 1},
-    "supersedes": {"type": ["string", "null"]},
-    "components": {
-      "type": "array",
-      "items": {
-        "type": "object", "additionalProperties": false, "required": ["name"],
-        "properties": {"name": {"type": "string"}, "value": {}, "unit": {"type": ["string", "null"]}, "featureValueId": {"type": ["string", "null"]}, "observationId": {"type": ["string", "null"]}}
-      }
-    },
-    "quality": {
-      "type": "object", "additionalProperties": false, "required": ["state"],
-      "properties": {
-        "state": {"type": "string", "enum": ["COMPLETE", "PARTIAL", "STALE", "CONFLICTED", "UNVERIFIED", "INSUFFICIENT"]},
-        "completeness": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
-        "freshness": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
-        "sourceAuthority": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
-        "sourceAuthorityTier": {"type": ["string", "null"], "enum": ["T1", "T2", "T3", "T4", null]},
-        "extractionConfidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
-        "entityResolutionConfidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
-        "corroborationCount": {"type": ["integer", "null"], "minimum": 0},
-        "marketLiquidityQuality": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
-        "issues": {"type": "array", "items": {"type": "string"}}
-      }
-    },
-    "lineage": {
-      "type": "object", "additionalProperties": false, "required": ["transformationVersion"],
-      "properties": {
-        "transformationVersion": {"type": "string"},
-        "inputFeatureValueIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
-        "observationIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
-        "evidenceIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
-        "sourceRecordIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
-        "sourceRightsRefs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
-        "entityResolutionRefs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
-        "peerCohortRef": {"type": ["string", "null"]},
-        "marketNormalizationRef": {"type": ["string", "null"]}
-      }
-    },
+    "valueType": {"type": ["string", "null"], "enum": ["DECIMAL", "INTEGER", "BOOLEAN", "STRING", "DATE", "TIMESTAMP", null]},
+    "value": {"type": ["number", "integer", "boolean", "string", "null"], "description": "Logical feature value. For DECIMAL values, JSON numbers are accepted only when producer/consumer implementations preserve the precision and scale defined by the governed feature definition; the Avro event contract uses an exact decimal logical type."},
+    "unit": {"type": ["string", "null"]}, "currency": {"type": ["string", "null"], "pattern": "^[A-Z]{3}$"},
+    "effectiveFrom": {"type": ["string", "null"], "format": "date-time"}, "effectiveTo": {"type": ["string", "null"], "format": "date-time"}, "knowledgeTime": {"type": "string", "format": "date-time"}, "calculatedAt": {"type": "string", "format": "date-time"}, "windowStart": {"type": ["string", "null"], "format": "date-time"}, "windowEnd": {"type": ["string", "null"], "format": "date-time"}, "sourceAsOf": {"type": ["string", "null"], "format": "date-time"}, "revision": {"type": "integer", "minimum": 1}, "supersedes": {"type": ["string", "null"]},
+    "components": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["name"], "properties": {"name": {"type": "string"}, "value": {"type": ["number", "integer", "boolean", "string", "null"]}, "unit": {"type": ["string", "null"]}, "featureValueId": {"type": ["string", "null"]}, "observationId": {"type": ["string", "null"]}}}},
+    "quality": {"type": "object", "additionalProperties": false, "required": ["state"], "properties": {"state": {"type": "string", "enum": ["COMPLETE", "PARTIAL", "STALE", "CONFLICTED", "UNVERIFIED", "INSUFFICIENT"]}, "completeness": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "freshness": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "sourceAuthority": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "sourceAuthorityTier": {"type": ["string", "null"], "enum": ["T1", "T2", "T3", "T4", null]}, "extractionConfidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "entityResolutionConfidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "corroborationCount": {"type": ["integer", "null"], "minimum": 0}, "marketLiquidityQuality": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "issues": {"type": "array", "items": {"type": "string"}}}},
+    "lineage": {"type": "object", "additionalProperties": false, "required": ["transformationVersion"], "properties": {"transformationVersion": {"type": "string"}, "inputFeatureValueIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}, "observationIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}, "evidenceIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}, "sourceRecordIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}, "sourceRightsRefs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}, "entityResolutionRefs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}, "peerCohortRef": {"type": ["string", "null"]}, "marketNormalizationRef": {"type": ["string", "null"]}}},
     "traceId": {"type": ["string", "null"]}
-  }
+  },
+  "allOf": [
+    {"if": {"properties": {"state": {"enum": ["VALUE", "ZERO"]}}, "required": ["state"]}, "then": {"required": ["valueType", "value"], "properties": {"valueType": {"not": {"type": "null"}}, "value": {"not": {"type": "null"}}}}},
+    {"if": {"properties": {"state": {"enum": ["NULL_UNKNOWN", "NOT_APPLICABLE", "NOT_AVAILABLE", "STALE", "INVALID"]}}, "required": ["state"]}, "then": {"properties": {"value": {"type": "null"}}}}
+  ]
 }
