@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ews-financial-intelligence/schemas/policies/risk-policy-v1.schema.json",
+  "title": "EWS Risk Policy v1",
+  "description": "Institution-configurable, governed and effective-dated deterministic risk policy. The contract is engine-neutral and may be executed by the native evaluator or an approved adapter such as DMN/Drools.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["policyId", "policyKey", "version", "name", "scope", "lifecycle", "effectivePeriod", "evaluation", "rules", "governance"],
+  "properties": {
+    "policyId": {"type": "string", "minLength": 1},
+    "policyKey": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,127}$"},
+    "version": {"type": "integer", "minimum": 1},
+    "name": {"type": "string", "minLength": 1, "maxLength": 256},
+    "description": {"type": ["string", "null"], "maxLength": 4000},
+    "scope": {
+      "type": "object", "additionalProperties": false,
+      "required": ["semanticScope", "institutionId"],
+      "properties": {
+        "semanticScope": {"type": "string", "enum": ["GLOBAL_CORE", "GLOBAL_PRODUCT_SPECIFIC", "JURISDICTION_EXTENSION", "INSTITUTION_POLICY_SPECIFIC"]},
+        "institutionId": {"type": "string", "minLength": 1},
+        "jurisdictions": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Z]{2}$"}},
+        "productTypes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "portfolioSegments": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "entityTypes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "enum": ["COUNTERPARTY", "FACILITY", "ACCOUNT", "COLLATERAL", "GROUP", "SECURITY", "LEGAL_ENTITY", "PERSON"]}
+      }
+    },
+    "lifecycle": {"type": "string", "enum": ["DRAFT", "VALIDATION", "PENDING_APPROVAL", "APPROVED", "ACTIVE", "SUSPENDED", "RETIRED"]},
+    "effectivePeriod": {
+      "type": "object", "additionalProperties": false, "required": ["effectiveFrom"],
+      "properties": {"effectiveFrom": {"type": "string", "format": "date-time"}, "effectiveTo": {"type": ["string", "null"], "format": "date-time"}}
+    },
+    "evaluation": {
+      "type": "object", "additionalProperties": false, "required": ["engine", "mode", "missingValuePolicy"],
+      "properties": {
+        "engine": {"type": "string", "enum": ["NATIVE", "DMN", "DROOLS"]},
+        "mode": {"type": "string", "enum": ["FIRST_MATCH", "ALL_MATCHES", "PRIORITY"]},
+        "missingValuePolicy": {"type": "string", "enum": ["FAIL_EVALUATION", "RULE_NOT_MATCHED", "INSUFFICIENT_EVIDENCE"]},
+        "externalArtifactRef": {"type": ["string", "null"]},
+        "externalArtifactVersion": {"type": ["string", "null"]}
+      }
+    },
+    "parameters": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["name", "type", "value", "institutionConfigurable"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,127}$"},
+          "type": {"type": "string", "enum": ["DECIMAL", "INTEGER", "BOOLEAN", "STRING", "DATE", "DURATION"]},
+          "value": {"type": ["number", "integer", "boolean", "string"]},
+          "unit": {"type": ["string", "null"]},
+          "institutionConfigurable": {"type": "boolean"},
+          "allowedRange": {
+            "type": ["object", "null"], "additionalProperties": false,
+            "properties": {"minimum": {"type": ["number", "null"]}, "maximum": {"type": ["number", "null"]}}
+          },
+          "allowedValues": {"type": ["array", "null"], "items": {"type": ["string", "number", "integer", "boolean"]}},
+          "rationale": {"type": ["string", "null"], "maxLength": 2000}
+        }
+      }
+    },
+    "rules": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["ruleId", "name", "enabled", "priority", "condition", "outcome"],
+        "properties": {
+          "ruleId": {"type": "string", "minLength": 1},
+          "name": {"type": "string", "minLength": 1},
+          "enabled": {"type": "boolean"},
+          "priority": {"type": "integer", "minimum": 0},
+          "condition": {"$ref": "#/$defs/expression"},
+          "outcome": {
+            "type": "object", "additionalProperties": false, "required": ["type", "code"],
+            "properties": {
+              "type": {"type": "string", "enum": ["SIGNAL_CANDIDATE", "POLICY_FLAG", "CLASSIFICATION_CANDIDATE", "NO_ACTION"]},
+              "code": {"type": "string", "minLength": 1},
+              "severity": {"type": ["string", "null"], "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL", null]},
+              "riskDimensions": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+              "attributes": {"type": "object", "additionalProperties": {"type": ["string", "number", "integer", "boolean", "null"]}}
+            }
+          }
+        }
+      }
+    },
+    "governance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["createdBy", "createdAt", "makerCheckerRequired"],
+      "properties": {
+        "createdBy": {"type": "string", "minLength": 1},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "makerCheckerRequired": {"type": "boolean"},
+        "approvedBy": {"type": ["string", "null"]},
+        "approvedAt": {"type": ["string", "null"], "format": "date-time"},
+        "changeReason": {"type": ["string", "null"], "maxLength": 2000},
+        "supersedesPolicyId": {"type": ["string", "null"]},
+        "simulationRunId": {"type": ["string", "null"]}
+      }
+    }
+  },
+  "$defs": {
+    "operand": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["feature"], "properties": {"feature": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"}}},
+        {"type": "object", "additionalProperties": false, "required": ["parameter"], "properties": {"parameter": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,127}$"}}},
+        {"type": "object", "additionalProperties": false, "required": ["literal"], "properties": {"literal": {"type": ["string", "number", "integer", "boolean", "null"]}}}
+      ]
+    },
+    "expression": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["all"], "properties": {"all": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/expression"}}}},
+        {"type": "object", "additionalProperties": false, "required": ["any"], "properties": {"any": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/expression"}}}},
+        {"type": "object", "additionalProperties": false, "required": ["not"], "properties": {"not": {"$ref": "#/$defs/expression"}}},
+        {"type": "object", "additionalProperties": false, "required": ["left", "operator", "right"], "properties": {"left": {"$ref": "#/$defs/operand"}, "operator": {"type": "string", "enum": ["EQ", "NE", "GT", "GTE", "LT", "LTE", "IN", "NOT_IN", "IS_NULL", "IS_NOT_NULL"]}, "right": {"$ref": "#/$defs/operand"}}}
+      ]
+    }
+  }
+}
