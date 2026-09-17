@@ -9,33 +9,31 @@
 Part III defines how authoritative facts and derived financial-risk intelligence move through EWS 2.0. It translates the Part-II semantic chain into event contracts and processing boundaries without confusing Kafka delivery semantics with business correctness.
 
 ```text
-Source Systems
-   |
-   +-- API / application events
-   +-- transactional outbox
-   +-- CDC
-   +-- batch/file/document ingestion
-   +-- external feeds
-   v
-Ingestion / Source Adapters
-   v
-Canonical Domain Events
-   v
-Kafka
-   +--> Stream Processing
-   +--> Feature Computation
-   +--> Evidence / Historical Stores
-   +--> Search / Analytics
-   v
-Feature Events
-   v
-Signal Engines
-   v
-Signal Events
-   v
-Correlation / Risk Assessment
-   v
-Decision / Case Workflow
+EWS-owned services                 Legacy/external sources
+       |                                   |
+transactional outbox              API / file / native event / CDC
+       |                                   |
+application publisher             source adapter
+       +------------------+----------------+
+                          v
+                Canonical Domain Events
+                          v
+                        Kafka
+                 +--------+--------+
+                 |                 |
+          Stream Processing   Evidence/History
+                 |
+          Feature Computation
+                 v
+             Feature Events
+                 v
+             Signal Engines
+                 v
+             Signal Events
+                 v
+        Correlation/Risk Assessment
+                 v
+          Human Decision / Case
 ```
 
 ## 2. Event architecture principles
@@ -56,7 +54,7 @@ Ordering is guaranteed only within a Kafka partition. Partition keys therefore f
 Every material event has a stable `eventId`; consumers with external side effects use event/inbox IDs or equivalent idempotency mechanisms.
 
 ### EA-06 — Delivery semantics are documented per boundary
-Do not claim platform-wide exactly-once. Kafka producer idempotence, Kafka transactions, Flink checkpoints, databases and external APIs have different failure boundaries.
+Do not claim platform-wide exactly-once. Kafka producer idempotence, Kafka transactions, stream processors, databases and external APIs have different failure boundaries.
 
 ### EA-07 — Event time is first-class
 Business event/effective time is distinct from observed/knowledge and ingestion/processing time.
@@ -69,6 +67,9 @@ Consumers distinguish normal processing from rebuild/backfill where necessary; e
 
 ### EA-10 — Sensitive data is minimized
 Events contain identifiers and required analytical facts, not entire source records/documents by convenience. Large/sensitive artefacts live in governed stores and are referenced.
+
+### EA-11 — Intentional domain events from systems we own; observation adapters for systems we do not
+EWS-owned applications publish intentional domain events through an application-managed transactional outbox. CDC is optional and primarily an anti-corruption/integration mechanism for systems EWS cannot change.
 
 ## 3. Event classes
 
@@ -146,6 +147,7 @@ eventVersion
 producer
 entity / aggregate
 partitionKey
+aggregateVersion (where ordering/version checks are required)
 eventTime
 effectiveTime
 knowledgeTime
@@ -161,12 +163,13 @@ payload
 
 Definitions:
 
-- `eventId`: globally unique immutable event identity.
+- `eventId`: globally unique immutable event identity and principal idempotency identity.
 - `eventType`: semantic event name.
 - `eventVersion`: semantic contract version, independent of Schema Registry numeric ID.
 - `producer`: producing bounded context/service/connector and version.
 - `entity`: principal business entity affected.
 - `partitionKey`: explicit logical key used for ordered processing.
+- `aggregateVersion`: monotonic version/sequence where consumers must detect gaps/stale transitions.
 - `eventTime`: when the originating business event occurred.
 - `effectiveTime`: when the asserted fact became economically/legally effective where different.
 - `knowledgeTime`: earliest time EWS was entitled to know/use the fact.
@@ -197,8 +200,6 @@ Historical EWS replay for 2026-05-23 may use the parsed information known by the
 
 The default key is the aggregate whose events must be processed in order, not automatically `counterpartyId` for every topic.
 
-Examples:
-
 | Event family | Preferred key | Reason |
 |---|---|---|
 | account transactions | accountId | account-local ordering and scale |
@@ -211,13 +212,13 @@ Examples:
 | signals | counterpartyId for counterparty-level signal processing | ordered signal/risk aggregation |
 | cases | caseId | workflow ordering |
 
-Avoid a universal `counterpartyId` key for high-volume account transactions: one large corporate/retail entity could create a hot partition and unnecessarily serialize unrelated accounts.
+Avoid a universal `counterpartyId` key for high-volume account transactions: one large entity could create a hot partition and unnecessarily serialize unrelated accounts.
+
+Where concurrent publishers can produce events for the same aggregate, partitioning alone is insufficient to guarantee the producer submits them in business order. Material aggregates use `aggregateVersion`/sequence checks or a publisher strategy that prevents overtaking.
 
 ## 7. Topic strategy
 
 Use domain/event-family topics rather than one topic per event type or one enterprise mega-topic.
-
-Initial logical families:
 
 ```text
 ews.canonical.counterparty
@@ -238,9 +239,7 @@ ews.derived.decision
 ews.derived.case
 ```
 
-Environment is preferably a deployment/cluster namespace rather than embedded into semantic event names where platform tooling supports it. Physical naming standards are finalized during implementation design.
-
-Do not create one topic per counterparty, feature or signal type.
+Environment is preferably a deployment/cluster namespace rather than embedded into semantic event names where platform tooling supports it. Do not create one topic per counterparty, feature or signal type.
 
 ## 8. Topic retention categories
 
@@ -260,14 +259,6 @@ Invalid/unprocessable records retained separately with error metadata and access
 
 Recommended production default: **Avro + Schema Registry** for high-volume canonical/derived Kafka events, while retaining JSON Schema for API/document-facing contracts where appropriate.
 
-Rationale:
-
-- compact wire representation;
-- mature schema evolution semantics;
-- Java/Python ecosystem support;
-- strong fit for Kafka/CDC tooling;
-- schema IDs avoid carrying full schemas in every record.
-
 Protobuf remains a valid alternative where RPC/message reuse and generated types dominate; do not mix formats arbitrarily inside one event family.
 
 Compatibility recommendation for durable event topics: `BACKWARD_TRANSITIVE` initially, with stronger `FULL_TRANSITIVE` selectively where old consumers must safely process new producer data. Breaking semantic changes require a new event major version rather than disabling compatibility.
@@ -276,81 +267,106 @@ Kafka keys should remain simple deterministic scalar/string IDs wherever possibl
 
 ## 10. Producer reliability
 
-For direct Kafka producers:
+For direct Kafka producers and the shared outbox publisher:
 
 - producer idempotence enabled;
 - `acks=all`;
 - retries managed through supported idempotent-producer semantics;
-- stable event IDs generated before publish;
-- transactions used only where atomic multi-record/offset-write semantics are actually required.
+- stable event IDs generated before publication;
+- Kafka transactions used only where atomic Kafka multi-record/offset-write semantics are actually required.
 
-Kafka producer idempotence protects against duplicate writes caused by producer retry within its defined scope. It does not eliminate application-level duplicate business events or duplicate external side effects.
+Kafka producer idempotence protects against duplicate writes caused by retry within Kafka producer protocol semantics. It does **not** remove the database-outbox/Kafka acknowledgement ambiguity. The stable `eventId` remains the cross-boundary business idempotency identity.
 
-## 11. Transactional outbox
+## 11. Application-managed transactional outbox
 
-Services that must atomically persist business state and publish a domain event use the transactional outbox pattern:
+EWS-owned services that must atomically persist business state and create an event use:
 
 ```text
 DB transaction
   +-- update business tables
-  +-- insert immutable outbox row
+  +-- insert immutable OUTBOX_EVENT containing committed event intent
 COMMIT
        |
        v
-Debezium CDC
+short claim/lease transaction
        |
        v
-Outbox Event Router
+Application Outbox Publisher
        |
        v
 Kafka
+       |
+       v
+mark PUBLISHED / reconciliation metadata
 ```
 
-Outbox rows include at least event ID, aggregate type/ID, event type/version, event timestamp and payload/reference metadata.
+The publisher does not reconstruct the event from mutable business tables after commit. The outbox retains the immutable event payload/envelope or immutable references needed to reproduce it.
 
-The aggregate ID normally becomes the Kafka message key to preserve aggregate ordering.
+### Claiming
 
-Do not implement `DB commit -> application calls Kafka` as the default for state-changing services where loss between the two operations would be material.
+Multiple publisher workers claim small batches using tested database queue semantics, e.g. `FOR UPDATE SKIP LOCKED` where supported. The preferred Phase-1 implementation uses a **short persisted claim/lease**, commits the DB transaction, then performs Kafka network I/O outside the lock-holding transaction.
 
-## 12. CDC strategy
+Expired claims are recoverable. Kafka acknowledgement followed by publisher failure may cause the row to be sent again; this is expected and handled through `eventId` idempotency.
 
-Use CDC for:
+### Backpressure
 
-1. legacy/source systems that cannot natively publish governed events;
-2. transactional outbox relay;
-3. selected state synchronization where change-log semantics are explicitly understood.
+Kafka unavailability creates an outbox backlog, not a synchronous dependency for the business transaction. Monitor:
 
-Raw table CDC is not automatically a canonical business event. A normalization layer converts source changes into governed observations/domain events.
+- oldest unpublished event age;
+- NEW/claimed/failed counts;
+- publication throughput;
+- retry/error rate;
+- claim expiry rate;
+- database capacity consumed by retained outbox rows.
 
-Avoid exposing physical source table schemas as long-lived enterprise contracts.
+See `ADR-003-application-managed-transactional-outbox.md`.
+
+## 12. Legacy/source integration and CDC
+
+Integration preference for systems EWS does not own:
+
+```text
+1. native governed event
+2. supported API/integration feed
+3. scheduled/file integration where latency permits
+4. CDC where database change observation is the practical mechanism
+```
+
+CDC is therefore optional, not a mandatory EWS platform dependency.
+
+Where CDC is used, raw table changes remain source events. An anti-corruption/normalization adapter converts them into governed canonical observations/domain events. Physical table schemas must not become long-lived enterprise contracts.
 
 ## 13. Consumer idempotency
 
-Consumers are categorized:
-
 ### Pure deterministic Kafka-to-Kafka transformations
-Can use Kafka/Flink transactional/checkpoint capabilities where supported.
+Use Kafka/stream-processing transactional semantics where supported and justified.
 
 ### Database-writing consumers
-Persist processed `eventId`/inbox identity in the same transaction as the materialized state change, or use an equivalent idempotent upsert/version strategy.
+Use a transactional inbox or version-aware idempotent upsert.
+
+```text
+BEGIN
+  INSERT processed_event(event_id) -- unique
+  apply state/projection change
+COMMIT
+```
 
 ### External side-effect consumers
-Notifications, external APIs and human workflow actions require explicit idempotency keys and replay suppression policies.
+Notifications, external APIs and workflow actions require explicit idempotency keys and replay suppression/reconciliation policies.
 
-An event being redelivered must not send a second customer/analyst notification merely because Kafka processing restarted.
+An event redelivery must not create a second analyst/customer notification merely because processing restarted.
 
 ## 14. Processing guarantees
 
-Guarantees are stated per pipeline:
-
 | Boundary | Target semantic |
 |---|---|
-| source DB + outbox row | atomic local DB transaction |
-| Debezium outbox -> Kafka | at-least-once delivery with stable event identity; downstream idempotency |
-| direct Kafka producer | idempotent production; transactions where justified |
+| service business state + outbox row | atomic local DB transaction |
+| application outbox -> Kafka | at-least-once publication with stable event identity |
+| direct Kafka producer | idempotent production; Kafka transactions where justified |
 | Kafka -> deterministic stream -> Kafka | exactly-once processing where configured/supported |
-| Kafka -> operational DB | effectively-once business outcome via transactional inbox/upsert |
-| Kafka -> external API/notification | at-least-once attempt + idempotency/reconciliation |
+| Kafka -> operational DB | effectively-once business outcome via inbox/versioned upsert |
+| Kafka -> external API/notification | at-least-once attempt + external/business idempotency and reconciliation |
+| optional legacy CDC -> normalization | source-specific; canonical output remains idempotent/versioned |
 
 The architecture deliberately uses **effectively-once business outcomes** where a global distributed transaction would be brittle or impossible.
 
@@ -358,14 +374,7 @@ The architecture deliberately uses **effectively-once business outcomes** where 
 
 Financial data is frequently late and out of order. Stream processing therefore uses event time for time-sensitive features/windows and configurable watermarks/allowed lateness.
 
-Late events are not globally discarded. Policy determines whether they:
-
-- update an open window;
-- create a correction/retraction;
-- trigger feature recalculation;
-- produce a revised signal;
-- are stored for historical accuracy only;
-- require manual reconciliation.
+Late events are not globally discarded. Policy determines whether they update an open window, create a correction/retraction, trigger feature recalculation, produce a revised signal, are stored only for historical accuracy, or require manual reconciliation.
 
 Example: a payment-return event arriving two days late may change `returned_payment_count_30d`; a six-month-late restated financial statement may create revised historical features without pretending the bank knew them six months earlier.
 
@@ -400,70 +409,56 @@ Invalid source records go to quarantine with source identity, error code, timest
 ## 18. Stream-processing engine boundary
 
 ### Kafka Streams
-Preferred for Phase-1 service-local/stateful transformations where:
-
-- topology is moderate;
-- processing is tightly integrated with Spring Boot/Java;
-- Kafka is the principal source/sink;
-- simple joins, windows and aggregations dominate.
+Preferred for Phase-1 service-local/stateful transformations where topology is moderate, processing is tightly integrated with Spring Boot/Java, Kafka is the principal source/sink, and simple joins/windows/aggregations dominate.
 
 ### Apache Flink
-Introduce where requirements justify it:
+Introduce where requirements justify complex event-time processing, heterogeneous streams/sources, sophisticated watermarks/late-data handling, large stateful joins/patterns, advanced CEP, or an independent streaming platform.
 
-- complex event-time processing;
-- multiple heterogeneous streams/sources;
-- sophisticated watermarks/late-data handling;
-- large stateful joins/patterns;
-- advanced CEP;
-- independent streaming platform/team.
-
-Recommendation: **Kafka Streams first for the Phase-1 EWS spine; validate Flink against specific workloads rather than introducing it merely because the platform is event-driven.**
+**Recommendation:** Kafka Streams first for the Phase-1 EWS spine; validate Flink against specific workloads rather than introducing it merely because the platform is event-driven.
 
 ## 19. Initial processing topology
 
 ```text
-SOURCE / OUTBOX / CDC
-       |
-       v
-source.* / connector boundary
-       |
-       v
-Normalization + validation + entity resolution
-       |
-       v
-CANONICAL DOMAIN TOPICS
-       |
-       +--> Evidence/history sink
-       |
-       +--> Feature processors
-                 |
+EWS services             Legacy/external
+     |                         |
+  OUTBOX                 API/file/CDC
+     |                         |
+ publisher                 adapters
+     +-----------+-------------+
                  v
-          FEATURE EVENTS/STORE
+       CANONICAL DOMAIN TOPICS
                  |
-          +------+-------+
-          |              |
-       Rules         Anomaly/ML
-          |              |
-          +------+-------+
-                 v
-             SIGNALS
-                 |
-         Correlation engine
-                 |
-                 v
-          RISK ASSESSMENT
-                 |
-                 v
-         HUMAN VALIDATION
+       +---------+----------+
+       |                    |
+ Evidence/history     Feature processors
+                            |
+                            v
+                     FEATURE EVENTS/STORE
+                            |
+                     +------+-------+
+                     |              |
+                   Rules        Anomaly/ML
+                     |              |
+                     +------+-------+
+                            v
+                         SIGNALS
+                            |
+                    Correlation engine
+                            |
+                            v
+                     RISK ASSESSMENT
+                            |
+                            v
+                    HUMAN VALIDATION
 ```
 
 ## 20. Part-III next specifications
 
-1. Canonical event envelope schema.
-2. Topic catalogue and key/partition matrix.
-3. Event-type catalogue for the 25 Phase-1 signals/features.
-4. Outbox contract.
+1. Canonical event envelope Avro schema.
+2. Application outbox SQL/logical contract and Spring publisher reference design.
+3. Topic catalogue and key/partition matrix.
+4. Event-type catalogue for Phase-1 signals/features.
 5. Schema compatibility/versioning rules.
 6. Replay/quarantine operating model.
 7. Kafka sizing and retention model based on assumed scale.
-8. Kafka Streams versus Flink workload decision matrix/ADR.
+8. Kafka Streams versus Flink workload decision ADR.
