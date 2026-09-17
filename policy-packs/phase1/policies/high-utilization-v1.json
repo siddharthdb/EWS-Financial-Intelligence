@@ -1,0 +1,14 @@
+{
+  "policyId":"POL-CORP-HIGH-UTILIZATION-001","policyKey":"HIGH_UTILIZATION","version":1,"name":"High Utilization","description":"Detect elevated facility utilization as an analytical liquidity/refinancing risk signal using institution-approved thresholds.",
+  "scope":{"semanticScope":"INSTITUTION_POLICY_SPECIFIC","institutionId":"REFERENCE_INSTITUTION","entityTypes":["FACILITY"]},"lifecycle":"VALIDATION","effectivePeriod":{"effectiveFrom":"2026-09-17T00:00:00Z","effectiveTo":null},
+  "evaluation":{"engine":"NATIVE","mode":"PRIORITY","missingValuePolicy":"INSUFFICIENT_EVIDENCE","externalArtifactRef":null,"externalArtifactVersion":null},
+  "parameters":[
+    {"name":"HIGH_UTILIZATION_THRESHOLD","type":"DECIMAL","value":0.85,"unit":"ratio","institutionConfigurable":true,"allowedRange":{"minimum":0,"maximum":1},"allowedValues":null,"rationale":"Reference high-utilization threshold; institution controlled."},
+    {"name":"CRITICAL_UTILIZATION_THRESHOLD","type":"DECIMAL","value":0.95,"unit":"ratio","institutionConfigurable":true,"allowedRange":{"minimum":0,"maximum":1},"allowedValues":null,"rationale":"Reference critical-utilization threshold; institution controlled."}
+  ],
+  "rules":[
+    {"ruleId":"R-UTL-001","name":"Critical utilization","enabled":true,"priority":100,"condition":{"left":{"feature":"utilization_ratio"},"operator":"GTE","right":{"parameter":"CRITICAL_UTILIZATION_THRESHOLD"}},"outcome":{"type":"SIGNAL_CANDIDATE","code":"HIGH_UTILIZATION","severity":"HIGH","riskDimensions":["LIQUIDITY","REFINANCING_FUNDING"],"attributes":{}}},
+    {"ruleId":"R-UTL-002","name":"High utilization","enabled":true,"priority":200,"condition":{"left":{"feature":"utilization_ratio"},"operator":"GTE","right":{"parameter":"HIGH_UTILIZATION_THRESHOLD"}},"outcome":{"type":"SIGNAL_CANDIDATE","code":"HIGH_UTILIZATION","severity":"MEDIUM","riskDimensions":["LIQUIDITY","REFINANCING_FUNDING"],"attributes":{}}}
+  ],
+  "governance":{"createdBy":"architecture","createdAt":"2026-09-17T00:00:00Z","makerCheckerRequired":true,"approvedBy":null,"approvedAt":null,"changeReason":"Phase-1 executable reference policy","supersedesPolicyId":null,"simulationRunId":null}
+}
