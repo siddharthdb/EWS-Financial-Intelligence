@@ -1,83 +1,46 @@
 {
   "type": "record",
   "name": "CanonicalEventEnvelopeV1",
-  "namespace": "in.ews.events.v1",
-  "doc": "Common EWS event metadata. Domain payload schemas are separate governed records and are composed/wrapped by producer-specific event schemas.",
+  "namespace": "org.ewsfi.events.v1",
+  "doc": "Jurisdiction-neutral common event metadata for the EWS Financial Intelligence Platform. Domain payload schemas are separate governed records.",
   "fields": [
-    {
-      "name": "eventId",
-      "type": {"type": "string", "logicalType": "uuid"},
-      "doc": "Immutable identity of the committed business event; unchanged across publication retries."
-    },
+    {"name": "eventId", "type": {"type": "string", "logicalType": "uuid"}, "doc": "Immutable event identity; unchanged across publication retries."},
     {"name": "eventType", "type": "string"},
     {"name": "eventVersion", "type": "string"},
-    {
-      "name": "producer",
-      "type": {
-        "type": "record",
-        "name": "ProducerIdentityV1",
-        "fields": [
-          {"name": "service", "type": "string"},
-          {"name": "instance", "type": ["null", "string"], "default": null},
-          {"name": "version", "type": ["null", "string"], "default": null}
-        ]
-      }
-    },
-    {
-      "name": "entity",
-      "type": {
-        "type": "record",
-        "name": "EntityReferenceV1",
-        "fields": [
-          {"name": "type", "type": "string"},
-          {"name": "id", "type": "string"}
-        ]
-      }
-    },
+    {"name": "producer", "type": {"type": "record", "name": "ProducerIdentityV1", "fields": [
+      {"name": "service", "type": "string"}, {"name": "instance", "type": ["null", "string"], "default": null}, {"name": "version", "type": ["null", "string"], "default": null}
+    ]}},
+    {"name": "entity", "type": {"type": "record", "name": "EntityReferenceV1", "fields": [
+      {"name": "type", "type": "string"}, {"name": "id", "type": "string"}, {"name": "resolutionRef", "type": ["null", "string"], "default": null}, {"name": "resolutionConfidence", "type": ["null", "double"], "default": null}
+    ]}},
     {"name": "aggregateSequence", "type": ["null", "long"], "default": null},
     {"name": "partitionKey", "type": "string"},
     {"name": "eventTime", "type": {"type": "long", "logicalType": "timestamp-micros"}},
     {"name": "effectiveTime", "type": ["null", {"type": "long", "logicalType": "timestamp-micros"}], "default": null},
     {"name": "knowledgeTime", "type": {"type": "long", "logicalType": "timestamp-micros"}},
     {"name": "ingestedAt", "type": {"type": "long", "logicalType": "timestamp-micros"}},
-    {
-      "name": "source",
-      "type": {
-        "type": "record",
-        "name": "SourceReferenceV1",
-        "fields": [
-          {"name": "system", "type": "string"},
-          {"name": "recordId", "type": ["null", "string"], "default": null},
-          {"name": "evidenceIds", "type": {"type": "array", "items": "string"}, "default": []}
-        ]
-      }
-    },
+    {"name": "jurisdiction", "type": ["null", "string"], "default": null, "doc": "ISO 3166-1 alpha-2 jurisdiction where relevant. Null for genuinely jurisdiction-neutral events."},
+    {"name": "market", "type": ["null", "string"], "default": null},
+    {"name": "source", "type": {"type": "record", "name": "SourceReferenceV1", "fields": [
+      {"name": "system", "type": "string"},
+      {"name": "provider", "type": ["null", "string"], "default": null},
+      {"name": "recordId", "type": ["null", "string"], "default": null},
+      {"name": "authorityTier", "type": ["null", {"type": "enum", "name": "SourceAuthorityTierV1", "symbols": ["T1", "T2", "T3", "T4"]}], "default": null},
+      {"name": "evidenceIds", "type": {"type": "array", "items": "string"}, "default": []},
+      {"name": "sourceRightsRef", "type": ["null", "string"], "default": null},
+      {"name": "sourcePublishedAt", "type": ["null", {"type": "long", "logicalType": "timestamp-micros"}], "default": null}
+    ]}},
     {"name": "correlationId", "type": ["null", "string"], "default": null},
     {"name": "causationId", "type": ["null", "string"], "default": null},
     {"name": "traceId", "type": ["null", "string"], "default": null},
-    {
-      "name": "classification",
-      "type": {
-        "type": "record",
-        "name": "DataClassificationV1",
-        "fields": [
-          {"name": "sensitivity", "type": {"type": "enum", "name": "SensitivityV1", "symbols": ["PUBLIC", "INTERNAL", "CONFIDENTIAL", "RESTRICTED"]}},
-          {"name": "containsPii", "type": "boolean", "default": false},
-          {"name": "retentionClass", "type": ["null", "string"], "default": null}
-        ]
-      }
-    },
-    {
-      "name": "execution",
-      "type": {
-        "type": "record",
-        "name": "ExecutionMetadataV1",
-        "fields": [
-          {"name": "mode", "type": {"type": "enum", "name": "ExecutionModeV1", "symbols": ["LIVE", "RECOVERY_REPLAY", "PROJECTION_REBUILD", "FEATURE_REBUILD", "COUNTERFACTUAL_BACKTEST", "SOURCE_BACKFILL"]}, "default": "LIVE"},
-          {"name": "runId", "type": ["null", "string"], "default": null}
-        ]
-      },
-      "default": {"mode": "LIVE", "runId": null}
-    }
+    {"name": "classification", "type": {"type": "record", "name": "DataClassificationV1", "fields": [
+      {"name": "sensitivity", "type": {"type": "enum", "name": "SensitivityV1", "symbols": ["PUBLIC", "INTERNAL", "CONFIDENTIAL", "RESTRICTED"]}},
+      {"name": "containsPii", "type": "boolean", "default": false},
+      {"name": "retentionClass", "type": ["null", "string"], "default": null}
+    ]}},
+    {"name": "execution", "type": {"type": "record", "name": "ExecutionMetadataV1", "fields": [
+      {"name": "mode", "type": {"type": "enum", "name": "ExecutionModeV1", "symbols": ["LIVE", "RECOVERY_REPLAY", "PROJECTION_REBUILD", "FEATURE_REBUILD", "COUNTERFACTUAL_BACKTEST", "SOURCE_BACKFILL"]}, "default": "LIVE"},
+      {"name": "runId", "type": ["null", "string"], "default": null}
+    ]}, "default": {"mode": "LIVE", "runId": null}}
   ]
 }
