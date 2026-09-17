@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ews-financial-intelligence/schemas/signals/signal-policy-v1.schema.json",
+  "title": "EWS Signal Policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["policyId", "signalType", "version", "status", "applicability", "detection", "effectiveFrom", "approval"],
+  "properties": {
+    "policyId": { "type": "string", "minLength": 1 },
+    "signalType": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" },
+    "version": { "type": "string", "minLength": 1 },
+    "status": { "type": "string", "enum": ["DRAFT", "VALIDATION", "APPROVED", "ACTIVE", "RETIRED"] },
+    "applicability": {
+      "type": "object",
+      "required": ["domain"],
+      "properties": {
+        "domain": { "type": "string", "enum": ["CORPORATE", "RETAIL"] },
+        "segments": { "type": "array", "items": { "type": "string" } },
+        "products": { "type": "array", "items": { "type": "string" } },
+        "jurisdictions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "properties": {
+        "features": { "type": "array", "items": { "type": "string" } },
+        "eventTypes": { "type": "array", "items": { "type": "string" } },
+        "minimumEvidenceTier": { "type": "string", "enum": ["T1", "T2", "T3", "T4"] }
+      }
+    },
+    "detection": {
+      "type": "object",
+      "required": ["method"],
+      "properties": {
+        "method": { "type": "string", "enum": ["RULE", "STATISTICAL", "ANOMALY", "ML", "GRAPH", "NLP", "HYBRID"] },
+        "window": { "type": ["string", "null"] },
+        "condition": { "type": ["object", "array", "string"] },
+        "modelRef": { "type": ["string", "null"] }
+      }
+    },
+    "severityMapping": { "type": "object" },
+    "confidencePolicy": { "type": "object" },
+    "materialityPolicy": { "type": "object" },
+    "qualityGate": { "type": "object" },
+    "deduplication": { "type": "object" },
+    "suppression": { "type": "object" },
+    "cooldown": { "type": ["string", "null"] },
+    "decay": { "type": ["object", "null"] },
+    "humanValidationRequired": { "type": "boolean" },
+    "riskContributionPolicyRef": { "type": ["string", "null"] },
+    "effectiveFrom": { "type": "string", "format": "date-time" },
+    "effectiveTo": { "type": ["string", "null"], "format": "date-time" },
+    "approval": {
+      "type": "object",
+      "required": ["owner"],
+      "properties": {
+        "owner": { "type": "string" },
+        "approvedBy": { "type": ["string", "null"] },
+        "approvedAt": { "type": ["string", "null"], "format": "date-time" },
+        "validationRef": { "type": ["string", "null"] }
+      }
+    }
+  }
+}
