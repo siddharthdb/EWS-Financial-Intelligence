@@ -48,7 +48,7 @@ Partition count is an operational capacity decision, not a semantic constant. Si
 
 Increasing partitions can change the partition selected for a key. Consumers therefore use key-local ordering plus domain sequence/version checks where ordering is material.
 
-Initial sizing and retention ranges are defined in `03i-production-kafka-topology-and-sizing.md`; production values remain benchmark-validated deployment configuration.
+Initial sizing and retention ranges are defined in `03i-production-kafka-topology-and-resilience.md`; production values remain benchmark-validated deployment configuration.
 
 ## 5. Hot keys
 
@@ -79,4 +79,4 @@ ACLs follow least privilege. Producers write only owned topics; consumers read o
 
 ## 10. Recommendation
 
-Use domain-family topics with independent concrete record schemas. Avoid both one enterprise mega-topic and one topic per event type. `03i-production-kafka-topology-and-sizing.md` owns the initial production sizing, durability, retention, HA and DR recommendations; this document owns semantic topic/key boundaries.
+Use domain-family topics with independent concrete record schemas. Avoid both one enterprise mega-topic and one topic per event type. `03i-production-kafka-topology-and-resilience.md` owns the initial production sizing, durability, retention, HA and DR recommendations; this document owns semantic topic/key boundaries.
