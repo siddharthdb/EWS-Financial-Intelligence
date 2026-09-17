@@ -1,16 +1,14 @@
-# EWS 2.0 — Phase-1 Event Catalogue
+# EWS 2.0 — Initial Global Event Catalogue
 
 **Status:** Draft / Part III  
-**Scope:** Corporate EWS Phase 1
+**Scope:** Corporate EWS; initial India/US/UK reference implementations
 
 ## 1. Contract boundary
 
-Part II defines risk semantics. Part III transports those semantics without collapsing facts, features, signals and decisions into one event type.
-
 ```text
-OPERATIONAL FACT
+SOURCE FACT
     ↓
-CANONICAL DOMAIN EVENT
+CANONICAL OBSERVATION / DOMAIN EVENT
     ↓
 FEATURE COMPUTATION
     ↓
@@ -21,253 +19,204 @@ SIGNAL POLICY / ANALYTICAL ENGINE
 SIGNAL EVENT
     ↓
 CORRELATION / RISK ASSESSMENT
-    ↓
-HUMAN DECISION
-    ↓
-OFFICIAL EWS STATE
+    ↓                    ↓
+HUMAN DECISION      JURISDICTION ADAPTER
+    ↓                    ↓
+OFFICIAL EWS       CLASSIFICATION STATE
 ```
 
-A producer at an ingestion boundary must not emit `signal.*` merely because it observed an adverse-looking source record.
+Ingestion producers never emit adverse analytical signals merely because a source fact appears adverse.
 
-## 2. Phase-1 canonical domain events
+## 2. Internal canonical events
 
-| Event type | Aggregate / key | Primary source | Meaning | Typical downstream feature/signal |
-|---|---|---|---|---|
-| `obligation.dpd.changed` | facilityId | LMS/CBS | authoritative DPD state changed | current/max DPD → DPD signals |
-| `payment.instruction.returned` | accountId | CBS/payment system | payment instruction returned | return count/value/rate |
-| `facility.limit.changed` | facilityId | LOS/CBS | sanctioned/applicable limit changed | capacity/headroom/utilization |
-| `facility.drawing_power.changed` | facilityId | CBS/stock statement | drawing power changed | capacity/utilization/excess |
-| `facility.outstanding.changed` | facilityId | CBS/LMS | facility exposure/outstanding changed | utilization/headroom |
-| `trade_finance.lc.devolved` | facilityId | trade finance | LC devolved | LC devolvement signal |
-| `trade_finance.bg.invoked` | facilityId | trade finance | guarantee invoked | BG invocation signal |
-| `financial.statement.received` | counterpartyId | document ingestion | financial statement received | document workflow/freshness |
-| `financial.statement.validated` | counterpartyId | financial intelligence | statement facts validated | financial ratios/trends |
-| `covenant.measurement.updated` | facilityId | covenant engine | governed covenant measurement updated | headroom/breach |
-| `monitoring.document.status.changed` | counterpartyId | monitoring registry | required monitoring item status changed | delay days |
-| `collateral.valuation.updated` | collateralId | collateral/valuation | approved valuation changed | cover/valuation age |
-| `rating.action.published` | counterpartyId | approved rating source | verified rating action | notch/outlook/watch features |
-| `relationship.changed` | relationshipId | entity resolution/registry | relationship created/changed/ended | graph features |
-| `management.position.changed` | counterpartyId | registry/exchange/verified source | management/director role changed | governance features |
-| `transaction.posted` | accountId | CBS | booked transaction fact | inflow/fund-flow/related-party features |
+| Event type | Key | Meaning | Typical downstream |
+|---|---|---|---|
+| `obligation.dpd.changed` | facilityId | authoritative DPD state changed | DPD features/signals |
+| `payment.instruction.returned` | accountId | payment instruction returned | return count/value/rate |
+| `facility.limit.changed` | facilityId | approved/committed limit changed | capacity/utilization |
+| `facility.drawing_power.changed` | facilityId | drawing power/borrowing-base capacity changed | WC specialization |
+| `facility.outstanding.changed` | facilityId | exposure changed | utilization/headroom |
+| `trade_finance.lc.devolved` | facilityId | LC devolved | LC_DEVOLVEMENT |
+| `trade_finance.guarantee.invoked` | facilityId | guarantee invoked | GUARANTEE_INVOCATION |
+| `financial.statement.received` | counterpartyId | statement received | workflow/freshness |
+| `financial.statement.validated` | counterpartyId | financial facts validated | ratios/trends |
+| `covenant.measurement.updated` | facilityId | covenant measurement changed | breach/headroom |
+| `monitoring.requirement.status.changed` | counterpartyId | required monitoring item changed | delay/non-cooperation |
+| `collateral.valuation.updated` | collateralId | valuation changed | cover/age |
+| `relationship.changed` | relationshipId | relationship changed | graph features |
+| `transaction.posted` | accountId | booked transaction | cash-flow/graph features |
 
-## 3. Domain-event design rules
+Historical aliases such as `trade_finance.bg.invoked` remain readable but new producers use the normalized event name.
 
-1. Events use past-tense factual names.
-2. Payload contains the fact and identifiers needed to interpret it, not a generated risk conclusion.
-3. Source-specific codes are retained where required for audit but normalized semantic fields are also provided.
-4. Corrections/reversals are explicit events or revisions; prior history is not silently rewritten.
-5. Monetary amounts carry currency.
-6. Financial/accounting facts carry period/scope and source status where relevant.
-7. Event identity is stable across publisher retries.
-8. Aggregate sequence is used where authoritative ordered state transitions exist.
+## 3. External canonical observations
 
-## 4. Derived feature event
+| Event type | Initial source examples | Key before/after resolution | Typical downstream |
+|---|---|---|---|
+| `rating.action.published` | rating provider/official publication | provider entity/instrument → entityId | rating features/signals |
+| `management.position.changed` | company registry/issuer filing | source entity → entityId | governance features |
+| `ownership.control.changed` | company/beneficial-owner registry | source entity → entityId | ownership/control features |
+| `security.interest.created` | internal security, authorised UCC, Companies House charge, equivalent registry | debtor/security record → entityId | security-interest features |
+| `security.interest.released` | same | security record → entityId | creditor/security state |
+| `credit.facility.amended` | internal facility/issuer disclosure/licensed loan source | facility/debt instrument | refinancing features |
+| `covenant.waiver.disclosed` | internal/issuer/lender disclosure | facility/instrument | waiver frequency |
+| `facility.maturity.extended` | internal/issuer disclosure | facility/instrument | amend-and-extend |
+| `facility.pricing.changed` | internal/authoritative disclosure | facility/instrument | funding cost |
+| `debt.default.disclosed` | authoritative filing/lender source | debt instrument/entity | default/refinancing evidence |
+| `debt.acceleration.disclosed` | authoritative filing/legal source | debt instrument/entity | DEBT_ACCELERATION |
+| `insolvency.proceeding.started` | court/registry | legal party → entityId | FORMAL_INSOLVENCY_PROCEEDING |
+| `insolvency.proceeding.status.changed` | court/registry | case/entity | legal state |
+| `financial.reporting.non_reliance.disclosed` | issuer/regulatory filing | entityId | reporting reliability |
+| `internal.control.weakness.disclosed` | issuer/regulatory filing | entityId | reporting/control concern |
+| `financial.statement.restated` | issuer/company filing | entityId | restatement features |
+| `market.bond.trade.observed` | authorised/contracted market feed | securityId | market features |
+| `market.security.reference.changed` | reference-data provider | securityId | issuer/security resolution |
 
-`feature.value.updated` is the standard event indicating a new governed feature value/revision.
+Jurisdiction/procedure/legal subtype is payload/evidence metadata, not encoded into separate country-specific event names unless semantics genuinely differ.
 
-It references the Part-II feature contract rather than duplicating feature semantics in the event name.
+## 4. Domain-event rules
+
+Events are factual/past-tense; retain source codes and normalized fields; corrections/reversals are explicit; amounts carry currency; financial facts carry period/accounting scope; event identity is stable; authoritative sequences are retained; external observations carry jurisdiction, source authority, source-rights reference and entity/security-resolution reference.
+
+## 5. Derived feature event
+
+`feature.value.updated` remains the common governed feature-change event. Feature names are semantic contracts, not topic names.
 
 Examples:
 
 ```text
-featureName = current_dpd
-featureDefinitionId = REPAYMENT.CURRENT_DPD
-entity = FACILITY/F123
-value = 12
-state = VALUE
-knowledgeTime = ...
+current_dpd
+returned_payment_count_30d
+utilization_ratio
+wc_utilization_ratio
+credit_spread_change_bps_30d
+new_security_interest_count_90d
+covenant_waiver_count_12m
 ```
 
-```text
-featureName = returned_payment_count_30d
-featureDefinitionId = CONDUCT.RETURNED_PAYMENT_COUNT_30D
-entity = ACCOUNT/A456
-value = 3
-state = VALUE
-```
+A feature update may cause no signal.
 
-```text
-featureName = wc_utilization_ratio
-featureDefinitionId = LIQUIDITY.WC_UTILIZATION_RATIO
-entity = FACILITY/F123
-value = 0.94
-state = VALUE
-```
+## 6. Signal events
 
-A feature update may cause no signal at all. Detection remains the responsibility of signal policies/models.
+`signal.detected`, `signal.proposed`, `signal.updated`, `signal.accepted`, `signal.rejected`, `signal.resolved`, `signal.reopened`.
 
-## 5. Signal events
+New signal instances use normalized global signal names. Historical aliases are not silently rewritten.
 
-| Event type | Meaning |
-|---|---|
-| `signal.detected` | analytical policy/engine produced a new signal candidate |
-| `signal.proposed` | signal entered governed analyst workflow |
-| `signal.updated` | material evidence/severity/confidence changed |
-| `signal.accepted` | authorized human/system policy accepted the proposed signal |
-| `signal.rejected` | authorized analyst rejected it |
-| `signal.resolved` | active signal condition resolved/mitigated |
-| `signal.reopened` | resolved episode recurred under policy rules |
+## 7. Decision, risk and classification events
 
-Signal payload references `signalId`, `signalType`, policy/model versions, feature snapshots and evidence IDs. It does not copy every underlying transaction/document into Kafka.
+- `signal.disposition.recorded` — immutable human disposition.
+- `risk.assessment.proposed` — analytical/policy assessment.
+- `risk.assessment.approved` — authorized EWS risk state.
+- `classification.state.proposed` / `classification.state.approved` / `classification.state.changed` — namespaced accounting/prudential/supervisory state.
 
-## 6. Decision and risk events
+Machine risk output and jurisdiction classification remain independently auditable.
 
-`signal.disposition.recorded` captures human disposition as an immutable governance fact.
-
-`risk.assessment.proposed` captures the analytical/policy assessment before approval.
-
-`risk.assessment.approved` captures the authorized official EWS risk state.
-
-These are separate because an analyst can reject/modify a proposal without altering the original machine output.
-
-## 7. End-to-end example — returned payments
-
-### Step 1 — source fact
-CBS reports a returned payment instruction.
+## 8. Example — returned payment
 
 ```text
 payment.instruction.returned
-key = accountId
-reason = INSUFFICIENT_FUNDS
-amount = INR 2,500,000
-```
-
-The canonical event references the authoritative transaction/source record evidence.
-
-### Step 2 — feature processing
-A stateful feature processor updates:
-
-```text
-returned_payment_count_30d = 3
-returned_payment_value_30d = INR 6,800,000
-returned_payment_rate_30d = ...
-```
-
-Technical/network returns are excluded according to the governed reason-code policy.
-
-### Step 3 — signal policy
-The active `REPEATED_PAYMENT_RETURN` policy evaluates the new feature snapshot.
-
-If its condition is satisfied it creates a Signal Instance and emits:
-
-```text
+   ↓
+returned_payment_count_30d / value / rate
+   ↓
+REPEATED_PAYMENT_RETURN policy
+   ↓
 signal.detected
-signalType = REPEATED_PAYMENT_RETURN
-policyVersion = ...
-featureSnapshotIds = [...]
-evidenceIds = [...]
-severity = ...
-confidence = ...
-materiality = ...
-```
-
-The numeric threshold/window belongs to the versioned policy, not to the event contract.
-
-### Step 4 — correlation
-The correlation layer may combine this signal with independent signals such as:
-
-```text
-WORKING_CAPITAL_UTILIZATION_HIGH
-RECEIVABLE_DAYS_DERIORATION
-RATING_OUTLOOK_NEGATIVE
-```
-
-and produce an `EMERGING_LIQUIDITY_STRESS` hypothesis while preserving all source signal IDs.
-
-### Step 5 — analyst workflow
-The proposed signal/hypothesis is placed into analyst review. Analyst action creates:
-
-```text
-signal.disposition.recorded
-```
-
-with actor, timestamp, decision, reason and before/after references.
-
-### Step 6 — official state
-Only the governed risk workflow emits:
-
-```text
+   ↓
+correlation / analyst disposition
+   ↓
 risk.assessment.approved
 ```
 
-The original returned-payment event remains a fact and is never mutated into a risk decision.
+Threshold/window is policy, not event semantics.
 
-## 8. End-to-end example — working-capital utilization
-
-Three independent facts can arrive in any order:
+## 9. Example — utilization
 
 ```text
 facility.limit.changed
-facility.drawing_power.changed
 facility.outstanding.changed
+[facility.drawing_power.changed where product requires]
+       ↓
+utilization_ratio
+[wc_utilization_ratio specialization]
+       ↓
+UTILIZATION_HIGH / UTILIZATION_SPIKE
 ```
 
-The feature processor reconstructs applicable capacity under the pinned feature definition and calculates:
+This prevents working-capital/drawing-power mechanics from defining the global utilization ontology.
+
+## 10. Example — US/UK security-interest activity
 
 ```text
-wc_utilization_ratio
-wc_available_headroom
-wc_utilization_delta_30d
+US authorised UCC record --------+
+                                  +--> security.interest.created
+UK Companies House charge -------+           |
+                                              v
+                             entity resolution
+                                              |
+                                              v
+                          new_security_interest_count_90d
+                                              |
+                                              v
+                          NEW_SECURITY_INTEREST_ACTIVITY
 ```
 
-A stale drawing-power input can set feature quality to `STALE` or `PARTIAL`; the signal quality gate may then degrade confidence or produce `INSUFFICIENT_EVIDENCE` instead of treating stale capacity as current truth.
+The legal subtype remains distinct in evidence.
 
-## 9. End-to-end example — suspected fund diversion
+## 11. Example — refinancing stress
 
 ```text
-transaction.posted
-relationship.changed
-facility/disbursement facts
-sanction-purpose evidence
-invoice/end-use evidence
+credit.facility.amended
+facility.maturity.extended
+facility.pricing.changed
+covenant.waiver.disclosed
+rating.action.published
+market.bond.trade.observed
         ↓
-reconciliation + graph + anomaly features
+refinancing + funding + market features
         ↓
-FUND_DIVERSION_SUSPECTED
+REFINANCING_RISK_INCREASE
+COVENANT_WAIVER_FREQUENCY
+MARKET_IMPLIED_CREDIT_STRESS
         ↓
-mandatory human investigation
+REFINANCING_STRESS hypothesis
 ```
 
-No transaction event, graph engine or LLM emits a confirmed fraud/diversion classification.
+## 12. Example — insolvency
 
-## 10. Schema-evolution rule
+```text
+court / insolvency registry
+       ↓
+insolvency.proceeding.started
+  {jurisdiction, procedureType, caseRef}
+       ↓
+FORMAL_INSOLVENCY_PROCEEDING
+       ↓
+EWS correlation
+       +--------------------------+
+                                  ↓
+                       jurisdiction classification
+                       where separately applicable
+```
 
-Additive optional fields require defaults appropriate to Avro schema resolution. A field rename uses a governed alias only where semantics are unchanged. A semantic reinterpretation is not hidden behind an alias; it requires a new contract/event version.
+## 13. Example — suspected diversion
 
-Event `eventVersion` represents the semantic contract version and is not replaced by the registry's internal schema identifier.
+Transactions + relationship + financing-purpose evidence produce features and `FUND_DIVERSION_SUSPECTED`; human investigation remains mandatory. No event, graph engine or LLM emits a confirmed legal/fraud conclusion autonomously.
 
-## 11. Initial implementation order
+## 14. Schema evolution
 
-### Wave A — operational facts
+Additive optional fields use compatible defaults. Semantic reinterpretation requires new event contract/version. Aliases are permitted only where meaning is unchanged. `eventVersion` is semantic and independent of registry schema ID.
 
-1. `obligation.dpd.changed`
-2. `payment.instruction.returned`
-3. `facility.limit.changed`
-4. `facility.drawing_power.changed`
-5. `facility.outstanding.changed`
-6. `trade_finance.lc.devolved`
-7. `trade_finance.bg.invoked`
-8. `covenant.measurement.updated`
-9. `monitoring.document.status.changed`
+## 15. Implementation waves
 
-### Wave B — financial/document facts
+### Wave A — internal operational spine
+`obligation.dpd.changed`, `payment.instruction.returned`, facility capacity/outstanding, trade finance, covenant, monitoring.
 
-10. `financial.statement.received`
-11. `financial.statement.validated`
-12. `collateral.valuation.updated`
+### Wave B — financial/document/collateral
+financial statements, collateral valuation, financial reporting facts.
 
-### Wave C — external/graph facts
+### Wave C — structured external/market
+ratings, management/ownership, security interests, financing amendments/waivers/default/acceleration, insolvency and market data.
 
-13. `rating.action.published`
-14. `relationship.changed`
-15. `management.position.changed`
-16. `transaction.posted` for governed fund-flow analytics
+Wave C can run in parallel with A/B for portfolios such as public US/UK corporates where authoritative structured external sources are available.
 
 ### Common derived contracts
-
-17. `feature.value.updated`
-18. `signal.detected`
-19. `signal.proposed`
-20. `signal.disposition.recorded`
-21. `risk.assessment.proposed`
-22. `risk.assessment.approved`
+`feature.value.updated`, signal lifecycle, disposition, risk assessment and classification-state events.
