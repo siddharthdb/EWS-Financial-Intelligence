@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "FeatureValueUpdatedV1",
+  "namespace": "com.ews.events.feature",
+  "doc": "Notification that a governed feature value/revision was materialized. Full lineage remains available through the referenced feature snapshot.",
+  "fields": [
+    {"name": "featureValueId", "type": "string"},
+    {"name": "featureName", "type": "string"},
+    {"name": "featureDefinitionId", "type": "string"},
+    {"name": "featureDefinitionVersion", "type": "string"},
+    {"name": "entityType", "type": "string"},
+    {"name": "entityId", "type": "string"},
+    {"name": "valueState", "type": {"type": "enum", "name": "FeatureValueState", "symbols": ["VALUE", "ZERO", "NULL_UNKNOWN", "NOT_APPLICABLE", "NOT_AVAILABLE", "STALE", "INVALID"]}},
+    {"name": "numericValue", "type": ["null", "double"], "default": null},
+    {"name": "stringValue", "type": ["null", "string"], "default": null},
+    {"name": "unit", "type": ["null", "string"], "default": null},
+    {"name": "qualityState", "type": {"type": "enum", "name": "FeatureQualityState", "symbols": ["COMPLETE", "PARTIAL", "STALE", "CONFLICTED", "UNVERIFIED", "INSUFFICIENT"]}},
+    {"name": "revision", "type": "long"},
+    {"name": "supersedesFeatureValueId", "type": ["null", "string"], "default": null},
+    {"name": "snapshotRef", "type": "string"},
+    {"name": "evidenceIds", "type": {"type": "array", "items": "string"}, "default": []}
+  ]
+}
