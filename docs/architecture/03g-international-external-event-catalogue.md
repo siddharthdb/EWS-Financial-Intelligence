@@ -46,8 +46,6 @@ debt.default.disclosed
 debt.acceleration.disclosed
 ```
 
-These can originate from internal credit systems, securities filings, borrower disclosures or licensed loan datasets.
-
 ## 5. Insolvency/legal events
 
 ```text
@@ -69,11 +67,9 @@ rating.outlook.changed
 rating.watch.changed
 ```
 
-Payload preserves provider, original scale/value, instrument/issuer scope, effective/publication time and provider entity IDs. Canonical normalization is downstream/versioned.
+Provider, original scale/value, instrument/issuer scope, effective/publication time and provider entity IDs remain preserved.
 
 ## 7. Market events
-
-Raw/high-volume market families:
 
 ```text
 market.bond.trade.observed
@@ -82,7 +78,7 @@ market.bond.yield.observed
 market.security.reference.changed
 ```
 
-Derived feature processing converts these into issuer-level market-implied features. Do not emit one EWS signal per trade.
+Derived processing converts these into issuer-level market features. Do not emit one EWS signal per trade.
 
 ## 8. News/announcement events
 
@@ -91,11 +87,9 @@ issuer.announcement.published
 news.item.observed
 ```
 
-Structured NLP extraction can produce candidate observations such as `profit.warning.disclosed`, `management.position.changed`, `debt.restructuring.disclosed`, but extracted facts reference source document spans and extraction confidence.
+NLP extraction may produce candidate observations, but extracted facts reference source spans and extraction confidence.
 
 ## 9. Common external observation payload requirements
-
-At minimum:
 
 ```text
 sourceObservationId
@@ -113,9 +107,7 @@ entityMatchConfidence
 correctionOf / supersedes (optional)
 ```
 
-Document-derived observations additionally include document hash/span and extraction model/version/confidence.
-
-Market observations additionally include security identifier, issuer-resolution reference, currency, venue/source and market-quality metadata.
+Document-derived observations additionally include document hash/span and extraction model/version/confidence. Market observations additionally include security identifier, issuer-resolution reference, currency, venue/source and market-quality metadata.
 
 ## 10. Example mappings
 
@@ -143,13 +135,16 @@ UK insolvency stream
 US bankruptcy source
   -> bankruptcy.case.filed {chapter=11 where authoritative}
   -> active_bankruptcy_case_flag
-  -> BANKRUPTCY_FILED / FORMAL_RESTRUCTURING_EVENT
+  -> FORMAL_INSOLVENCY_PROCEEDING
+  -> may contribute to FORMAL_RESTRUCTURING_EVENT when the governed policy/evidence establishes restructuring semantics
 ```
+
+`BANKRUPTCY_FILED` is deliberately not a global analytical signal. Bankruptcy filing is a jurisdiction-bearing legal observation that feeds the normalized insolvency/restructuring signal taxonomy.
 
 ## 11. Correction semantics
 
-External sources frequently revise records. Corrections use new event identities with `supersedesEventId` or stable source record/revision semantics. They never mutate historical knowledge time.
+Corrections use new event identities with `supersedesEventId` or stable source record/revision semantics. They never mutate historical knowledge time.
 
 ## 12. Signal boundary
 
-Connectors do not emit `REFINANCING_RISK_INCREASE`, `MARKET_IMPLIED_CREDIT_STRESS`, `LEGAL_CREDITOR_PRESSURE` or similar analytical signals directly. They emit observations; governed feature/policy/correlation engines own risk interpretation.
+Connectors do not emit analytical signals directly. They emit observations; governed feature, policy and correlation engines own risk interpretation.
