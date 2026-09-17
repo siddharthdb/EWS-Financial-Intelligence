@@ -1,0 +1,24 @@
+{
+  "type": "record",
+  "name": "SignalDetectedV1",
+  "namespace": "com.ews.events.signal",
+  "doc": "Analytical detection of a governed EWS signal candidate. This is not an approved risk decision.",
+  "fields": [
+    {"name": "signalId", "type": "string"},
+    {"name": "signalType", "type": "string"},
+    {"name": "counterpartyId", "type": "string"},
+    {"name": "scopeEntityType", "type": "string"},
+    {"name": "scopeEntityId", "type": "string"},
+    {"name": "policyId", "type": "string"},
+    {"name": "policyVersion", "type": "string"},
+    {"name": "severity", "type": {"type": "enum", "name": "SignalSeverity", "symbols": ["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"]}},
+    {"name": "confidence", "type": "double"},
+    {"name": "materiality", "type": {"type": "enum", "name": "SignalMateriality", "symbols": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]}},
+    {"name": "featureSnapshotIds", "type": {"type": "array", "items": "string"}, "default": []},
+    {"name": "evidenceIds", "type": {"type": "array", "items": "string"}, "default": []},
+    {"name": "predictionIds", "type": {"type": "array", "items": "string"}, "default": []},
+    {"name": "episodeId", "type": ["null", "string"], "default": null},
+    {"name": "requiresHumanValidation", "type": "boolean", "default": true},
+    {"name": "signalSnapshotRef", "type": "string"}
+  ]
+}
