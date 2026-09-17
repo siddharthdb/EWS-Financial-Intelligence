@@ -1,0 +1,60 @@
+name: Policy Contract Validation
+
+on:
+  pull_request:
+    paths:
+      - 'schemas/policies/**'
+      - 'policy-packs/**'
+      - 'tests/fixtures/policies/**'
+      - 'tools/policy-validator/**'
+      - '.github/workflows/policy-contract-validation.yml'
+  push:
+    branches: [ master ]
+    paths:
+      - 'schemas/policies/**'
+      - 'policy-packs/**'
+      - 'tests/fixtures/policies/**'
+      - 'tools/policy-validator/**'
+
+permissions:
+  contents: read
+
+jobs:
+  validator-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Compile and test policy validator
+        run: mvn -B -f tools/policy-validator/pom.xml test
+
+  parse-json-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Parse policy JSON artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib, sys
+          roots = [pathlib.Path('schemas/policies'), pathlib.Path('policy-packs'), pathlib.Path('tests/fixtures/policies')]
+          files = [p for r in roots if r.exists() for p in r.rglob('*.json')]
+          failed = False
+          for p in files:
+              try:
+                  json.loads(p.read_text(encoding='utf-8'))
+                  print(f'OK {p}')
+              except Exception as exc:
+                  failed = True
+                  print(f'INVALID {p}: {exc}', file=sys.stderr)
+          if failed: sys.exit(1)
+          print(f'Parsed {len(files)} JSON policy artifacts')
+          PY
