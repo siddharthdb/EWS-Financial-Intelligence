@@ -1,0 +1,9 @@
+{
+  "type": "record",
+  "name": "SignalDispositionRecordedV1",
+  "namespace": "org.ewsfi.events.decision.v1",
+  "doc": "Immutable human/governance disposition of a proposed analytical signal. It does not itself assert a prudential, accounting or legal classification.",
+  "fields": [
+    {"name": "decisionId", "type": "string"}, {"name": "signalId", "type": "string"}, {"name": "counterpartyId", "type": "string"}, {"name": "decision", "type": {"type": "enum", "name": "SignalDispositionV1", "symbols": ["ACCEPT", "REJECT", "ESCALATE", "REQUEST_MORE_INFORMATION", "MARK_FALSE_POSITIVE", "MARK_DUPLICATE"]}}, {"name": "reasonCode", "type": "string"}, {"name": "reasonText", "type": ["null", "string"], "default": null}, {"name": "actorId", "type": "string"}, {"name": "actorRole", "type": "string"}, {"name": "caseId", "type": ["null", "string"], "default": null}, {"name": "previousSignalSnapshotRef", "type": "string"}, {"name": "resultingSignalSnapshotRef", "type": ["null", "string"], "default": null}
+  ]
+}

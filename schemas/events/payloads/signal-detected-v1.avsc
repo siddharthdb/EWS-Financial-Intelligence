@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "SignalDetectedV1",
+  "namespace": "org.ewsfi.events.signal.v1",
+  "doc": "Analytical detection of a governed global EWS signal candidate. This is not an approved risk or jurisdictional classification decision.",
+  "fields": [
+    {"name": "signalId", "type": "string"}, {"name": "signalType", "type": "string"}, {"name": "semanticScope", "type": {"type": "enum", "name": "SignalSemanticScopeV1", "symbols": ["GLOBAL_CORE", "GLOBAL_PRODUCT_SPECIFIC", "JURISDICTION_EXTENSION", "INSTITUTION_POLICY_SPECIFIC"]}},
+    {"name": "counterpartyId", "type": "string"}, {"name": "scopeEntityType", "type": "string"}, {"name": "scopeEntityId", "type": "string"}, {"name": "jurisdiction", "type": ["null", "string"], "default": null}, {"name": "market", "type": ["null", "string"], "default": null},
+    {"name": "policyId", "type": "string"}, {"name": "policyVersion", "type": "string"},
+    {"name": "severity", "type": {"type": "enum", "name": "SignalSeverityV1", "symbols": ["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"]}}, {"name": "confidence", "type": "double"}, {"name": "materiality", "type": {"type": "enum", "name": "SignalMaterialityV1", "symbols": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]}},
+    {"name": "featureSnapshotIds", "type": {"type": "array", "items": "string"}, "default": []}, {"name": "evidenceIds", "type": {"type": "array", "items": "string"}, "default": []}, {"name": "sourceRightsRefs", "type": {"type": "array", "items": "string"}, "default": []}, {"name": "entityResolutionRefs", "type": {"type": "array", "items": "string"}, "default": []}, {"name": "predictionIds", "type": {"type": "array", "items": "string"}, "default": []}, {"name": "episodeId", "type": ["null", "string"], "default": null}, {"name": "requiresHumanValidation", "type": "boolean", "default": true}, {"name": "signalSnapshotRef", "type": "string"}
+  ]
+}

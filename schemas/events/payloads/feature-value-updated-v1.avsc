@@ -1,0 +1,31 @@
+{
+  "type": "record",
+  "name": "FeatureValueUpdatedV1",
+  "namespace": "org.ewsfi.events.feature.v1",
+  "doc": "Notification that a governed feature value/revision was materialized. Numeric financial values use Avro decimal rather than binary floating point. Full lineage remains available through the referenced feature snapshot.",
+  "fields": [
+    {"name": "featureValueId", "type": "string"},
+    {"name": "featureName", "type": "string"},
+    {"name": "featureDefinitionId", "type": "string"},
+    {"name": "featureDefinitionVersion", "type": "string"},
+    {"name": "semanticScope", "type": {"type": "enum", "name": "FeatureSemanticScopeV1", "symbols": ["GLOBAL_CORE", "GLOBAL_PRODUCT_SPECIFIC", "JURISDICTION_EXTENSION", "INSTITUTION_POLICY_SPECIFIC"]}, "default": "GLOBAL_CORE"},
+    {"name": "entityType", "type": "string"},
+    {"name": "entityId", "type": "string"},
+    {"name": "valueState", "type": {"type": "enum", "name": "FeatureValueStateV1", "symbols": ["VALUE", "ZERO", "NULL_UNKNOWN", "NOT_APPLICABLE", "NOT_AVAILABLE", "STALE", "INVALID"]}},
+    {"name": "valueType", "type": {"type": "enum", "name": "FeatureValueTypeV1", "symbols": ["DECIMAL", "INTEGER", "BOOLEAN", "STRING", "DATE", "TIMESTAMP"]}},
+    {"name": "decimalValue", "type": ["null", {"type": "bytes", "logicalType": "decimal", "precision": 38, "scale": 12}], "default": null},
+    {"name": "integerValue", "type": ["null", "long"], "default": null},
+    {"name": "booleanValue", "type": ["null", "boolean"], "default": null},
+    {"name": "stringValue", "type": ["null", "string"], "default": null},
+    {"name": "dateValue", "type": ["null", {"type": "int", "logicalType": "date"}], "default": null},
+    {"name": "timestampValue", "type": ["null", {"type": "long", "logicalType": "timestamp-micros"}], "default": null},
+    {"name": "unit", "type": ["null", "string"], "default": null},
+    {"name": "currency", "type": ["null", "string"], "default": null},
+    {"name": "qualityState", "type": {"type": "enum", "name": "FeatureQualityStateV1", "symbols": ["COMPLETE", "PARTIAL", "STALE", "CONFLICTED", "UNVERIFIED", "INSUFFICIENT"]}},
+    {"name": "revision", "type": "long"},
+    {"name": "supersedesFeatureValueId", "type": ["null", "string"], "default": null},
+    {"name": "snapshotRef", "type": "string"},
+    {"name": "evidenceIds", "type": {"type": "array", "items": "string"}, "default": []},
+    {"name": "sourceRightsRefs", "type": {"type": "array", "items": "string"}, "default": []}
+  ]
+}

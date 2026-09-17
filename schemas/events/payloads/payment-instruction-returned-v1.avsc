@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "PaymentInstructionReturnedV1",
+  "namespace": "org.ewsfi.events.payment.v1",
+  "doc": "Canonical jurisdiction-neutral fact that a payment instruction was returned. Risk interpretation is downstream.",
+  "fields": [
+    {"name": "paymentInstructionId", "type": "string"}, {"name": "accountId", "type": "string"}, {"name": "counterpartyId", "type": ["null", "string"], "default": null}, {"name": "facilityId", "type": ["null", "string"], "default": null},
+    {"name": "amount", "type": {"type": "bytes", "logicalType": "decimal", "precision": 20, "scale": 2}}, {"name": "currency", "type": "string"}, {"name": "returnReasonCode", "type": "string"},
+    {"name": "returnReasonCategory", "type": {"type": "enum", "name": "ReturnReasonCategoryV1", "symbols": ["FINANCIAL", "TECHNICAL", "BENEFICIARY_DETAIL", "CUSTOMER_INSTRUCTION", "REGULATORY", "OTHER", "UNKNOWN"]}},
+    {"name": "instrumentType", "type": ["null", "string"], "default": null}, {"name": "instructionDate", "type": ["null", {"type": "int", "logicalType": "date"}], "default": null}, {"name": "returnDate", "type": {"type": "int", "logicalType": "date"}}, {"name": "sourceTransactionId", "type": ["null", "string"], "default": null}, {"name": "reversalOfEventId", "type": ["null", "string"], "default": null}
+  ]
+}

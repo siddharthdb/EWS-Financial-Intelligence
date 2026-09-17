@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ews-financial-intelligence/schemas/sources/source-registry-v1.schema.json",
+  "title": "EWS External Source Registry v1",
+  "type": "object", "additionalProperties": false,
+  "required": ["sourceId", "provider", "sourceDomain", "authorityTier", "accessClass", "acquisitionMode", "rights", "owner"],
+  "properties": {
+    "sourceId": {"type": "string", "minLength": 1}, "provider": {"type": "string", "minLength": 1},
+    "sourceDomain": {"type": "string", "enum": ["COMPANY_REGISTRY", "SECURITIES_FILING", "RATING", "MARKET_DATA", "COURT_BANKRUPTCY", "INSOLVENCY", "LIEN_SECURITY_INTEREST", "REGULATORY", "MACROECONOMIC", "NEWS_MEDIA", "SYNDICATED_LOAN", "INTERNAL", "OTHER"]},
+    "jurisdictions": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Z]{2}$"}}, "authorityTier": {"type": "string", "enum": ["T1", "T2", "T3", "T4"]}, "accessClass": {"type": "string", "enum": ["PUBLIC", "COMMERCIAL_LICENSED", "INTERNAL", "RESTRICTED_AUTHORISED"]}, "acquisitionMode": {"type": "string", "enum": ["PUSH_STREAM", "POLL_INCREMENTAL", "BULK_SNAPSHOT_PLUS_STREAM", "BULK_SCHEDULED", "LICENSED_FEED", "ON_DEMAND", "MANUAL_VERIFICATION", "CDC"]}, "structuredness": {"type": "string", "enum": ["STRUCTURED", "SEMI_STRUCTURED", "UNSTRUCTURED", "MIXED"]},
+    "freshnessSlo": {"type": ["string", "null"]}, "rateLimitRef": {"type": ["string", "null"]}, "credentialClass": {"type": ["string", "null"]}, "checkpointStrategy": {"type": ["string", "null"]}, "entityResolutionRequired": {"type": "boolean", "default": true},
+    "rights": {"type": "object", "additionalProperties": false, "required": ["riskAnalyticsAllowed", "rawRetentionAllowed", "derivedRetentionAllowed", "redistributionAllowed", "llmProcessingAllowed", "modelInferenceAllowed", "modelTrainingAllowed", "crossBorderTransferAllowed"], "properties": {
+      "riskAnalyticsAllowed": {"type": "boolean"}, "rawRetentionAllowed": {"type": "boolean"}, "derivedRetentionAllowed": {"type": "boolean"}, "redistributionAllowed": {"type": "boolean"}, "llmProcessingAllowed": {"type": "boolean"}, "modelInferenceAllowed": {"type": "boolean"}, "modelTrainingAllowed": {"type": "boolean"}, "crossBorderTransferAllowed": {"type": "boolean"}, "rawRetentionPeriod": {"type": ["string", "null"]}, "derivedRetentionPeriod": {"type": ["string", "null"]}, "licenceRef": {"type": ["string", "null"]}, "restrictions": {"type": "array", "items": {"type": "string"}}
+    },
+    "evidencePolicyRef": {"type": ["string", "null"]}, "owner": {"type": "string"}, "status": {"type": "string", "enum": ["PROPOSED", "APPROVED", "ACTIVE", "SUSPENDED", "RETIRED"]}
+  }
+}

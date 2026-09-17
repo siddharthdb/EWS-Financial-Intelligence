@@ -1,97 +1,28 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ews-financial-intelligence/schemas/signals/signal-instance-v1.schema.json",
-  "title": "EWS Signal Instance v1",
+  "title": "EWS Global Signal Instance v1",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "signalId", "signalType", "entity", "status", "severity",
-    "confidence", "materiality", "detectedAt", "effectiveAt",
-    "knowledgeTime", "policy", "evidenceIds", "dataQuality"
-  ],
+  "required": ["signalId", "signalType", "semanticScope", "entity", "status", "severity", "confidence", "materiality", "detectedAt", "effectiveAt", "knowledgeTime", "policy", "evidenceIds", "dataQuality"],
   "properties": {
-    "signalId": { "type": "string", "minLength": 1 },
-    "signalType": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" },
-    "entity": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["type", "id"],
-      "properties": {
-        "type": { "type": "string", "enum": ["COUNTERPARTY", "FACILITY", "ACCOUNT", "GROUP", "PERSON", "LEGAL_ENTITY"] },
-        "id": { "type": "string", "minLength": 1 }
-      }
-    },
-    "riskIntents": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": { "type": "string", "enum": ["CREDIT_DETERIORATION", "FRAUD_INTEGRITY", "OPERATIONAL_CONDUCT", "EXTERNAL_CONTAGION"] }
-    },
-    "riskDimensions": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": { "type": "string" }
-    },
-    "status": {
-      "type": "string",
-      "enum": ["DETECTED", "PROPOSED", "ACCEPTED", "ACTIVE", "REJECTED", "MITIGATED", "CLOSED", "EXPIRED", "SUPERSEDED", "INSUFFICIENT_EVIDENCE"]
-    },
-    "classification": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": { "type": "string", "enum": ["FALSE_POSITIVE", "DUPLICATE", "SUPERSEDED", "INSUFFICIENT_EVIDENCE"] }
-    },
-    "severity": { "type": "string", "enum": ["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"] },
-    "confidence": {
-      "type": "object",
-      "required": ["value"],
-      "properties": {
-        "value": { "type": "number", "minimum": 0, "maximum": 1 },
-        "sourceAuthority": { "type": "number", "minimum": 0, "maximum": 1 },
-        "dataQuality": { "type": "number", "minimum": 0, "maximum": 1 },
-        "entityResolution": { "type": "number", "minimum": 0, "maximum": 1 },
-        "detectionReliability": { "type": "number", "minimum": 0, "maximum": 1 },
-        "corroboration": { "type": "number", "minimum": 0, "maximum": 1 },
-        "extractionConfidence": { "type": "number", "minimum": 0, "maximum": 1 }
-      }
-    },
-    "materiality": {
-      "type": "object",
-      "required": ["band"],
-      "properties": {
-        "band": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
-        "value": { "type": "number" },
-        "basis": { "type": "string" }
-      }
-    },
-    "detectedAt": { "type": "string", "format": "date-time" },
-    "effectiveAt": { "type": "string", "format": "date-time" },
-    "knowledgeTime": { "type": "string", "format": "date-time" },
-    "policy": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["id", "version"],
-      "properties": {
-        "id": { "type": "string" },
-        "version": { "type": "string" }
-      }
-    },
-    "featureSnapshotIds": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
-    "evidenceIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } },
-    "ruleEvaluationIds": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
-    "predictionIds": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
-    "correlationId": { "type": ["string", "null"] },
-    "episodeId": { "type": ["string", "null"] },
-    "proposedRiskImpact": { "type": ["number", "null"] },
-    "explanationRef": { "type": ["string", "null"] },
-    "caseId": { "type": ["string", "null"] },
-    "dataQuality": {
-      "type": "object",
-      "required": ["state"],
-      "properties": {
-        "state": { "type": "string", "enum": ["COMPLETE", "PARTIAL", "STALE", "CONFLICTED", "UNVERIFIED", "INSUFFICIENT"] },
-        "issues": { "type": "array", "items": { "type": "string" } }
-      }
-    },
-    "traceId": { "type": ["string", "null"] }
+    "signalId": {"type": "string", "minLength": 1},
+    "signalType": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]+$"},
+    "semanticScope": {"type": "string", "enum": ["GLOBAL_CORE", "GLOBAL_PRODUCT_SPECIFIC", "JURISDICTION_EXTENSION", "INSTITUTION_POLICY_SPECIFIC"]},
+    "jurisdictionContext": {"type": "object", "additionalProperties": false, "properties": {"primaryJurisdiction": {"type": ["string", "null"], "pattern": "^[A-Z]{2}$"}, "applicableJurisdictions": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Z]{2}$"}}, "market": {"type": ["string", "null"]}}},
+    "entity": {"type": "object", "additionalProperties": false, "required": ["type", "id"], "properties": {"type": {"type": "string", "enum": ["COUNTERPARTY", "FACILITY", "ACCOUNT", "GROUP", "PERSON", "LEGAL_ENTITY", "SECURITY", "RELATIONSHIP", "COLLATERAL"]}, "id": {"type": "string", "minLength": 1}}},
+    "riskIntents": {"type": "array", "uniqueItems": true, "items": {"type": "string", "enum": ["CREDIT_DETERIORATION", "FRAUD_INTEGRITY", "OPERATIONAL_CONDUCT", "EXTERNAL_CONTAGION"]}},
+    "riskDimensions": {"type": "array", "uniqueItems": true, "items": {"type": "string", "enum": ["LIQUIDITY", "LEVERAGE_SOLVENCY", "PROFITABILITY_OPERATING_PERFORMANCE", "CASH_FLOW_DEBT_SERVICE", "REPAYMENT_CONDUCT", "COVENANT_DOCUMENTATION", "COLLATERAL_SECURITY", "REFINANCING_FUNDING", "MANAGEMENT_GOVERNANCE", "FRAUD_INTEGRITY", "EXTERNAL_MARKET_REPUTATION", "LEGAL_REGULATORY", "RELATIONSHIP_GROUP_CONTAGION", "SECTOR_MACRO"]}},
+    "status": {"type": "string", "enum": ["DETECTED", "PROPOSED", "ACCEPTED", "ACTIVE", "REJECTED", "MITIGATED", "CLOSED", "EXPIRED", "SUPERSEDED"]},
+    "dispositionTags": {"type": "array", "uniqueItems": true, "items": {"type": "string", "enum": ["FALSE_POSITIVE", "DUPLICATE", "SUPERSEDED", "INSUFFICIENT_EVIDENCE"]}},
+    "severity": {"type": "string", "enum": ["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"]},
+    "confidence": {"type": "object", "additionalProperties": false, "required": ["value"], "properties": {"value": {"type": "number", "minimum": 0, "maximum": 1}, "sourceAuthority": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "dataQuality": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "entityResolution": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "detectionReliability": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "corroboration": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "extractionConfidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "marketLiquidityQuality": {"type": ["number", "null"], "minimum": 0, "maximum": 1}}},
+    "materiality": {"type": "object", "additionalProperties": false, "required": ["band"], "properties": {"band": {"type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]}, "value": {"type": ["number", "null"]}, "basis": {"type": ["string", "null"]}}},
+    "detectedAt": {"type": "string", "format": "date-time"}, "effectiveAt": {"type": "string", "format": "date-time"}, "knowledgeTime": {"type": "string", "format": "date-time"},
+    "policy": {"type": "object", "additionalProperties": false, "required": ["id", "version"], "properties": {"id": {"type": "string"}, "version": {"type": "string"}}},
+    "featureSnapshotIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}, "evidenceIds": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}}, "sourceRightsRefs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}, "entityResolutionRefs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}, "ruleEvaluationIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}, "predictionIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "correlationId": {"type": ["string", "null"]}, "episodeId": {"type": ["string", "null"]}, "proposedRiskImpact": {"type": ["number", "null"]}, "explanationRef": {"type": ["string", "null"]}, "caseId": {"type": ["string", "null"]},
+    "dataQuality": {"type": "object", "additionalProperties": false, "required": ["state"], "properties": {"state": {"type": "string", "enum": ["COMPLETE", "PARTIAL", "STALE", "CONFLICTED", "UNVERIFIED", "INSUFFICIENT"]}, "sourceAuthorityTier": {"type": ["string", "null"], "enum": ["T1", "T2", "T3", "T4", null]}, "entityMatchConfidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "extractionConfidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1}, "corroborationCount": {"type": ["integer", "null"], "minimum": 0}, "issues": {"type": "array", "items": {"type": "string"}}}},
+    "traceId": {"type": ["string", "null"]}
   }
 }

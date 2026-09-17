@@ -1,0 +1,9 @@
+{
+  "type": "record",
+  "name": "ObligationDpdChangedV1",
+  "namespace": "org.ewsfi.events.repayment.v1",
+  "doc": "Authoritative jurisdiction-neutral change in days-past-due state for a repayment obligation/facility. Regulatory classification is downstream and separate.",
+  "fields": [
+    {"name": "facilityId", "type": "string"}, {"name": "counterpartyId", "type": "string"}, {"name": "obligationId", "type": ["null", "string"], "default": null}, {"name": "previousDpd", "type": ["null", "int"], "default": null}, {"name": "currentDpd", "type": "int"}, {"name": "earliestUnpaidDueDate", "type": ["null", {"type": "int", "logicalType": "date"}], "default": null}, {"name": "asOfDate", "type": {"type": "int", "logicalType": "date"}}, {"name": "calculationPolicyRef", "type": "string"}, {"name": "sourceScheduleVersion", "type": ["null", "string"], "default": null}, {"name": "reconciled", "type": "boolean", "default": true}
+  ]
+}
