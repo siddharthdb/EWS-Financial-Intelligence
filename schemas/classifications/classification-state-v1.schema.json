@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ews-financial-intelligence/schemas/classifications/classification-state-v1.schema.json",
+  "title": "EWS Classification State v1",
+  "description": "Namespaced institution, accounting, prudential or legal classification. Separate from analytical EWS signal/risk state.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["classificationId", "namespace", "value", "entity", "status", "effectiveAt", "knowledgeTime", "policy"],
+  "properties": {
+    "classificationId": {"type": "string", "minLength": 1},
+    "namespace": {"type": "string", "enum": ["ANALYTICAL_EWS", "INTERNAL_CREDIT_GRADE", "WATCHLIST", "WORKOUT", "IN_SMA_NPA", "US_SUPERVISORY_CLASSIFICATION", "US_ACCRUAL_STATUS", "US_CECL", "UK_SICR", "UK_IFRS9_STAGE", "UK_PRUDENTIAL_DEFAULT", "UK_IRB", "OTHER_JURISDICTIONAL"]},
+    "value": {"type": "string", "minLength": 1},
+    "jurisdiction": {"type": ["string", "null"], "pattern": "^[A-Z]{2}$"},
+    "entity": {
+      "type": "object", "additionalProperties": false, "required": ["type", "id"],
+      "properties": {"type": {"type": "string", "enum": ["COUNTERPARTY", "FACILITY", "ACCOUNT", "LEGAL_ENTITY", "GROUP"]}, "id": {"type": "string", "minLength": 1}}
+    },
+    "status": {"type": "string", "enum": ["PROPOSED", "APPROVED", "ACTIVE", "SUPERSEDED", "CLOSED"]},
+    "effectiveAt": {"type": "string", "format": "date-time"},
+    "knowledgeTime": {"type": "string", "format": "date-time"},
+    "policy": {
+      "type": "object", "additionalProperties": false, "required": ["id", "version"],
+      "properties": {"id": {"type": "string"}, "version": {"type": "string"}, "authority": {"type": ["string", "null"]}}
+    },
+    "evidenceIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "featureSnapshotIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "signalIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "decisionId": {"type": ["string", "null"]},
+    "supersedesClassificationId": {"type": ["string", "null"]},
+    "traceId": {"type": ["string", "null"]}
+  }
+}
