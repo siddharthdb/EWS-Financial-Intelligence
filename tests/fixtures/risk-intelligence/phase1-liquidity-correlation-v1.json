@@ -1,0 +1,99 @@
+{
+  "hypothesisId": "HYP-LIQ-CP-001-001",
+  "hypothesisType": "EMERGING_LIQUIDITY_STRESS",
+  "entity": {
+    "type": "COUNTERPARTY",
+    "id": "CP-001"
+  },
+  "status": "PROPOSED",
+  "policy": {
+    "id": "CORR-POL-EMERGING-LIQUIDITY-STRESS",
+    "version": "1"
+  },
+  "executionMode": "LIVE",
+  "runId": null,
+  "knowledgeTime": "2026-09-18T06:10:00Z",
+  "asOf": "2026-09-18T06:10:00Z",
+  "window": {
+    "from": "2026-08-19T06:10:00Z",
+    "to": "2026-09-18T06:10:00Z"
+  },
+  "contributors": [
+    {
+      "type": "EPISODE",
+      "id": "EP-UTL-FAC-1001-001",
+      "analyticalType": "HIGH_UTILIZATION",
+      "entity": {
+        "type": "FACILITY",
+        "id": "FAC-1001"
+      },
+      "role": "SUPPORTING",
+      "effectiveAt": "2026-09-18T06:00:00Z",
+      "knowledgeTime": "2026-09-18T06:05:01Z",
+      "evidenceIds": [
+        "EVD-FAC-1001-LIMIT",
+        "EVD-FAC-1001-OUTSTANDING"
+      ],
+      "featureSnapshotIds": [
+        "FV-utilization_ratio-FAC-1001-20260918T0605Z"
+      ],
+      "lineageGroupIds": [
+        "LIN-FAC-1001-UTILIZATION"
+      ],
+      "contributionStrength": 0.78
+    },
+    {
+      "type": "EPISODE",
+      "id": "EP-PAYRET-ACC-2001-001",
+      "analyticalType": "REPEATED_PAYMENT_RETURN",
+      "entity": {
+        "type": "ACCOUNT",
+        "id": "ACC-2001"
+      },
+      "role": "SUPPORTING",
+      "effectiveAt": "2026-09-17T09:30:00Z",
+      "knowledgeTime": "2026-09-17T09:31:00Z",
+      "evidenceIds": [
+        "EVD-PAYRET-2001-01",
+        "EVD-PAYRET-2001-02",
+        "EVD-PAYRET-2001-03"
+      ],
+      "featureSnapshotIds": [
+        "FV-returned_payment_count_30d-CP-001-20260917"
+      ],
+      "lineageGroupIds": [
+        "LIN-ACC-2001-PAYMENT-RETURNS"
+      ],
+      "contributionStrength": 0.72
+    }
+  ],
+  "independentContributorCount": 2,
+  "lineageCollapse": {
+    "rawSupportingCount": 2,
+    "independentSupportingCount": 2,
+    "collapsedLineageGroupIds": []
+  },
+  "evidenceIds": [
+    "EVD-FAC-1001-LIMIT",
+    "EVD-FAC-1001-OUTSTANDING",
+    "EVD-PAYRET-2001-01",
+    "EVD-PAYRET-2001-02",
+    "EVD-PAYRET-2001-03"
+  ],
+  "featureSnapshotIds": [
+    "FV-utilization_ratio-FAC-1001-20260918T0605Z",
+    "FV-returned_payment_count_30d-CP-001-20260917"
+  ],
+  "confidence": 0.76,
+  "materiality": "HIGH",
+  "contradiction": {
+    "present": false,
+    "summaryRef": null
+  },
+  "revision": 1,
+  "previousRevisionRef": null,
+  "createdAt": "2026-09-18T06:10:01Z",
+  "resolvedAt": null,
+  "correlationId": "CORR-LIQ-CP-001",
+  "traceId": "TRACE-LIQ-CP-001"
+}
