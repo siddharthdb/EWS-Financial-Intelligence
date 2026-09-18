@@ -13,40 +13,45 @@ public final class PolicyPublicationValidator {
                        List<PolicySemanticValidator.Finding> findings) {}
 
   private final JsonSchema schema;
-  private final PolicySemanticValidator semantic = new PolicySemanticValidator();
-  private final PolicyGovernanceValidator governance = new PolicyGovernanceValidator();
+  private final PolicySemanticValidator semantic=new PolicySemanticValidator();
+  private final PolicyGovernanceValidator governance=new PolicyGovernanceValidator();
 
   public PolicyPublicationValidator(JsonNode schemaNode) {
-    this.schema = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012).getSchema(schemaNode);
+    this.schema=JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012).getSchema(schemaNode);
   }
 
-  public Result validate(JsonNode policy, JsonNode constraints, GovernedRegistry registry,
+  public Result validate(JsonNode policy,JsonNode constraints,GovernedRegistry registry,
                          Collection<PolicyGovernanceValidator.PolicyVersion> existingVersions) {
     return validate(policy,policy.toString().getBytes(StandardCharsets.UTF_8),constraints,registry,existingVersions);
   }
 
-  public Result validate(JsonNode policy, byte[] artifactBytes, JsonNode constraints, GovernedRegistry registry,
+  public Result validate(JsonNode policy,byte[] artifactBytes,JsonNode constraints,GovernedRegistry registry,
                          Collection<PolicyGovernanceValidator.PolicyVersion> existingVersions) {
     List<PolicySemanticValidator.Finding> findings=new ArrayList<>();
     Set<ValidationMessage> schemaErrors=schema.validate(policy);
     for(ValidationMessage m:schemaErrors)
-      findings.add(new PolicySemanticValidator.Finding("SCHEMA", PolicySemanticValidator.Severity.ERROR,
-          "JSON_SCHEMA_VIOLATION", m.getMessage(), m.getInstanceLocation().toString()));
+      findings.add(new PolicySemanticValidator.Finding("SCHEMA",PolicySemanticValidator.Severity.ERROR,
+        "JSON_SCHEMA_VIOLATION",m.getMessage(),m.getInstanceLocation().toString()));
 
     boolean schemaValid=schemaErrors.isEmpty();
-    if(schemaValid) {
+    if(schemaValid){
       findings.addAll(semantic.validate(policy,registry));
       findings.addAll(governance.validate(policy,constraints,registry,existingVersions));
     }
-    boolean semanticValid=schemaValid && findings.stream().noneMatch(f->f.severity()==PolicySemanticValidator.Severity.ERROR);
+    boolean semanticValid=schemaValid&&findings.stream().noneMatch(f->f.severity()==PolicySemanticValidator.Severity.ERROR);
     Map<String,String> snapshot=registry==null?Map.of():Map.of(
-        "features",registry.featureRegistryVersion(),"signals",registry.signalRegistryVersion(),
-        "riskDimensions",registry.riskDimensionRegistryVersion());
+      "features",registry.featureRegistryVersion(),
+      "signals",registry.signalRegistryVersion(),
+      "riskDimensions",registry.riskDimensionRegistryVersion());
     return new Result(schemaValid,semanticValid,semanticValid,sha256(artifactBytes),snapshot,List.copyOf(findings));
   }
 
-  private String sha256(byte[] input) {\n    try { byte[] b=MessageDigest.getInstance("SHA-256").digest(input);
-      return java.util.HexFormat.of().formatHex(b);
-    } catch(Exception e){throw new IllegalStateException(e);}
+  private String sha256(byte[] input) {
+    try {
+      byte[] digest=MessageDigest.getInstance("SHA-256").digest(input);
+      return HexFormat.of().formatHex(digest);
+    } catch(Exception e) {
+      throw new IllegalStateException(e);
+    }
   }
 }
