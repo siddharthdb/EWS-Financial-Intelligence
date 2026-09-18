@@ -346,4 +346,5 @@ The contracts are DRAFT/PRE-PUBLICATION until explicitly published under the Par
 3. Institution-configurable correlation policy + platform guardrails — implemented for Phase 1.
 4. Positive/negative schema and semantic fixtures — implemented, including shared-lineage and same-family anti-double-counting.
 5. CI contract validation — implemented.
-6. Next: define Kafka event payloads for episode/hypothesis revisions, validate them, then move to `06c-risk-assessment-and-score-aggregation.md`.
+6. Episode/hypothesis Kafka revision payloads — implemented and Avro-parser validated in CI.
+7. Remaining 06b closure: transition-table tests and correlation-policy publication evidence/version-overlap governance; then move to `06c-risk-assessment-and-score-aggregation.md`.
