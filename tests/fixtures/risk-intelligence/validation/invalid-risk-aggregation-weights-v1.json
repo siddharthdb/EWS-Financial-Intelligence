@@ -24,23 +24,19 @@
     "bands": [
       {
         "band": "LOW",
-        "minimum": 0,
-        "maximum": 24.9999
+        "minimum": 0
       },
       {
         "band": "MEDIUM",
-        "minimum": 25,
-        "maximum": 49.9999
+        "minimum": 25
       },
       {
         "band": "HIGH",
-        "minimum": 50,
-        "maximum": 74.9999
+        "minimum": 50
       },
       {
         "band": "CRITICAL",
-        "minimum": 75,
-        "maximum": 100
+        "minimum": 75
       }
     ]
   },
@@ -53,6 +49,7 @@
     }
   },
   "severityContribution": {
+    "INFO": 0,
     "LOW": 20,
     "MEDIUM": 40,
     "HIGH": 70,
