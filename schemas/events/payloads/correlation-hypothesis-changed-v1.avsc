@@ -1,0 +1,173 @@
+{
+  "type": "record",
+  "name": "CorrelationHypothesisChangedV1",
+  "namespace": "org.ewsfi.events.riskintelligence.v1",
+  "doc": "Revision event for a governed multi-signal correlation hypothesis. This is analytical state and not approved EWS or jurisdiction classification.",
+  "fields": [
+    {
+      "name": "hypothesisId",
+      "type": "string"
+    },
+    {
+      "name": "hypothesisType",
+      "type": "string"
+    },
+    {
+      "name": "scopeEntityType",
+      "type": "string"
+    },
+    {
+      "name": "scopeEntityId",
+      "type": "string"
+    },
+    {
+      "name": "transition",
+      "type": {
+        "type": "enum",
+        "name": "CorrelationTransitionV1",
+        "symbols": [
+          "PROPOSED",
+          "UPDATED",
+          "ACTIVATED",
+          "REJECTED",
+          "RESOLVED"
+        ]
+      }
+    },
+    {
+      "name": "status",
+      "type": {
+        "type": "enum",
+        "name": "CorrelationStatusV1",
+        "symbols": [
+          "PROPOSED",
+          "ACTIVE",
+          "REJECTED",
+          "RESOLVED"
+        ]
+      }
+    },
+    {
+      "name": "revision",
+      "type": "long"
+    },
+    {
+      "name": "previousRevisionRef",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    },
+    {
+      "name": "policyId",
+      "type": "string"
+    },
+    {
+      "name": "policyVersion",
+      "type": "string"
+    },
+    {
+      "name": "contributors",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "CorrelationContributorRefV1",
+          "fields": [
+            {
+              "name": "contributorType",
+              "type": {
+                "type": "enum",
+                "name": "CorrelationContributorTypeV1",
+                "symbols": [
+                  "SIGNAL",
+                  "EPISODE"
+                ]
+              }
+            },
+            {
+              "name": "contributorId",
+              "type": "string"
+            },
+            {
+              "name": "analyticalType",
+              "type": "string"
+            },
+            {
+              "name": "contributorFamily",
+              "type": "string"
+            },
+            {
+              "name": "role",
+              "type": {
+                "type": "enum",
+                "name": "CorrelationContributorRoleV1",
+                "symbols": [
+                  "SUPPORTING",
+                  "CONTRADICTING",
+                  "CONTEXTUAL"
+                ]
+              }
+            },
+            {
+              "name": "lineageGroupIds",
+              "type": {
+                "type": "array",
+                "items": "string"
+              },
+              "default": []
+            }
+          ]
+        }
+      },
+      "default": []
+    },
+    {
+      "name": "independentContributorCount",
+      "type": "int"
+    },
+    {
+      "name": "confidence",
+      "type": "double"
+    },
+    {
+      "name": "materiality",
+      "type": {
+        "type": "enum",
+        "name": "CorrelationMaterialityV1",
+        "symbols": [
+          "LOW",
+          "MEDIUM",
+          "HIGH",
+          "CRITICAL"
+        ]
+      }
+    },
+    {
+      "name": "contradictionPresent",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "name": "evidenceIds",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": []
+    },
+    {
+      "name": "featureSnapshotIds",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": []
+    },
+    {
+      "name": "snapshotRef",
+      "type": "string"
+    }
+  ]
+}
