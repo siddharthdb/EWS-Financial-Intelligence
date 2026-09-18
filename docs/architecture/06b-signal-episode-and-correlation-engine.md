@@ -1,6 +1,6 @@
 # EWS 2.0 — Signal Episode & Correlation Engine
 
-**Status:** Draft / Part IV-B  
+**Status:** Draft / Part IV-B — executable contract loop complete  
 **Scope:** Governed signal continuity, deduplication and multi-signal risk correlation  
 **Depends on:** `06-risk-intelligence-processing-architecture.md`, Part II signal contracts, Part III event architecture, Part IV-A policy control plane
 
@@ -347,4 +347,6 @@ The contracts are DRAFT/PRE-PUBLICATION until explicitly published under the Par
 4. Positive/negative schema and semantic fixtures — implemented, including shared-lineage and same-family anti-double-counting.
 5. CI contract validation — implemented.
 6. Episode/hypothesis Kafka revision payloads — implemented and Avro-parser validated in CI.
-7. Remaining 06b closure: transition-table tests and correlation-policy publication evidence/version-overlap governance; then move to `06c-risk-assessment-and-score-aggregation.md`.
+7. Episode/hypothesis transition-table tests — implemented.
+8. Correlation-policy publication evidence, immutable artifact hashing and effective-version overlap governance — implemented.
+9. Part IV-B executable loop is complete; proceed to `06c-risk-assessment-and-score-aggregation.md`.
