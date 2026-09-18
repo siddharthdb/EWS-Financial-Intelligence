@@ -1,0 +1,115 @@
+{
+  "policyId": "RISK-AGG-CORPORATE-001",
+  "policyKey": "CORPORATE_RISK_ASSESSMENT",
+  "version": "1",
+  "scope": {
+    "institutionId": "REFERENCE_INSTITUTION",
+    "jurisdictions": [],
+    "productTypes": [],
+    "portfolioSegments": [],
+    "entityTypes": [
+      "COUNTERPARTY"
+    ]
+  },
+  "lifecycle": "ACTIVE",
+  "effectivePeriod": {
+    "effectiveFrom": "2026-09-18T00:00:00Z",
+    "effectiveTo": null
+  },
+  "scoreScale": {
+    "scaleId": "REFERENCE_0_100",
+    "minimum": 0,
+    "maximum": 100,
+    "institutionConfigurable": true,
+    "bands": [
+      {
+        "band": "LOW",
+        "minimum": 0,
+        "maximum": 24.9999
+      },
+      {
+        "band": "MEDIUM",
+        "minimum": 25,
+        "maximum": 49.9999
+      },
+      {
+        "band": "HIGH",
+        "minimum": 50,
+        "maximum": 74.9999
+      },
+      {
+        "band": "CRITICAL",
+        "minimum": 75,
+        "maximum": 100
+      }
+    ]
+  },
+  "aggregation": {
+    "method": "MAX_DIMENSION",
+    "institutionConfigurable": true,
+    "dimensionWeights": {}
+  },
+  "severityContribution": {
+    "LOW": 20,
+    "MEDIUM": 40,
+    "HIGH": 70,
+    "CRITICAL": 90,
+    "institutionConfigurable": true,
+    "guardrail": {
+      "minimum": 0,
+      "maximum": 100
+    }
+  },
+  "dimensionPolicies": [
+    {
+      "riskDimension": "LIQUIDITY",
+      "cap": 100,
+      "institutionConfigurable": true
+    },
+    {
+      "riskDimension": "REPAYMENT_CONDUCT",
+      "cap": 100,
+      "institutionConfigurable": true
+    },
+    {
+      "riskDimension": "CASH_FLOW_DEBT_SERVICE",
+      "cap": 100,
+      "institutionConfigurable": true
+    },
+    {
+      "riskDimension": "REFINANCING_FUNDING",
+      "cap": 100,
+      "institutionConfigurable": true
+    }
+  ],
+  "correlationSubstitution": [
+    {
+      "hypothesisType": "EMERGING_LIQUIDITY_STRESS",
+      "riskDimension": "LIQUIDITY",
+      "contribution": 80,
+      "suppressUnderlyingFamilies": [
+        "UTILIZATION_PRESSURE",
+        "PAYMENT_RETURN",
+        "DELINQUENCY"
+      ]
+    }
+  ],
+  "qualityGate": {
+    "minimumConfidence": 0.5,
+    "excludeStale": true,
+    "excludeInsufficient": true
+  },
+  "humanReview": {
+    "minimumBand": "HIGH",
+    "onContradiction": true
+  },
+  "governance": {
+    "createdBy": "platform-template",
+    "createdAt": "2026-09-18T00:00:00Z",
+    "makerCheckerRequired": true,
+    "approvedBy": "reference-checker",
+    "approvedAt": "2026-09-18T01:00:00Z",
+    "simulationRunId": "SIM-RISK-AGG-001",
+    "changeReason": "Phase-1 transparent reference aggregation policy"
+  }
+}
