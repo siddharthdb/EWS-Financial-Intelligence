@@ -134,8 +134,10 @@ public final class RiskIntelligenceSemanticValidator {
         out.add(err("RAP-002","INVALID_SCORE_BAND","Band thresholds must be unique, strictly increasing and inside the score scale","/scoreScale/bands"));
       previousMin=lo;
     }
-    if(bands.size()!=4||!bandNames.equals(Set.of("LOW","MEDIUM","HIGH","CRITICAL"))||Math.abs(bands.get(0).path("minimum").asDouble()-scaleMin)>0.000001)
-      out.add(err("RAP-002","INCOMPLETE_SCORE_BANDS","LOW/MEDIUM/HIGH/CRITICAL thresholds are required and LOW must begin at scale minimum","/scoreScale/bands"));
+    List<String> expectedBands=List.of("LOW","MEDIUM","HIGH","CRITICAL");
+    List<String> actualBands=bands.stream().map(x->x.path("band").asText()).toList();
+    if(bands.size()!=4||!actualBands.equals(expectedBands)||Math.abs(bands.get(0).path("minimum").asDouble()-scaleMin)>0.000001)
+      out.add(err("RAP-002","INCOMPLETE_SCORE_BANDS","Threshold order must be LOW, MEDIUM, HIGH, CRITICAL and LOW must begin at scale minimum","/scoreScale/bands"));
     JsonNode sev=p.path("severityContribution"); double info=sev.path("INFO").asDouble(),low=sev.path("LOW").asDouble(),med=sev.path("MEDIUM").asDouble(),high=sev.path("HIGH").asDouble(),crit=sev.path("CRITICAL").asDouble();
     double guardMin=sev.path("guardrail").path("minimum").asDouble(),guardMax=sev.path("guardrail").path("maximum").asDouble();
     if(!(guardMin<=info&&info<=low&&low<med&&med<high&&high<crit&&crit<=guardMax))
