@@ -4,8 +4,8 @@
   "engine":{"type":"NATIVE","version":"policy-evaluator-v1","artifactRef":null},"inputFeatureValueIds":["FV-UTL-001"],
   "ruleResults":[
     {"ruleId":"R-UTL-001","matched":false,"outcomeCode":null,"severity":null,"evaluatedOperands":[{"name":"utilization_ratio","value":0.85,"source":"FEATURE"},{"name":"CRITICAL_UTILIZATION_THRESHOLD","value":0.95,"source":"PARAMETER"}],"reason":"0.85 is below 0.95"},
-    {"ruleId":"R-UTL-002","matched":true,"outcomeCode":"HIGH_UTILIZATION","severity":"MEDIUM","evaluatedOperands":[{"name":"utilization_ratio","value":0.85,"source":"FEATURE"},{"name":"HIGH_UTILIZATION_THRESHOLD","value":0.85,"source":"PARAMETER"}],"reason":"0.85 meets the inclusive high-utilization threshold"}
+    {"ruleId":"R-UTL-002","matched":true,"outcomeCode":"UTILIZATION_HIGH","severity":"MEDIUM","evaluatedOperands":[{"name":"utilization_ratio","value":0.85,"source":"FEATURE"},{"name":"UTILIZATION_HIGH_THRESHOLD","value":0.85,"source":"PARAMETER"}],"reason":"0.85 meets the inclusive high-utilization threshold"}
   ],
-  "outcomes":[{"type":"SIGNAL_CANDIDATE","code":"HIGH_UTILIZATION","ruleId":"R-UTL-002","severity":"MEDIUM","attributes":{}}],"evidenceIds":["EVIDENCE-TEST-001"],
+  "outcomes":[{"type":"SIGNAL_CANDIDATE","code":"UTILIZATION_HIGH","ruleId":"R-UTL-002","severity":"MEDIUM","attributes":{}}],"evidenceIds":["EVIDENCE-TEST-001"],
   "evaluatedAt":"2026-09-17T10:00:01Z","durationMs":2,"failure":null,"correlationId":"CORR-TEST-001","traceId":"TRACE-TEST-001"
 }
