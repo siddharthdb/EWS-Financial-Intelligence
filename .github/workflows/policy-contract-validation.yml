@@ -46,8 +46,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: policy-validation-results
-          path: tools/policy-validator/target/policy-validation-results/
+          name: risk-intelligence-validation-results
+          path: |
+            tools/policy-validator/target/policy-validation-results/
+            tools/policy-validator/target/correlation-policy-validation-results/
           if-no-files-found: warn
 
   parse-json-contracts:
