@@ -242,17 +242,19 @@ A signal instance is an analytical assertion. An **episode** groups repeated/rev
 Example:
 
 ```text
-Day 1 utilization spike
-Day 3 utilization remains high
-Day 6 payment return
-Day 8 another utilization spike
+Day 1 HIGH_UTILIZATION detection
+Day 3 HIGH_UTILIZATION remains active
+Day 8 another HIGH_UTILIZATION detection
+        -> one HIGH_UTILIZATION episode
 
-individual signal evidence
-        -> LIQUIDITY_STRESS episode
-        -> correlated hypothesis
+REPEATED_PAYMENT_RETURN detections
+        -> separate REPEATED_PAYMENT_RETURN episode
+
+both governed episodes
+        -> EMERGING_LIQUIDITY_STRESS correlation hypothesis
 ```
 
-Episode logic prevents alert storms while preserving every underlying detection and revision.
+Episode logic prevents alert storms while preserving every underlying detection and revision. Episodes represent continuity of the same governed condition; multi-signal interpretation belongs to the correlation engine.
 
 ### 4.10 Correlation engine
 
