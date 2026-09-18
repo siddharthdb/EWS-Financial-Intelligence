@@ -121,6 +121,92 @@ public final class RiskIntelligenceSemanticValidator {
     return List.copyOf(out);
   }
 
+  public List<Finding> validateAggregationPolicy(JsonNode p, GovernedRegistry registry, JsonNode hypothesisRegistry){
+    List<Finding> out=new ArrayList<>();
+    double scaleMin=p.path("scoreScale").path("minimum").asDouble(), scaleMax=p.path("scoreScale").path("maximum").asDouble();
+    if(scaleMin>=scaleMax) out.add(err("RAP-001","INVALID_SCORE_SCALE","Score scale minimum must be less than maximum","/scoreScale"));
+    List<JsonNode> bands=new ArrayList<>(); p.path("scoreScale").path("bands").forEach(bands::add);
+    bands.sort(Comparator.comparingDouble(x->x.path("minimum").asDouble()));
+    Set<String> bandNames=new HashSet<>();
+    double previousMax=Double.NaN;
+    for(int i=0;i<bands.size();i++){
+      JsonNode b=bands.get(i); double lo=b.path("minimum").asDouble(),hi=b.path("maximum").asDouble();
+      if(!bandNames.add(b.path("band").asText())||lo>hi||lo<scaleMin||hi>scaleMax)
+        out.add(err("RAP-002","INVALID_SCORE_BAND","Bands must be unique, ordered and within the score scale","/scoreScale/bands"));
+      if(i>0&&lo<=previousMax) out.add(err("RAP-002","OVERLAPPING_SCORE_BANDS","Score bands must not overlap","/scoreScale/bands"));
+      previousMax=hi;
+    }
+    JsonNode sev=p.path("severityContribution"); double low=sev.path("LOW").asDouble(),med=sev.path("MEDIUM").asDouble(),high=sev.path("HIGH").asDouble(),crit=sev.path("CRITICAL").asDouble();
+    double guardMin=sev.path("guardrail").path("minimum").asDouble(),guardMax=sev.path("guardrail").path("maximum").asDouble();
+    if(!(guardMin<=low&&low<med&&med<high&&high<crit&&crit<=guardMax))
+      out.add(err("RAP-003","INVALID_SEVERITY_CONTRIBUTIONS","Severity contributions must be strictly increasing inside governance guardrails","/severityContribution"));
+
+    Set<String> dimensions=new HashSet<>(); for(JsonNode d:p.path("dimensionPolicies")){
+      String dim=d.path("riskDimension").asText();
+      if(!dimensions.add(dim)) out.add(err("RAP-004","DUPLICATE_DIMENSION_POLICY","A risk dimension may have only one aggregation policy entry","/dimensionPolicies"));
+      if(registry==null||!registry.riskDimensions().contains(dim)) out.add(err("RAP-005","UNKNOWN_RISK_DIMENSION","Aggregation policy references unknown risk dimension: "+dim,"/dimensionPolicies"));
+      double cap=d.path("cap").asDouble(); if(cap<scaleMin||cap>scaleMax) out.add(err("RAP-006","DIMENSION_CAP_OUT_OF_SCALE","Dimension cap must be inside score scale","/dimensionPolicies"));
+    }
+
+    String method=p.path("aggregation").path("method").asText(); JsonNode weights=p.path("aggregation").path("dimensionWeights");
+    if("WEIGHTED_DIMENSIONS".equals(method)){
+      double sum=0; Iterator<String> names=weights.fieldNames(); int count=0;
+      while(names.hasNext()){String dim=names.next();count++;sum+=weights.path(dim).asDouble();if(registry==null||!registry.riskDimensions().contains(dim))out.add(err("RAP-007","UNKNOWN_WEIGHT_DIMENSION","Weight references unknown risk dimension: "+dim,"/aggregation/dimensionWeights/"+dim));}
+      if(count==0||Math.abs(sum-1.0)>0.000001) out.add(err("RAP-008","DIMENSION_WEIGHTS_NOT_NORMALIZED","WEIGHTED_DIMENSIONS weights must sum to 1.0","/aggregation/dimensionWeights"));
+    } else if(weights.size()>0) out.add(err("RAP-009","UNUSED_DIMENSION_WEIGHTS","Dimension weights are only permitted for WEIGHTED_DIMENSIONS","/aggregation/dimensionWeights"));
+
+    Set<String> knownHypotheses=new HashSet<>(); for(JsonNode h:hypothesisRegistry.path("hypotheses"))if("ACTIVE".equals(h.path("status").asText()))knownHypotheses.add(h.path("hypothesisType").asText());
+    for(JsonNode s:p.path("correlationSubstitution")){
+      if(!knownHypotheses.contains(s.path("hypothesisType").asText()))out.add(err("RAP-010","UNKNOWN_CORRELATION_HYPOTHESIS","Substitution references unknown/non-active hypothesis","/correlationSubstitution"));
+      if(!registry.riskDimensions().contains(s.path("riskDimension").asText()))out.add(err("RAP-005","UNKNOWN_RISK_DIMENSION","Substitution references unknown risk dimension","/correlationSubstitution"));
+      double contribution=s.path("contribution").asDouble();if(contribution<scaleMin||contribution>scaleMax)out.add(err("RAP-011","CORRELATION_CONTRIBUTION_OUT_OF_SCALE","Correlation contribution must be inside score scale","/correlationSubstitution"));
+    }
+    String lifecycle=p.path("lifecycle").asText();
+    if("APPROVED".equals(lifecycle)||"ACTIVE".equals(lifecycle)){
+      JsonNode g=p.path("governance");String maker=g.path("createdBy").asText(),checker=g.path("approvedBy").asText();
+      if(!g.path("makerCheckerRequired").asBoolean()||maker.isBlank()||checker.isBlank()||maker.equals(checker))out.add(err("RAP-012","MAKER_CHECKER_SEPARATION_REQUIRED","Approved/active aggregation policy requires distinct maker and checker","/governance"));
+      if(g.path("simulationRunId").asText().isBlank())out.add(err("RAP-013","SIMULATION_EVIDENCE_REQUIRED","Approved/active aggregation policy requires simulation evidence","/governance/simulationRunId"));
+    }
+    return List.copyOf(out);
+  }
+
+  public List<Finding> validateRiskAssessment(JsonNode a, JsonNode policy, GovernedRegistry registry, String expectedPolicyHash){
+    List<Finding> out=new ArrayList<>(); validateExecutionIsolation(a,out);
+    if(!policy.path("policyId").asText().equals(a.path("aggregationPolicy").path("id").asText())||!policy.path("version").asText().equals(a.path("aggregationPolicy").path("version").asText()))
+      out.add(err("RAV-001","ASSESSMENT_POLICY_MISMATCH","Assessment policy identity/version must match the evaluated aggregation policy","/aggregationPolicy"));
+    if(!expectedPolicyHash.equals(a.path("aggregationPolicy").path("artifactHash").asText()))
+      out.add(err("RAV-002","ASSESSMENT_POLICY_HASH_MISMATCH","Assessment must bind to exact aggregation policy artifact bytes","/aggregationPolicy/artifactHash"));
+
+    Set<String> dims=new HashSet<>(); double maxScore=Double.NEGATIVE_INFINITY; String maxBand=null;
+    Map<String,Set<String>> suppressed=new HashMap<>();
+    for(JsonNode s:policy.path("correlationSubstitution"))suppressed.put(s.path("riskDimension").asText(),textSet(s.path("suppressUnderlyingFamilies")));
+    for(JsonNode d:a.path("dimensionAssessments")){
+      String dim=d.path("riskDimension").asText();
+      if(!dims.add(dim))out.add(err("RAV-003","DUPLICATE_DIMENSION_ASSESSMENT","A risk dimension may appear only once per assessment","/dimensionAssessments"));
+      if(registry==null||!registry.riskDimensions().contains(dim))out.add(err("RAV-004","UNKNOWN_RISK_DIMENSION","Assessment references unknown risk dimension: "+dim,"/dimensionAssessments"));
+      Set<String> identities=new HashSet<>(); boolean scoringCorrelation=false; Set<String> scoringFamilies=new HashSet<>();
+      for(JsonNode x:d.path("contributors")){
+        String identity=x.path("type").asText()+"|"+x.path("id").asText();
+        if(!identities.add(identity))out.add(err("RAV-005","DUPLICATE_DIMENSION_CONTRIBUTOR","Contributor identity may score only once per dimension","/dimensionAssessments"));
+        if("SCORING".equals(x.path("role").asText())){
+          scoringFamilies.add(x.path("contributionFamily").asText());
+          if("CORRELATION_HYPOTHESIS".equals(x.path("type").asText()))scoringCorrelation=true;
+        }
+      }
+      if(scoringCorrelation){for(String family:suppressed.getOrDefault(dim,Set.of()))if(scoringFamilies.contains(family))out.add(err("RAV-006","CORRELATION_DOUBLE_COUNT","Underlying family cannot score again when correlation substitution is authoritative for the same dimension","/dimensionAssessments"));}
+      if(!d.path("rawScore").isNull()){double score=d.path("rawScore").asDouble();if(score>maxScore){maxScore=score;maxBand=d.path("proposedBand").asText();}}
+    }
+    JsonNode overall=a.path("overallAssessment");String method=overall.path("method").asText();
+    if(!method.equals(policy.path("aggregation").path("method").asText()))out.add(err("RAV-007","AGGREGATION_METHOD_MISMATCH","Assessment method must match policy","/overallAssessment/method"));
+    if("MAX_DIMENSION".equals(method)&&!overall.path("rawScore").isNull()&&Math.abs(overall.path("rawScore").asDouble()-maxScore)>0.000001)
+      out.add(err("RAV-008","OVERALL_SCORE_MISMATCH","MAX_DIMENSION overall score must equal maximum dimension raw score","/overallAssessment/rawScore"));
+    if("MAX_DIMENSION".equals(method)&&maxBand!=null&&!maxBand.equals(overall.path("proposedBand").asText()))
+      out.add(err("RAV-009","OVERALL_BAND_MISMATCH","MAX_DIMENSION overall band must follow the maximum scoring dimension","/overallAssessment/proposedBand"));
+    return List.copyOf(out);
+  }
+
+  private Set<String> textSet(JsonNode n){Set<String>s=new HashSet<>();for(JsonNode x:n)s.add(x.asText());return s;}
+
   private int independentFamiliesAfterLineageCollapse(List<JsonNode> nodes){
     int n=nodes.size(); if(n==0)return 0; int[] parent=new int[n]; for(int i=0;i<n;i++)parent[i]=i;
     List<Set<String>> groups=new ArrayList<>(); List<String> families=new ArrayList<>();
