@@ -249,7 +249,7 @@ Reference rule:
 Eligible contributors:
   REPEATED_PAYMENT_RETURN
   DPD_DERIORATION
-  HIGH_UTILIZATION / UTILIZATION_SPIKE
+  UTILIZATION_HIGH / UTILIZATION_SPIKE
 
 Window:
   institution-configurable within governed bounds
@@ -341,9 +341,9 @@ The contracts are DRAFT/PRE-PUBLICATION until explicitly published under the Par
 
 ## 18. Next implementation slice
 
-1. Freeze episode identity/lifecycle contract.
-2. Freeze correlation contributor/evidence-lineage contract.
-3. Add positive and negative schema fixtures.
-4. Add executable contract validation to CI.
-5. Add episode transition and correlation-policy semantic tests.
-6. Then define the event payloads for episode/hypothesis revisions and move to `06c-risk-assessment-and-score-aggregation.md`.
+1. Episode identity/lifecycle contract — implemented and executable.
+2. Correlation contributor/evidence-lineage contract — implemented and executable.
+3. Institution-configurable correlation policy + platform guardrails — implemented for Phase 1.
+4. Positive/negative schema and semantic fixtures — implemented, including shared-lineage and same-family anti-double-counting.
+5. CI contract validation — implemented.
+6. Next: define Kafka event payloads for episode/hypothesis revisions, validate them, then move to `06c-risk-assessment-and-score-aggregation.md`.
