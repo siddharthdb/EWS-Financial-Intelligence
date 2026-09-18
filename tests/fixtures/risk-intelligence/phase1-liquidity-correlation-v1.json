@@ -40,7 +40,8 @@
       "lineageGroupIds": [
         "LIN-FAC-1001-UTILIZATION"
       ],
-      "contributionStrength": 0.78
+      "contributionStrength": 0.78,
+      "contributorFamily": "UTILIZATION_PRESSURE"
     },
     {
       "type": "EPISODE",
@@ -64,7 +65,8 @@
       "lineageGroupIds": [
         "LIN-ACC-2001-PAYMENT-RETURNS"
       ],
-      "contributionStrength": 0.72
+      "contributionStrength": 0.72,
+      "contributorFamily": "PAYMENT_RETURN"
     }
   ],
   "independentContributorCount": 2,
