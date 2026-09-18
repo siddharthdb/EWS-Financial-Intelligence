@@ -22,6 +22,11 @@ public final class PolicyPublicationValidator {
 
   public Result validate(JsonNode policy, JsonNode constraints, GovernedRegistry registry,
                          Collection<PolicyGovernanceValidator.PolicyVersion> existingVersions) {
+    return validate(policy,policy.toString().getBytes(StandardCharsets.UTF_8),constraints,registry,existingVersions);
+  }
+
+  public Result validate(JsonNode policy, byte[] artifactBytes, JsonNode constraints, GovernedRegistry registry,
+                         Collection<PolicyGovernanceValidator.PolicyVersion> existingVersions) {
     List<PolicySemanticValidator.Finding> findings=new ArrayList<>();
     Set<ValidationMessage> schemaErrors=schema.validate(policy);
     for(ValidationMessage m:schemaErrors)
@@ -37,11 +42,10 @@ public final class PolicyPublicationValidator {
     Map<String,String> snapshot=registry==null?Map.of():Map.of(
         "features",registry.featureRegistryVersion(),"signals",registry.signalRegistryVersion(),
         "riskDimensions",registry.riskDimensionRegistryVersion());
-    return new Result(schemaValid,semanticValid,semanticValid,sha256(policy.toString()),snapshot,List.copyOf(findings));
+    return new Result(schemaValid,semanticValid,semanticValid,sha256(artifactBytes),snapshot,List.copyOf(findings));
   }
 
-  private String sha256(String s) {
-    try { byte[] b=MessageDigest.getInstance("SHA-256").digest(s.getBytes(StandardCharsets.UTF_8));
+  private String sha256(byte[] input) {\n    try { byte[] b=MessageDigest.getInstance("SHA-256").digest(input);
       return java.util.HexFormat.of().formatHex(b);
     } catch(Exception e){throw new IllegalStateException(e);}
   }
