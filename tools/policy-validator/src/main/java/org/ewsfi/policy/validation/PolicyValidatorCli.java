@@ -65,6 +65,24 @@ public final class PolicyValidatorCli {
         if(!result.publishable())failed=true;
       }
     }
+    // Part IV-C aggregation-policy publication gate and reference assessment contract.
+    JsonNode aggregationSchema=read(m,root,"schemas/risk-intelligence/risk-assessment-aggregation-policy-v1.schema.json");
+    RiskAggregationPolicyPublicationValidator aggregationValidator=new RiskAggregationPolicyPublicationValidator(aggregationSchema);
+    JsonSchemaGate aggregationEvidenceGate=new JsonSchemaGate(read(m,root,"schemas/risk-intelligence/risk-aggregation-policy-validation-result-v1.schema.json"));
+    Path aggregationDir=root.resolve("policy-packs/phase1/assessments");
+    Path aggregationOut=root.resolve("tools/policy-validator/target/risk-aggregation-policy-validation-results");
+    Files.createDirectories(aggregationOut);
+    try(var paths=Files.list(aggregationDir)){
+      for(Path p:paths.filter(x->x.toString().endsWith(".json")).sorted().toList()){
+        byte[] bytes=Files.readAllBytes(p);JsonNode policy=m.readTree(bytes);
+        var result=aggregationValidator.validate(policy,bytes,registry,hypothesisRegistry,List.of());
+        ObjectNode evidence=toAggregationEvidence(m,policy,result);
+        aggregationEvidenceGate.requireValid(evidence,"aggregation validation evidence for "+p.getFileName());
+        Files.writeString(aggregationOut.resolve(p.getFileName().toString().replace(".json","-validation.json")),m.writerWithDefaultPrettyPrinter().writeValueAsString(evidence));
+        System.out.printf("%s schema=%s semantic=%s publishable=%s sha256=%s%n",root.relativize(p),result.schemaValid(),result.semanticValid(),result.publishable(),result.policyArtifactHash());
+        if(!result.publishable())failed=true;
+      }
+    }
     if(failed) throw new IllegalStateException("One or more Phase-1 governed policies failed the publication gate");
   }
 
@@ -109,6 +127,14 @@ public final class PolicyValidatorCli {
     o.put("policyArtifactHash",r.policyArtifactHash()); o.put("schemaValid",r.schemaValid()); o.put("semanticValid",r.semanticValid()); o.put("publishable",r.publishable());
     ArrayNode findings=o.putArray("findings"); for(var f:r.findings()){ObjectNode n=findings.addObject();n.put("ruleId",f.ruleId());n.put("code",f.code());n.put("message",f.message());if(f.jsonPointer()==null)n.putNull("jsonPointer");else n.put("jsonPointer",f.jsonPointer());}
     o.put("validatedAt",Instant.now().toString()); o.put("validatorVersion","0.1.0"); return o;
+  }
+
+  private static ObjectNode toAggregationEvidence(ObjectMapper m,JsonNode p,RiskAggregationPolicyPublicationValidator.Result r){
+    ObjectNode o=m.createObjectNode();o.put("validationId",UUID.randomUUID().toString());
+    ObjectNode policy=o.putObject("policy");policy.put("policyId",p.path("policyId").asText());policy.put("policyKey",p.path("policyKey").asText());policy.put("version",p.path("version").asText());
+    o.put("policyArtifactHash",r.policyArtifactHash());o.put("schemaValid",r.schemaValid());o.put("semanticValid",r.semanticValid());o.put("publishable",r.publishable());
+    ArrayNode findings=o.putArray("findings");for(var f:r.findings()){ObjectNode n=findings.addObject();n.put("ruleId",f.ruleId());n.put("code",f.code());n.put("message",f.message());if(f.jsonPointer()==null)n.putNull("jsonPointer");else n.put("jsonPointer",f.jsonPointer());}
+    o.put("validatedAt",Instant.now().toString());o.put("validatorVersion","0.1.0");return o;
   }
 
   private static void validateContractDirectory(ObjectMapper m,Path root,String schemaPath,String directory)throws Exception{
