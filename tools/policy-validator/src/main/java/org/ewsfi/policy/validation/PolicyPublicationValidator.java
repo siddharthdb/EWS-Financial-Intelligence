@@ -26,7 +26,7 @@ public final class PolicyPublicationValidator {
     Set<ValidationMessage> schemaErrors=schema.validate(policy);
     for(ValidationMessage m:schemaErrors)
       findings.add(new PolicySemanticValidator.Finding("SCHEMA", PolicySemanticValidator.Severity.ERROR,
-          "JSON_SCHEMA_VIOLATION", m.getMessage(), m.getPath()));
+          "JSON_SCHEMA_VIOLATION", m.getMessage(), m.getInstanceLocation().toString()));
 
     boolean schemaValid=schemaErrors.isEmpty();
     if(schemaValid) {
