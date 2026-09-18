@@ -33,17 +33,17 @@
       "outcome": {"type": "SIGNAL_CANDIDATE", "code": "DPD_DERIORATION", "riskDimensions": ["REPAYMENT_CONDUCT", "CASH_FLOW_DEBT_SERVICE"]}
     },
     {
-      "policyKey": "HIGH_UTILIZATION",
+      "policyKey": "UTILIZATION_HIGH",
       "parameters": {
-        "HIGH_UTILIZATION_THRESHOLD": 0.85,
+        "UTILIZATION_HIGH_THRESHOLD": 0.85,
         "CRITICAL_UTILIZATION_THRESHOLD": 0.95
       },
       "requiredFeatures": ["utilization_ratio"],
       "rules": [
         {"priority": 100, "condition": "utilization_ratio >= CRITICAL_UTILIZATION_THRESHOLD", "severity": "HIGH"},
-        {"priority": 200, "condition": "utilization_ratio >= HIGH_UTILIZATION_THRESHOLD", "severity": "MEDIUM"}
+        {"priority": 200, "condition": "utilization_ratio >= UTILIZATION_HIGH_THRESHOLD", "severity": "MEDIUM"}
       ],
-      "outcome": {"type": "SIGNAL_CANDIDATE", "code": "HIGH_UTILIZATION", "riskDimensions": ["LIQUIDITY", "REFINANCING_FUNDING"]}
+      "outcome": {"type": "SIGNAL_CANDIDATE", "code": "UTILIZATION_HIGH", "riskDimensions": ["LIQUIDITY", "REFINANCING_FUNDING"]}
     }
   ]
 }
