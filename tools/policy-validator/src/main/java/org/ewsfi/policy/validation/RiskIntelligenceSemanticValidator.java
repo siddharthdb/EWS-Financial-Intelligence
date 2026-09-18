@@ -127,19 +127,19 @@ public final class RiskIntelligenceSemanticValidator {
     if(scaleMin>=scaleMax) out.add(err("RAP-001","INVALID_SCORE_SCALE","Score scale minimum must be less than maximum","/scoreScale"));
     List<JsonNode> bands=new ArrayList<>(); p.path("scoreScale").path("bands").forEach(bands::add);
     bands.sort(Comparator.comparingDouble(x->x.path("minimum").asDouble()));
-    Set<String> bandNames=new HashSet<>();
-    double previousMax=Double.NaN;
+    Set<String> bandNames=new HashSet<>(); double previousMin=Double.NEGATIVE_INFINITY;
     for(int i=0;i<bands.size();i++){
-      JsonNode b=bands.get(i); double lo=b.path("minimum").asDouble(),hi=b.path("maximum").asDouble();
-      if(!bandNames.add(b.path("band").asText())||lo>hi||lo<scaleMin||hi>scaleMax)
-        out.add(err("RAP-002","INVALID_SCORE_BAND","Bands must be unique, ordered and within the score scale","/scoreScale/bands"));
-      if(i>0&&lo<=previousMax) out.add(err("RAP-002","OVERLAPPING_SCORE_BANDS","Score bands must not overlap","/scoreScale/bands"));
-      previousMax=hi;
+      JsonNode b=bands.get(i); double lo=b.path("minimum").asDouble();
+      if(!bandNames.add(b.path("band").asText())||lo<scaleMin||lo>scaleMax||lo<=previousMin)
+        out.add(err("RAP-002","INVALID_SCORE_BAND","Band thresholds must be unique, strictly increasing and inside the score scale","/scoreScale/bands"));
+      previousMin=lo;
     }
-    JsonNode sev=p.path("severityContribution"); double low=sev.path("LOW").asDouble(),med=sev.path("MEDIUM").asDouble(),high=sev.path("HIGH").asDouble(),crit=sev.path("CRITICAL").asDouble();
+    if(bands.size()!=4||!bandNames.equals(Set.of("LOW","MEDIUM","HIGH","CRITICAL"))||Math.abs(bands.get(0).path("minimum").asDouble()-scaleMin)>0.000001)
+      out.add(err("RAP-002","INCOMPLETE_SCORE_BANDS","LOW/MEDIUM/HIGH/CRITICAL thresholds are required and LOW must begin at scale minimum","/scoreScale/bands"));
+    JsonNode sev=p.path("severityContribution"); double info=sev.path("INFO").asDouble(),low=sev.path("LOW").asDouble(),med=sev.path("MEDIUM").asDouble(),high=sev.path("HIGH").asDouble(),crit=sev.path("CRITICAL").asDouble();
     double guardMin=sev.path("guardrail").path("minimum").asDouble(),guardMax=sev.path("guardrail").path("maximum").asDouble();
-    if(!(guardMin<=low&&low<med&&med<high&&high<crit&&crit<=guardMax))
-      out.add(err("RAP-003","INVALID_SEVERITY_CONTRIBUTIONS","Severity contributions must be strictly increasing inside governance guardrails","/severityContribution"));
+    if(!(guardMin<=info&&info<=low&&low<med&&med<high&&high<crit&&crit<=guardMax))
+      out.add(err("RAP-003","INVALID_SEVERITY_CONTRIBUTIONS","Severity contributions must be ordered INFO <= LOW < MEDIUM < HIGH < CRITICAL inside governance guardrails","/severityContribution"));
 
     Set<String> dimensions=new HashSet<>(); for(JsonNode d:p.path("dimensionPolicies")){
       String dim=d.path("riskDimension").asText();
