@@ -1,0 +1,208 @@
+{
+  "type": "record",
+  "name": "RiskAssessmentProposedV1",
+  "namespace": "org.ewsfi.events.riskintelligence.v1",
+  "doc": "Immutable proposed analytical risk-assessment revision. It is not approved EWS state and not jurisdiction/accounting/prudential classification.",
+  "fields": [
+    {
+      "name": "assessmentId",
+      "type": "string"
+    },
+    {
+      "name": "entityType",
+      "type": "string"
+    },
+    {
+      "name": "entityId",
+      "type": "string"
+    },
+    {
+      "name": "revision",
+      "type": "long"
+    },
+    {
+      "name": "previousRevisionRef",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    },
+    {
+      "name": "aggregationPolicyId",
+      "type": "string"
+    },
+    {
+      "name": "aggregationPolicyVersion",
+      "type": "string"
+    },
+    {
+      "name": "aggregationPolicyArtifactHash",
+      "type": "string"
+    },
+    {
+      "name": "dimensions",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "RiskDimensionAssessmentV1",
+          "fields": [
+            {
+              "name": "riskDimension",
+              "type": "string"
+            },
+            {
+              "name": "rawScore",
+              "type": [
+                "null",
+                "double"
+              ],
+              "default": null
+            },
+            {
+              "name": "scoreScaleId",
+              "type": [
+                "null",
+                "string"
+              ],
+              "default": null
+            },
+            {
+              "name": "proposedBand",
+              "type": {
+                "type": "enum",
+                "name": "RiskBandV1",
+                "symbols": [
+                  "LOW",
+                  "MEDIUM",
+                  "HIGH",
+                  "CRITICAL"
+                ]
+              }
+            },
+            {
+              "name": "confidence",
+              "type": "double"
+            },
+            {
+              "name": "materiality",
+              "type": {
+                "type": "enum",
+                "name": "RiskMaterialityV1",
+                "symbols": [
+                  "LOW",
+                  "MEDIUM",
+                  "HIGH",
+                  "CRITICAL"
+                ]
+              }
+            },
+            {
+              "name": "contributorIds",
+              "type": {
+                "type": "array",
+                "items": "string"
+              },
+              "default": []
+            },
+            {
+              "name": "capApplied",
+              "type": "boolean",
+              "default": false
+            }
+          ]
+        }
+      },
+      "default": []
+    },
+    {
+      "name": "overallMethod",
+      "type": {
+        "type": "enum",
+        "name": "RiskAggregationMethodV1",
+        "symbols": [
+          "MAX_DIMENSION",
+          "WEIGHTED_DIMENSIONS",
+          "BAND_ONLY"
+        ]
+      }
+    },
+    {
+      "name": "overallRawScore",
+      "type": [
+        "null",
+        "double"
+      ],
+      "default": null
+    },
+    {
+      "name": "overallScoreScaleId",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    },
+    {
+      "name": "overallBand",
+      "type": "RiskBandV1"
+    },
+    {
+      "name": "overallConfidence",
+      "type": "double"
+    },
+    {
+      "name": "overallMateriality",
+      "type": "RiskMaterialityV1"
+    },
+    {
+      "name": "requiresHumanReview",
+      "type": "boolean"
+    },
+    {
+      "name": "signalIds",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": []
+    },
+    {
+      "name": "episodeIds",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": []
+    },
+    {
+      "name": "correlationHypothesisIds",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": []
+    },
+    {
+      "name": "evidenceIds",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": []
+    },
+    {
+      "name": "featureSnapshotIds",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": []
+    },
+    {
+      "name": "snapshotRef",
+      "type": "string"
+    }
+  ]
+}
