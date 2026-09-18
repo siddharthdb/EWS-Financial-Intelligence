@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /** End-to-end contract tests against repository artifacts, not synthetic policy strings. */
 class RepositoryPolicyPublicationTest {
   private final ObjectMapper m=new ObjectMapper();
-  private final Path root=Path.of("../..").normalize();
+  private final Path root=findRoot();
   private PolicyPublicationValidator validator; private GovernedRegistry registry; private JsonNode constraints;
 
   @BeforeEach void setup() throws Exception {
@@ -56,6 +56,6 @@ class RepositoryPolicyPublicationTest {
     assertTrue(r.findings().stream().anyMatch(f->f.ruleId().equals("PSV-010")&&f.code().equals("EFFECTIVE_VERSION_OVERLAP")));
   }
 
-  private JsonNode read(String p)throws Exception{return m.readTree(Files.readString(root.resolve(p)));}
+  private JsonNode read(String p)throws Exception{return m.readTree(Files.readString(root.resolve(p)));}\n  private static Path findRoot(){Path p=Path.of(System.getProperty("user.dir")).toAbsolutePath();for(int i=0;i<5&&p!=null;i++,p=p.getParent())if(Files.exists(p.resolve("schemas/policies")))return p;throw new IllegalStateException("Repository root not found from user.dir");}
   private Set<String> set(JsonNode n){Set<String>s=new HashSet<>();n.forEach(x->s.add(x.asText()));return s;}
 }
