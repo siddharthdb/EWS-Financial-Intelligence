@@ -180,6 +180,8 @@ public final class RiskIntelligenceSemanticValidator {
       out.add(err("RAV-002","ASSESSMENT_POLICY_HASH_MISMATCH","Assessment must bind to exact aggregation policy artifact bytes","/aggregationPolicy/artifactHash"));
 
     Set<String> dims=new HashSet<>(); double maxScore=Double.NEGATIVE_INFINITY; String maxBand=null;
+    double scaleMin=policy.path("scoreScale").path("minimum").asDouble(),scaleMax=policy.path("scoreScale").path("maximum").asDouble();
+    Map<String,Double> caps=new HashMap<>();for(JsonNode dp:policy.path("dimensionPolicies"))caps.put(dp.path("riskDimension").asText(),dp.path("cap").asDouble());
     Map<String,Set<String>> suppressed=new HashMap<>();
     for(JsonNode s:policy.path("correlationSubstitution"))suppressed.put(s.path("riskDimension").asText(),textSet(s.path("suppressUnderlyingFamilies")));
     for(JsonNode d:a.path("dimensionAssessments")){
@@ -196,7 +198,13 @@ public final class RiskIntelligenceSemanticValidator {
         }
       }
       if(scoringCorrelation){for(String family:suppressed.getOrDefault(dim,Set.of()))if(scoringFamilies.contains(family))out.add(err("RAV-006","CORRELATION_DOUBLE_COUNT","Underlying family cannot score again when correlation substitution is authoritative for the same dimension","/dimensionAssessments"));}
-      if(!d.path("rawScore").isNull()){double score=d.path("rawScore").asDouble();if(score>maxScore){maxScore=score;maxBand=d.path("proposedBand").asText();}}
+      if(!d.path("rawScore").isNull()){
+        double score=d.path("rawScore").asDouble();
+        if(score<scaleMin||score>scaleMax)out.add(err("RAV-010","DIMENSION_SCORE_OUT_OF_SCALE","Dimension raw score is outside policy score scale","/dimensionAssessments"));
+        if(caps.containsKey(dim)&&score>caps.get(dim)+0.000001)out.add(err("RAV-011","DIMENSION_CAP_VIOLATION","Dimension raw score exceeds governed cap","/dimensionAssessments"));
+        String expectedBand=bandForScore(policy,score);if(expectedBand!=null&&!expectedBand.equals(d.path("proposedBand").asText()))out.add(err("RAV-012","DIMENSION_BAND_MISMATCH","Dimension band does not match policy thresholds","/dimensionAssessments"));
+        if(score>maxScore){maxScore=score;maxBand=d.path("proposedBand").asText();}
+      }
     }
     JsonNode overall=a.path("overallAssessment");String method=overall.path("method").asText();
     if(!method.equals(policy.path("aggregation").path("method").asText()))out.add(err("RAV-007","AGGREGATION_METHOD_MISMATCH","Assessment method must match policy","/overallAssessment/method"));
@@ -204,7 +212,21 @@ public final class RiskIntelligenceSemanticValidator {
       out.add(err("RAV-008","OVERALL_SCORE_MISMATCH","MAX_DIMENSION overall score must equal maximum dimension raw score","/overallAssessment/rawScore"));
     if("MAX_DIMENSION".equals(method)&&maxBand!=null&&!maxBand.equals(overall.path("proposedBand").asText()))
       out.add(err("RAV-009","OVERALL_BAND_MISMATCH","MAX_DIMENSION overall band must follow the maximum scoring dimension","/overallAssessment/proposedBand"));
+    if(!overall.path("rawScore").isNull()){
+      String expected=bandForScore(policy,overall.path("rawScore").asDouble());if(expected!=null&&!expected.equals(overall.path("proposedBand").asText()))out.add(err("RAV-013","OVERALL_POLICY_BAND_MISMATCH","Overall band does not match policy thresholds","/overallAssessment/proposedBand"));
+    }
+    List<String> order=List.of("LOW","MEDIUM","HIGH","CRITICAL");String reviewBand=policy.path("humanReview").path("minimumBand").asText();
+    if(order.indexOf(overall.path("proposedBand").asText())>=order.indexOf(reviewBand)&&!overall.path("requiresHumanReview").asBoolean())
+      out.add(err("RAV-014","HUMAN_REVIEW_REQUIRED","Overall band meets policy human-review threshold","/overallAssessment/requiresHumanReview"));
+    if(policy.path("humanReview").path("onContradiction").asBoolean()&&a.path("contradictions").size()>0&&!overall.path("requiresHumanReview").asBoolean())
+      out.add(err("RAV-015","CONTRADICTION_REQUIRES_REVIEW","Policy requires human review when contradiction is present","/overallAssessment/requiresHumanReview"));
     return List.copyOf(out);
+  }
+
+  private String bandForScore(JsonNode policy,double score){
+    String band=null;double threshold=Double.NEGATIVE_INFINITY;
+    for(JsonNode b:policy.path("scoreScale").path("bands")){double min=b.path("minimum").asDouble();if(score>=min&&min>=threshold){threshold=min;band=b.path("band").asText();}}
+    return band;
   }
 
   private Set<String> textSet(JsonNode n){Set<String>s=new HashSet<>();for(JsonNode x:n)s.add(x.asText());return s;}
