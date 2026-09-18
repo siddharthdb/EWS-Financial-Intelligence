@@ -9,7 +9,7 @@ on:
       - 'tools/policy-validator/**'
       - '.github/workflows/policy-contract-validation.yml'
   push:
-    branches: [ master ]
+    branches: [ master, architecture/part-4-risk-intelligence ]
     paths:
       - 'schemas/policies/**'
       - 'policy-packs/**'
