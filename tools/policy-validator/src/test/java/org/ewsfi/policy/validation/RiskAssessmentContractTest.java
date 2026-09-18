@@ -47,6 +47,22 @@ final class RiskAssessmentContractTest {
     assertFalse(result.publishable());assertTrue(result.findings().stream().anyMatch(f->"RAP-014".equals(f.ruleId())));
   }
 
+  @Test void scoreCannotClaimAWeakerBandThanPolicyThreshold() throws Exception {
+    Path root=repoRoot();Path p=root.resolve("policy-packs/phase1/assessments/corporate-risk-assessment-v1.json");byte[] bytes=Files.readAllBytes(p);JsonNode policy=m.readTree(bytes);
+    String hash=publisher(root).validate(policy,bytes,registry(root),hypotheses(root),List.of()).policyArtifactHash();
+    com.fasterxml.jackson.databind.node.ObjectNode assessment=(com.fasterxml.jackson.databind.node.ObjectNode)read(root,"tests/fixtures/risk-intelligence/phase1-proposed-risk-assessment-v1.json").deepCopy();
+    ((com.fasterxml.jackson.databind.node.ObjectNode)assessment.path("dimensionAssessments").get(0)).put("proposedBand","HIGH");
+    assertTrue(semantic.validateRiskAssessment(assessment,policy,registry(root),hash).stream().anyMatch(f->"RAV-012".equals(f.ruleId())));
+  }
+
+  @Test void highOrCriticalAssessmentCannotBypassHumanReview() throws Exception {
+    Path root=repoRoot();Path p=root.resolve("policy-packs/phase1/assessments/corporate-risk-assessment-v1.json");byte[] bytes=Files.readAllBytes(p);JsonNode policy=m.readTree(bytes);
+    String hash=publisher(root).validate(policy,bytes,registry(root),hypotheses(root),List.of()).policyArtifactHash();
+    com.fasterxml.jackson.databind.node.ObjectNode assessment=(com.fasterxml.jackson.databind.node.ObjectNode)read(root,"tests/fixtures/risk-intelligence/phase1-proposed-risk-assessment-v1.json").deepCopy();
+    ((com.fasterxml.jackson.databind.node.ObjectNode)assessment.path("overallAssessment")).put("requiresHumanReview",false);
+    assertTrue(semantic.validateRiskAssessment(assessment,policy,registry(root),hash).stream().anyMatch(f->"RAV-014".equals(f.ruleId())));
+  }
+
   @Test void nonLiveAssessmentRequiresRunId() throws Exception {
     Path root=repoRoot();JsonNode a=read(root,"tests/fixtures/risk-intelligence/phase1-proposed-risk-assessment-v1.json").deepCopy();
     ((com.fasterxml.jackson.databind.node.ObjectNode)a).put("executionMode","COUNTERFACTUAL_BACKTEST");
