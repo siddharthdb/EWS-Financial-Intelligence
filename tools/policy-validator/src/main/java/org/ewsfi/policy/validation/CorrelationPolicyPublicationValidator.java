@@ -20,7 +20,7 @@ public final class CorrelationPolicyPublicationValidator {
   public Result validate(JsonNode policy,byte[] artifactBytes,GovernedRegistry registry,JsonNode hypothesisRegistry,Collection<PolicyVersion> existing){
     List<RiskIntelligenceSemanticValidator.Finding> findings=new ArrayList<>();
     Set<ValidationMessage> errors=schema.validate(policy);
-    for(ValidationMessage m:errors) findings.add(new RiskIntelligenceSemanticValidator.Finding("CPS-000","JSON_SCHEMA_VIOLATION",m.getMessage(),m.getPath()));
+    for(ValidationMessage m:errors) findings.add(new RiskIntelligenceSemanticValidator.Finding("CPS-000","JSON_SCHEMA_VIOLATION",m.getMessage(),m.getInstanceLocation().toString()));
     boolean schemaValid=errors.isEmpty();
     if(schemaValid){
       findings.addAll(semantic.validateCorrelationPolicy(policy,registry,hypothesisRegistry));
