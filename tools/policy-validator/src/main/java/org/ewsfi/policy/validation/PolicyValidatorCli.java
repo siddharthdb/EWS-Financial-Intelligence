@@ -15,6 +15,7 @@ public final class PolicyValidatorCli {
     GovernedRegistry registry=GovernedRegistry.from(read(m,root,"registries/phase1-feature-registry-v1.json"),
       read(m,root,"registries/phase1-signal-registry-v1.json"),read(m,root,"registries/risk-dimensions-v1.json"));
     PolicyPublicationValidator validator=new PolicyPublicationValidator(schema);
+    JsonSchemaGate validationEvidenceSchema=new JsonSchemaGate(read(m,root,"schemas/policies/policy-validation-result-v1.schema.json"));
     Path dir=root.resolve("policy-packs/phase1/policies"), outDir=root.resolve("tools/policy-validator/target/policy-validation-results");
     Files.createDirectories(outDir); boolean failed=false;
     try(var paths=Files.list(dir)){
@@ -22,6 +23,7 @@ public final class PolicyValidatorCli {
         JsonNode policy=m.readTree(Files.readString(p));
         var result=validator.validate(policy,constraints,registry,List.of());
         ObjectNode evidence=toEvidence(m,policy,result);
+        validationEvidenceSchema.requireValid(evidence,"Validation evidence for "+p.getFileName());
         Path out=outDir.resolve(p.getFileName().toString().replace(".json","-validation.json"));
         Files.writeString(out,m.writerWithDefaultPrettyPrinter().writeValueAsString(evidence));
         System.out.printf("%s schema=%s semantic=%s publishable=%s sha256=%s%n",
