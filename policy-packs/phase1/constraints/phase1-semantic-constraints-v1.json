@@ -4,8 +4,8 @@
       {"constraintId":"DPD-C-001","type":"PARAMETER_RELATION","leftParameter":"DPD_WARNING_THRESHOLD","operator":"LT","rightParameter":"DPD_HIGH_THRESHOLD","severity":"ERROR","message":"Warning DPD threshold must be lower than high DPD threshold."},
       {"constraintId":"DPD-C-002","type":"UNIQUE_PRIORITY","ruleIds":["R-DPD-001","R-DPD-002"],"severity":"ERROR","message":"Priority-mode DPD rules require unique priorities."}
     ]},
-    {"policyKey":"HIGH_UTILIZATION","constraints":[
-      {"constraintId":"UTL-C-001","type":"PARAMETER_RELATION","leftParameter":"HIGH_UTILIZATION_THRESHOLD","operator":"LT","rightParameter":"CRITICAL_UTILIZATION_THRESHOLD","severity":"ERROR","message":"High utilization threshold must be lower than critical utilization threshold."},
+    {"policyKey":"UTILIZATION_HIGH","constraints":[
+      {"constraintId":"UTL-C-001","type":"PARAMETER_RELATION","leftParameter":"UTILIZATION_HIGH_THRESHOLD","operator":"LT","rightParameter":"CRITICAL_UTILIZATION_THRESHOLD","severity":"ERROR","message":"High utilization threshold must be lower than critical utilization threshold."},
       {"constraintId":"UTL-C-002","type":"UNIQUE_PRIORITY","ruleIds":["R-UTL-001","R-UTL-002"],"severity":"ERROR","message":"Priority-mode utilization rules require unique priorities."}
     ]},
     {"policyKey":"REPEATED_PAYMENT_RETURN","constraints":[]}
