@@ -18,6 +18,10 @@ public final class PolicyValidatorCli {
       read(m,root,"registries/phase1-signal-registry-v1.json"),
       read(m,root,"registries/risk-dimensions-v1.json"));
     PolicyPublicationValidator validator=new PolicyPublicationValidator(schema);
+    validateContractDirectory(m,root,"schemas/policies/policy-evaluation-request-v1.schema.json","tests/fixtures/policies/requests");
+    validateContractDirectory(m,root,"schemas/policies/policy-evaluation-result-v1.schema.json","tests/fixtures/policies/results");
+    JsonSchemaGate constraintGate=new JsonSchemaGate(read(m,root,"schemas/policies/policy-semantic-constraints-v1.schema.json"));
+    for(JsonNode set:constraints.path("constraintSets")) constraintGate.requireValid(set,"semantic constraint set "+set.path("policyKey").asText());
     JsonSchemaGate evidenceGate=new JsonSchemaGate(read(m,root,"schemas/policies/policy-validation-result-v1.schema.json"));
 
     Path dir=root.resolve("policy-packs/phase1/policies");
@@ -78,6 +82,16 @@ public final class PolicyValidatorCli {
     o.put("validatorVersion","0.1.0");
     o.putNull("traceId");
     return o;
+  }
+
+  private static void validateContractDirectory(ObjectMapper m,Path root,String schemaPath,String directory)throws Exception{
+    JsonSchemaGate gate=new JsonSchemaGate(read(m,root,schemaPath));
+    Path dir=root.resolve(directory);
+    if(!Files.exists(dir))return;
+    try(var paths=Files.list(dir)){
+      for(Path p:paths.filter(x->x.toString().endsWith(".json")).sorted().toList())
+        gate.requireValid(m.readTree(Files.readString(p)),root.relativize(p).toString());
+    }
   }
 
   private static JsonNode read(ObjectMapper m,Path root,String path)throws Exception{
