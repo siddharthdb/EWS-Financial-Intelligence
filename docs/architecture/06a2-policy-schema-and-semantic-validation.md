@@ -148,3 +148,64 @@ The validator rules must therefore be packaged as reusable application code/libr
 Implement the validator in the Java/Spring policy service because policy publication, versioning and runtime evaluation are enterprise control-plane concerns. Keep JSON Schema validation standards-based. Implement semantic rules as explicit validator classes with stable rule IDs (`PSV-001`, etc.), deterministic outputs and unit fixtures.
 
 Do not implement semantic validation as Drools rules in Phase 1. Using the policy engine to validate the policy engine creates avoidable bootstrap, debugging and governance complexity.
+
+
+## 8. Unified publication validator
+
+The executable control plane now composes structural, semantic and governance validation through a single `PolicyPublicationValidator`.
+
+```text
+risk-policy-v1.schema.json
+        |
+        v
+JSON Schema validation
+        |
+        +--> governed feature registry
+        +--> governed signal registry
+        +--> canonical risk-dimension registry
+        +--> explicit semantic constraints
+        +--> existing policy-version registry
+        |
+        v
+PolicySemanticValidator
+        +
+PolicyGovernanceValidator
+        |
+        v
+PolicyPublicationValidator
+        |
+        +--> ERROR => publication blocked
+        +--> WARNING => approval evidence
+        +--> zero ERROR => publishable candidate
+```
+
+The repository CLI validates the actual Phase-1 policy documents rather than only synthetic unit-test objects. CI executes this gate whenever policy contracts, packs, fixtures or validator code change.
+
+## 9. Reproducible validation evidence
+
+Every publication validation produces a `policy-validation-result-v1` evidence artifact containing:
+
+- policy ID/version;
+- SHA-256 policy artifact hash;
+- structural validation outcome;
+- semantic/governance findings;
+- exact feature/signal/risk-dimension registry versions;
+- validator version;
+- publication decision;
+- validation timestamp.
+
+The hash binds approval evidence to the evaluated policy artifact. Runtime activation must reference the same immutable published artifact; a changed artifact requires a new validation/approval cycle.
+
+## 10. Completion boundary for Part IV-A
+
+The Rule & Policy Engine architecture is considered ready to close when:
+
+1. all repository policy JSON validates against its declared schema;
+2. the actual Phase-1 policies pass the unified publication gate;
+3. negative fixtures prove publication-blocking controls;
+4. validation evidence itself conforms to its schema;
+5. CI fails on any ERROR;
+6. simulation and maker-checker references are required before ACTIVE lifecycle transition;
+7. policy artifact/configuration identity is immutable and replayable.
+
+Runtime rule evaluation remains a separate concern from publication governance.
