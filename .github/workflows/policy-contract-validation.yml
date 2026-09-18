@@ -1,0 +1,81 @@
+name: Risk Intelligence Contract Validation
+
+on:
+  pull_request:
+    paths:
+      - 'schemas/risk-intelligence/**'
+      - 'schemas/events/payloads/**'
+      - 'registries/**'
+      - 'tests/fixtures/risk-intelligence/**'
+      - 'schemas/policies/**'
+      - 'policy-packs/**'
+      - 'tests/fixtures/policies/**'
+      - 'tools/policy-validator/**'
+      - '.github/workflows/policy-contract-validation.yml'
+  push:
+    branches: [ master, architecture/part-4-risk-intelligence ]
+    paths:
+      - 'schemas/risk-intelligence/**'
+      - 'schemas/events/payloads/**'
+      - 'registries/**'
+      - 'tests/fixtures/risk-intelligence/**'
+      - 'schemas/policies/**'
+      - 'policy-packs/**'
+      - 'tests/fixtures/policies/**'
+      - 'tools/policy-validator/**'
+      - '.github/workflows/policy-contract-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validator-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Compile and test policy validator
+        run: mvn -B -f tools/policy-validator/pom.xml test
+      - name: Execute Phase-1 publication gate
+        run: mvn -B -f tools/policy-validator/pom.xml exec:java -Dexec.args="$GITHUB_WORKSPACE"
+      - name: Upload policy validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: risk-intelligence-validation-results
+          path: |
+            tools/policy-validator/target/policy-validation-results/
+            tools/policy-validator/target/correlation-policy-validation-results/
+            tools/policy-validator/target/risk-aggregation-policy-validation-results/
+          if-no-files-found: warn
+
+  parse-json-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Parse policy JSON artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib, sys
+          roots = [pathlib.Path('schemas/policies'), pathlib.Path('schemas/risk-intelligence'), pathlib.Path('registries'), pathlib.Path('policy-packs'), pathlib.Path('tests/fixtures/policies'), pathlib.Path('tests/fixtures/risk-intelligence')]
+          files = [p for r in roots if r.exists() for p in r.rglob('*.json')]
+          failed = False
+          for p in files:
+              try:
+                  json.loads(p.read_text(encoding='utf-8'))
+                  print(f'OK {p}')
+              except Exception as exc:
+                  failed = True
+                  print(f'INVALID {p}: {exc}', file=sys.stderr)
+          if failed: sys.exit(1)
+          print(f'Parsed {len(files)} JSON governed contract artifacts')
+          PY

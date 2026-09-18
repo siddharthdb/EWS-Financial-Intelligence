@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ews-financial-intelligence/schemas/risk-intelligence/correlation-policy-validation-result-v1.schema.json",
+  "title": "EWS Correlation Policy Validation Result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "validationId",
+    "policy",
+    "policyArtifactHash",
+    "schemaValid",
+    "semanticValid",
+    "publishable",
+    "findings",
+    "validatedAt",
+    "validatorVersion"
+  ],
+  "properties": {
+    "validationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policyId",
+        "policyKey",
+        "version"
+      ],
+      "properties": {
+        "policyId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policyKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "policyArtifactHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "schemaValid": {
+      "type": "boolean"
+    },
+    "semanticValid": {
+      "type": "boolean"
+    },
+    "publishable": {
+      "type": "boolean"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ruleId",
+          "code",
+          "message",
+          "jsonPointer"
+        ],
+        "properties": {
+          "ruleId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "jsonPointer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "validatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "validatorVersion": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

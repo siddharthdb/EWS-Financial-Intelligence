@@ -1,0 +1,113 @@
+{
+  "policyId": "CORR-POL-EMERGING-LIQUIDITY-STRESS-001",
+  "policyKey": "EMERGING_LIQUIDITY_STRESS",
+  "version": "1",
+  "hypothesisType": "EMERGING_LIQUIDITY_STRESS",
+  "scope": {
+    "institutionId": "REFERENCE_INSTITUTION",
+    "jurisdictions": [],
+    "productTypes": [],
+    "portfolioSegments": [],
+    "entityTypes": [
+      "COUNTERPARTY"
+    ]
+  },
+  "lifecycle": "ACTIVE",
+  "effectivePeriod": {
+    "effectiveFrom": "2026-09-18T00:00:00Z",
+    "effectiveTo": null
+  },
+  "window": {
+    "duration": "P30D",
+    "institutionConfigurable": true,
+    "guardrail": {
+      "minimum": "P7D",
+      "maximum": "P90D"
+    }
+  },
+  "minimumIndependentContributorFamilies": {
+    "value": 2,
+    "institutionConfigurable": true,
+    "minimum": 2,
+    "maximum": 3
+  },
+  "contributors": [
+    {
+      "analyticalType": "REPEATED_PAYMENT_RETURN",
+      "acceptedInputTypes": [
+        "SIGNAL",
+        "EPISODE"
+      ],
+      "family": "PAYMENT_RETURN",
+      "role": "SUPPORTING",
+      "required": false
+    },
+    {
+      "analyticalType": "DPD_DERIORATION",
+      "acceptedInputTypes": [
+        "SIGNAL",
+        "EPISODE"
+      ],
+      "family": "DELINQUENCY",
+      "role": "SUPPORTING",
+      "required": false
+    },
+    {
+      "analyticalType": "UTILIZATION_HIGH",
+      "acceptedInputTypes": [
+        "SIGNAL",
+        "EPISODE"
+      ],
+      "family": "UTILIZATION_PRESSURE",
+      "role": "SUPPORTING",
+      "required": false
+    },
+    {
+      "analyticalType": "UTILIZATION_SPIKE",
+      "acceptedInputTypes": [
+        "SIGNAL",
+        "EPISODE"
+      ],
+      "family": "UTILIZATION_PRESSURE",
+      "role": "SUPPORTING",
+      "required": false
+    }
+  ],
+  "sourceIndependence": {
+    "collapseSharedLineage": true,
+    "requireLineageForSupporting": true
+  },
+  "qualityGate": {
+    "excludedSignalStatuses": [
+      "REJECTED",
+      "CLOSED",
+      "EXPIRED",
+      "SUPERSEDED"
+    ],
+    "excludedDispositionTags": [
+      "FALSE_POSITIVE",
+      "DUPLICATE",
+      "INSUFFICIENT_EVIDENCE"
+    ],
+    "excludeStale": true,
+    "excludeInsufficient": true
+  },
+  "contradictionPolicy": {
+    "retainContradictions": true,
+    "mode": "REDUCE_CONFIDENCE"
+  },
+  "output": {
+    "requiresHumanValidation": true,
+    "defaultMateriality": "HIGH",
+    "confidenceMethod": "BOUNDED_RULE"
+  },
+  "governance": {
+    "createdBy": "platform-template",
+    "createdAt": "2026-09-18T00:00:00Z",
+    "makerCheckerRequired": true,
+    "approvedBy": "reference-checker",
+    "approvedAt": "2026-09-18T00:30:00Z",
+    "simulationRunId": "SIM-CORR-LIQ-001",
+    "changeReason": "Phase-1 reference correlation policy"
+  }
+}

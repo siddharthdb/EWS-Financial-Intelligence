@@ -1,0 +1,22 @@
+{
+  "fixtureSet": "PHASE1_POLICY_EVALUATION_CASES_V1",
+  "description": "Deterministic boundary, quality and institution-override cases for the Phase-1 corporate EWS policy pack.",
+  "cases": [
+    {"id":"PPR-01","policyKey":"REPEATED_PAYMENT_RETURN","scenario":"below threshold","parameters":{"PAYMENT_RETURN_COUNT_THRESHOLD":3},"features":{"returned_payment_count_30d":{"state":"VALUE","value":2}},"expected":{"status":"NOT_MATCHED","outcomes":[]}},
+    {"id":"PPR-02","policyKey":"REPEATED_PAYMENT_RETURN","scenario":"exact threshold","parameters":{"PAYMENT_RETURN_COUNT_THRESHOLD":3},"features":{"returned_payment_count_30d":{"state":"VALUE","value":3}},"expected":{"status":"MATCHED","outcomeCode":"REPEATED_PAYMENT_RETURN","severity":"HIGH"}},
+    {"id":"PPR-03","policyKey":"REPEATED_PAYMENT_RETURN","scenario":"institution raises threshold","parameters":{"PAYMENT_RETURN_COUNT_THRESHOLD":5},"features":{"returned_payment_count_30d":{"state":"VALUE","value":3}},"expected":{"status":"NOT_MATCHED","outcomes":[]}},
+    {"id":"PPR-04","policyKey":"REPEATED_PAYMENT_RETURN","scenario":"unknown feature","parameters":{"PAYMENT_RETURN_COUNT_THRESHOLD":3},"features":{"returned_payment_count_30d":{"state":"NULL_UNKNOWN","value":null}},"expected":{"status":"INSUFFICIENT_EVIDENCE","outcomes":[]}},
+
+    {"id":"DPD-01","policyKey":"DPD_DERIORATION","scenario":"no arrears","parameters":{"DPD_WARNING_THRESHOLD":15,"DPD_HIGH_THRESHOLD":30},"features":{"current_dpd":{"state":"ZERO","value":0}},"expected":{"status":"NOT_MATCHED","outcomes":[]}},
+    {"id":"DPD-02","policyKey":"DPD_DERIORATION","scenario":"warning boundary","parameters":{"DPD_WARNING_THRESHOLD":15,"DPD_HIGH_THRESHOLD":30},"features":{"current_dpd":{"state":"VALUE","value":15}},"expected":{"status":"MATCHED","outcomeCode":"DPD_DERIORATION","severity":"MEDIUM"}},
+    {"id":"DPD-03","policyKey":"DPD_DERIORATION","scenario":"high boundary priority","parameters":{"DPD_WARNING_THRESHOLD":15,"DPD_HIGH_THRESHOLD":30},"features":{"current_dpd":{"state":"VALUE","value":30}},"expected":{"status":"MATCHED","outcomeCode":"DPD_DERIORATION","severity":"HIGH"}},
+    {"id":"DPD-04","policyKey":"DPD_DERIORATION","scenario":"stale DPD","parameters":{"DPD_WARNING_THRESHOLD":15,"DPD_HIGH_THRESHOLD":30},"features":{"current_dpd":{"state":"STALE","value":null}},"expected":{"status":"INSUFFICIENT_EVIDENCE","outcomes":[]}},
+    {"id":"DPD-05","policyKey":"DPD_DERIORATION","scenario":"institution lowers warning threshold","parameters":{"DPD_WARNING_THRESHOLD":7,"DPD_HIGH_THRESHOLD":30},"features":{"current_dpd":{"state":"VALUE","value":10}},"expected":{"status":"MATCHED","outcomeCode":"DPD_DERIORATION","severity":"MEDIUM"}},
+
+    {"id":"UTL-01","policyKey":"HIGH_UTILIZATION","scenario":"below threshold","parameters":{"HIGH_UTILIZATION_THRESHOLD":0.85,"CRITICAL_UTILIZATION_THRESHOLD":0.95},"features":{"utilization_ratio":{"state":"VALUE","value":0.84}},"expected":{"status":"NOT_MATCHED","outcomes":[]}},
+    {"id":"UTL-02","policyKey":"HIGH_UTILIZATION","scenario":"high utilization boundary","parameters":{"HIGH_UTILIZATION_THRESHOLD":0.85,"CRITICAL_UTILIZATION_THRESHOLD":0.95},"features":{"utilization_ratio":{"state":"VALUE","value":0.85}},"expected":{"status":"MATCHED","outcomeCode":"HIGH_UTILIZATION","severity":"MEDIUM"}},
+    {"id":"UTL-03","policyKey":"HIGH_UTILIZATION","scenario":"critical utilization priority","parameters":{"HIGH_UTILIZATION_THRESHOLD":0.85,"CRITICAL_UTILIZATION_THRESHOLD":0.95},"features":{"utilization_ratio":{"state":"VALUE","value":0.97}},"expected":{"status":"MATCHED","outcomeCode":"HIGH_UTILIZATION","severity":"HIGH"}},
+    {"id":"UTL-04","policyKey":"HIGH_UTILIZATION","scenario":"institution raises high threshold","parameters":{"HIGH_UTILIZATION_THRESHOLD":0.90,"CRITICAL_UTILIZATION_THRESHOLD":0.98},"features":{"utilization_ratio":{"state":"VALUE","value":0.87}},"expected":{"status":"NOT_MATCHED","outcomes":[]}},
+    {"id":"UTL-05","policyKey":"HIGH_UTILIZATION","scenario":"not available","parameters":{"HIGH_UTILIZATION_THRESHOLD":0.85,"CRITICAL_UTILIZATION_THRESHOLD":0.95},"features":{"utilization_ratio":{"state":"NOT_AVAILABLE","value":null}},"expected":{"status":"INSUFFICIENT_EVIDENCE","outcomes":[]}}
+  ]
+}

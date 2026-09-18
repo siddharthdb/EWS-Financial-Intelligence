@@ -1,0 +1,54 @@
+{
+  "episodeId": "EP-UTL-FAC-1001-001",
+  "episodeKey": "LIVE|EP-POL-HIGH-UTILIZATION|1|FACILITY|FAC-1001|UTILIZATION_HIGH|FAC-1001",
+  "signalType": "UTILIZATION_HIGH",
+  "entity": {
+    "type": "FACILITY",
+    "id": "FAC-1001"
+  },
+  "conditionDiscriminator": "FAC-1001",
+  "status": "OPEN",
+  "openedAt": "2026-09-18T06:00:00Z",
+  "lastActivityAt": "2026-09-18T06:05:00Z",
+  "resolvedAt": null,
+  "reopenCount": 0,
+  "policy": {
+    "id": "EP-POL-HIGH-UTILIZATION",
+    "version": "1"
+  },
+  "executionMode": "LIVE",
+  "runId": null,
+  "memberSignals": [
+    {
+      "signalId": "SIG-UTL-1001-001",
+      "signalType": "UTILIZATION_HIGH",
+      "snapshotRef": "signal://SIG-UTL-1001-001/rev/1",
+      "firstContributedAt": "2026-09-18T06:00:00Z",
+      "lastContributedAt": "2026-09-18T06:00:00Z",
+      "role": "PRIMARY"
+    },
+    {
+      "signalId": "SIG-UTL-1001-002",
+      "signalType": "UTILIZATION_HIGH",
+      "snapshotRef": "signal://SIG-UTL-1001-002/rev/1",
+      "firstContributedAt": "2026-09-18T06:05:00Z",
+      "lastContributedAt": "2026-09-18T06:05:00Z",
+      "role": "SUPPORTING"
+    }
+  ],
+  "evidenceIds": [
+    "EVD-FAC-1001-LIMIT",
+    "EVD-FAC-1001-OUTSTANDING"
+  ],
+  "featureSnapshotIds": [
+    "FV-utilization_ratio-FAC-1001-20260918T0600Z",
+    "FV-utilization_ratio-FAC-1001-20260918T0605Z"
+  ],
+  "knowledgeTime": "2026-09-18T06:05:01Z",
+  "revision": 2,
+  "previousRevisionRef": "episode://EP-UTL-FAC-1001-001/rev/1",
+  "resolution": null,
+  "supersededByEpisodeId": null,
+  "correlationId": "CORR-EP-UTL-1001",
+  "traceId": "TRACE-EP-UTL-1001"
+}
