@@ -50,6 +50,7 @@ jobs:
           path: |
             tools/policy-validator/target/policy-validation-results/
             tools/policy-validator/target/correlation-policy-validation-results/
+            tools/policy-validator/target/risk-aggregation-policy-validation-results/
           if-no-files-found: warn
 
   parse-json-contracts:
