@@ -1,6 +1,6 @@
 # EWS 2.0 — Risk Assessment and Score Aggregation
 
-**Status:** Draft / Part IV-C  
+**Status:** Draft / Part IV-C — executable contract loop complete  
 **Scope:** Proposed analytical risk assessment; approved EWS state remains separately governed  
 **Depends on:** `06-risk-intelligence-processing-architecture.md`, `06b-signal-episode-and-correlation-engine.md`, Part II scoring/confidence semantics
 
@@ -237,16 +237,17 @@ Part IV-C is implemented through:
 
 ## 11. Closure criteria
 
-Part IV-C is complete when:
+Part IV-C executable closure is complete:
 
-1. proposed assessment schema is executable;
-2. aggregation policy is institution-configurable but guardrailed;
-3. canonical risk dimensions are registry validated;
-4. double-counting/correlation substitution is tested;
-5. weighted methods enforce coherent weights;
-6. replay isolation is tested;
-7. aggregation policy publication emits immutable validation evidence;
-8. proposed assessment Kafka payload parses under Avro CI;
-9. the Phase-1 reference assessment passes the complete CI loop.
+1. proposed assessment schema — implemented and schema validated;
+2. institution-configurable aggregation policy with platform guardrails — implemented;
+3. canonical risk dimensions — registry validated;
+4. correlation substitution / anti-double-counting — executable negative test;
+5. weighted aggregation — weights must sum to 1.0;
+6. replay isolation — non-LIVE run ID enforced;
+7. score-scale, band, dimension-cap and mandatory-human-review integrity — executable semantic checks;
+8. aggregation policy publication — immutable SHA-256 validation evidence emitted;
+9. proposed assessment Kafka payload — Avro parser validated in CI;
+10. Phase-1 reference aggregation policy and proposed assessment — complete CI loop green.
 
 The next architecture section is `06d-predictive-ml-and-anomaly-architecture.md`.
