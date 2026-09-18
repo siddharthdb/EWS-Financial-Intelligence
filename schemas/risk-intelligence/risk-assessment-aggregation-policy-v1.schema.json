@@ -1,0 +1,473 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ews-financial-intelligence/schemas/risk-intelligence/risk-assessment-aggregation-policy-v1.schema.json",
+  "title": "EWS Risk Assessment Aggregation Policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "policyId",
+    "policyKey",
+    "version",
+    "scope",
+    "lifecycle",
+    "effectivePeriod",
+    "scoreScale",
+    "aggregation",
+    "severityContribution",
+    "dimensionPolicies",
+    "correlationSubstitution",
+    "qualityGate",
+    "humanReview",
+    "governance"
+  ],
+  "properties": {
+    "policyId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "policyKey": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]+$"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "institutionId",
+        "entityTypes"
+      ],
+      "properties": {
+        "institutionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jurisdictions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          }
+        },
+        "productTypes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "portfolioSegments": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "entityTypes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "COUNTERPARTY",
+              "GROUP",
+              "FACILITY",
+              "ACCOUNT"
+            ]
+          }
+        }
+      }
+    },
+    "lifecycle": {
+      "type": "string",
+      "enum": [
+        "DRAFT",
+        "VALIDATION",
+        "PENDING_APPROVAL",
+        "APPROVED",
+        "ACTIVE",
+        "SUSPENDED",
+        "RETIRED"
+      ]
+    },
+    "effectivePeriod": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "effectiveFrom"
+      ],
+      "properties": {
+        "effectiveFrom": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "effectiveTo": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "scoreScale": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scaleId",
+        "minimum",
+        "maximum",
+        "bands",
+        "institutionConfigurable"
+      ],
+      "properties": {
+        "scaleId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "minimum": {
+          "type": "number"
+        },
+        "maximum": {
+          "type": "number"
+        },
+        "institutionConfigurable": {
+          "type": "boolean"
+        },
+        "bands": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "band",
+              "minimum",
+              "maximum"
+            ],
+            "properties": {
+              "band": {
+                "type": "string",
+                "enum": [
+                  "LOW",
+                  "MEDIUM",
+                  "HIGH",
+                  "CRITICAL"
+                ]
+              },
+              "minimum": {
+                "type": "number"
+              },
+              "maximum": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    },
+    "aggregation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "method",
+        "institutionConfigurable"
+      ],
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": [
+            "MAX_DIMENSION",
+            "WEIGHTED_DIMENSIONS",
+            "BAND_ONLY"
+          ]
+        },
+        "institutionConfigurable": {
+          "type": "boolean"
+        },
+        "dimensionWeights": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      }
+    },
+    "severityContribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL",
+        "institutionConfigurable",
+        "guardrail"
+      ],
+      "properties": {
+        "LOW": {
+          "type": "number"
+        },
+        "MEDIUM": {
+          "type": "number"
+        },
+        "HIGH": {
+          "type": "number"
+        },
+        "CRITICAL": {
+          "type": "number"
+        },
+        "institutionConfigurable": {
+          "type": "boolean"
+        },
+        "guardrail": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "minimum",
+            "maximum"
+          ],
+          "properties": {
+            "minimum": {
+              "type": "number"
+            },
+            "maximum": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "dimensionPolicies": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "riskDimension",
+          "cap",
+          "institutionConfigurable"
+        ],
+        "properties": {
+          "riskDimension": {
+            "type": "string",
+            "enum": [
+              "LIQUIDITY",
+              "LEVERAGE_SOLVENCY",
+              "PROFITABILITY_OPERATING_PERFORMANCE",
+              "CASH_FLOW_DEBT_SERVICE",
+              "REPAYMENT_CONDUCT",
+              "COVENANT_DOCUMENTATION",
+              "COLLATERAL_SECURITY",
+              "REFINANCING_FUNDING",
+              "MANAGEMENT_GOVERNANCE",
+              "FRAUD_INTEGRITY",
+              "EXTERNAL_MARKET_REPUTATION",
+              "LEGAL_REGULATORY",
+              "RELATIONSHIP_GROUP_CONTAGION",
+              "SECTOR_MACRO"
+            ]
+          },
+          "cap": {
+            "type": "number"
+          },
+          "institutionConfigurable": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "correlationSubstitution": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "hypothesisType",
+          "riskDimension",
+          "contribution",
+          "suppressUnderlyingFamilies"
+        ],
+        "properties": {
+          "hypothesisType": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]+$"
+          },
+          "riskDimension": {
+            "type": "string",
+            "enum": [
+              "LIQUIDITY",
+              "LEVERAGE_SOLVENCY",
+              "PROFITABILITY_OPERATING_PERFORMANCE",
+              "CASH_FLOW_DEBT_SERVICE",
+              "REPAYMENT_CONDUCT",
+              "COVENANT_DOCUMENTATION",
+              "COLLATERAL_SECURITY",
+              "REFINANCING_FUNDING",
+              "MANAGEMENT_GOVERNANCE",
+              "FRAUD_INTEGRITY",
+              "EXTERNAL_MARKET_REPUTATION",
+              "LEGAL_REGULATORY",
+              "RELATIONSHIP_GROUP_CONTAGION",
+              "SECTOR_MACRO"
+            ]
+          },
+          "contribution": {
+            "type": "number"
+          },
+          "suppressUnderlyingFamilies": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]+$"
+            }
+          }
+        }
+      }
+    },
+    "qualityGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimumConfidence",
+        "excludeStale",
+        "excludeInsufficient"
+      ],
+      "properties": {
+        "minimumConfidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "excludeStale": {
+          "type": "boolean"
+        },
+        "excludeInsufficient": {
+          "type": "boolean"
+        }
+      }
+    },
+    "humanReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimumBand",
+        "onContradiction"
+      ],
+      "properties": {
+        "minimumBand": {
+          "type": "string",
+          "enum": [
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "CRITICAL"
+          ]
+        },
+        "onContradiction": {
+          "type": "boolean"
+        }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "createdBy",
+        "createdAt",
+        "makerCheckerRequired"
+      ],
+      "properties": {
+        "createdBy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "makerCheckerRequired": {
+          "type": "boolean"
+        },
+        "approvedBy": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "approvedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "simulationRunId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "changeReason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "lifecycle": {
+            "enum": [
+              "APPROVED",
+              "ACTIVE"
+            ]
+          }
+        },
+        "required": [
+          "lifecycle"
+        ]
+      },
+      "then": {
+        "properties": {
+          "governance": {
+            "required": [
+              "approvedBy",
+              "approvedAt",
+              "simulationRunId"
+            ],
+            "properties": {
+              "approvedBy": {
+                "type": "string",
+                "minLength": 1
+              },
+              "approvedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "simulationRunId": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
