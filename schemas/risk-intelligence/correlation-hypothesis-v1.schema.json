@@ -135,6 +135,7 @@
           "type",
           "id",
           "analyticalType",
+          "contributorFamily",
           "entity",
           "role",
           "effectiveAt",
@@ -219,6 +220,10 @@
             ],
             "minimum": 0,
             "maximum": 1
+          },
+          "contributorFamily": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]+$"
           }
         }
       }
