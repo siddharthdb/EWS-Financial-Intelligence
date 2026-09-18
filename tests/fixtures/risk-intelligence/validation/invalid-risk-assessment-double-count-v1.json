@@ -12,7 +12,7 @@
   "aggregationPolicy": {
     "id": "RISK-AGG-CORPORATE-001",
     "version": "1",
-    "artifactHash": "ed7f2261ac21af979a050e604bb5604ba2c4f61abcf4f3e8006287173f900f90"
+    "artifactHash": "c4935eefdea8d086ad0e6b7dc6ae6ee929418d00975bc22b4c846ddcad29fa71"
   },
   "dimensionAssessments": [
     {
