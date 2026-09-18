@@ -209,3 +209,37 @@ The Rule & Policy Engine architecture is considered ready to close when:
 7. policy artifact/configuration identity is immutable and replayable.
 
 Runtime rule evaluation remains a separate concern from publication governance.
+
+
+## 8. Phase-1 execution-loop verification
+
+The Phase-1 publication loop was executed in GitHub Actions on 2026-09-18 after repairing structural schema defects exposed by the gate.
+
+Verified pipeline:
+
+```text
+JSON parse
+ -> Maven compile
+ -> 20 validator tests
+ -> repository policy publication tests
+ -> actual Phase-1 publication CLI
+ -> validation-result schema validation
+ -> evidence artifact upload
+```
+
+Verified results:
+
+- all policy JSON/schema artifacts parse successfully;
+- Java 17 validator build succeeds;
+- 20 tests execute with zero failures/errors/skips;
+- `REPEATED_PAYMENT_RETURN` is schema-valid, semantic-valid and publishable;
+- `DPD_DERIORATION` is schema-valid, semantic-valid and publishable;
+- `HIGH_UTILIZATION` is schema-valid, semantic-valid and publishable;
+- negative fixtures prove PSV-006 threshold-order and PSV-010 version-overlap rejection;
+- hard-control tests cover PSV-008 stable FIRST_MATCH priority, PSV-009 effective-time validation and PSV-013 classification boundary;
+- publication evidence is emitted and uploaded as the `policy-validation-results` CI artifact;
+- the evidence contract includes the SHA-256 hash of the exact policy file bytes.
+
+Two non-blocking PSV-014 warnings remain intentionally visible: `current_dpd` and `utilization_ratio` are registered as product-specific features while the reference policies do not yet constrain `productTypes`. This is acceptable for the reference pack but must be resolved or explicitly accepted by institution policy governance before production activation where product applicability is narrower.
+
+**Phase-1 publication gate status: GREEN.**
