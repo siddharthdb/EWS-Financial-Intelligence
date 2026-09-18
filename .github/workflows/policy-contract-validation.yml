@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'schemas/risk-intelligence/**'
+      - 'schemas/events/payloads/**'
       - 'registries/**'
       - 'tests/fixtures/risk-intelligence/**'
       - 'schemas/policies/**'
@@ -15,6 +16,7 @@ on:
     branches: [ master, architecture/part-4-risk-intelligence ]
     paths:
       - 'schemas/risk-intelligence/**'
+      - 'schemas/events/payloads/**'
       - 'registries/**'
       - 'tests/fixtures/risk-intelligence/**'
       - 'schemas/policies/**'
