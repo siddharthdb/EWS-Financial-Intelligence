@@ -87,6 +87,40 @@ public final class RiskIntelligenceSemanticValidator {
     return List.copyOf(out);
   }
 
+  public List<Finding> validateEpisodeTransition(JsonNode previous, JsonNode next){
+    List<Finding> out=new ArrayList<>();
+    for(String field:List.of("episodeId","episodeKey","signalType"))
+      if(!previous.path(field).equals(next.path(field))) out.add(err("ETV-001","EPISODE_IDENTITY_CHANGED","Episode identity fields are immutable across revisions","/"+field));
+    if(!previous.path("entity").equals(next.path("entity"))||!previous.path("policy").equals(next.path("policy"))||!previous.path("executionMode").equals(next.path("executionMode"))||!previous.path("runId").equals(next.path("runId")))
+      out.add(err("ETV-001","EPISODE_IDENTITY_CHANGED","Entity, policy and execution namespace are immutable within an episode","/"));
+    if(next.path("revision").asInt()!=previous.path("revision").asInt()+1)
+      out.add(err("ETV-002","EPISODE_REVISION_NOT_SEQUENTIAL","Episode revision must increment exactly by one","/revision"));
+    String from=previous.path("status").asText(),to=next.path("status").asText();
+    boolean allowed=("OPEN".equals(from)&&Set.of("OPEN","MONITORING","RESOLVED","SUPERSEDED").contains(to))
+      ||("MONITORING".equals(from)&&Set.of("MONITORING","OPEN","RESOLVED","SUPERSEDED").contains(to))
+      ||("RESOLVED".equals(from)&&"OPEN".equals(to));
+    if(!allowed) out.add(err("ETV-003","INVALID_EPISODE_TRANSITION","Episode lifecycle transition is not permitted: "+from+" -> "+to,"/status"));
+    int expectedReopens=previous.path("reopenCount").asInt()+(("RESOLVED".equals(from)&&"OPEN".equals(to))?1:0);
+    if(next.path("reopenCount").asInt()!=expectedReopens)
+      out.add(err("ETV-004","INVALID_REOPEN_COUNT","reopenCount must increment exactly once on RESOLVED -> OPEN","/reopenCount"));
+    return List.copyOf(out);
+  }
+
+  public List<Finding> validateCorrelationTransition(JsonNode previous, JsonNode next){
+    List<Finding> out=new ArrayList<>();
+    for(String field:List.of("hypothesisId","hypothesisType"))
+      if(!previous.path(field).equals(next.path(field))) out.add(err("CTV-001","HYPOTHESIS_IDENTITY_CHANGED","Correlation hypothesis identity is immutable across revisions","/"+field));
+    if(!previous.path("entity").equals(next.path("entity"))||!previous.path("policy").equals(next.path("policy"))||!previous.path("executionMode").equals(next.path("executionMode"))||!previous.path("runId").equals(next.path("runId")))
+      out.add(err("CTV-001","HYPOTHESIS_IDENTITY_CHANGED","Entity, policy and execution namespace are immutable within a hypothesis","/"));
+    if(next.path("revision").asInt()!=previous.path("revision").asInt()+1)
+      out.add(err("CTV-002","HYPOTHESIS_REVISION_NOT_SEQUENTIAL","Hypothesis revision must increment exactly by one","/revision"));
+    String from=previous.path("status").asText(),to=next.path("status").asText();
+    boolean allowed=("PROPOSED".equals(from)&&Set.of("PROPOSED","ACTIVE","REJECTED","RESOLVED").contains(to))
+      ||("ACTIVE".equals(from)&&Set.of("ACTIVE","RESOLVED").contains(to));
+    if(!allowed) out.add(err("CTV-003","INVALID_HYPOTHESIS_TRANSITION","Correlation lifecycle transition is not permitted: "+from+" -> "+to,"/status"));
+    return List.copyOf(out);
+  }
+
   private int independentFamiliesAfterLineageCollapse(List<JsonNode> nodes){
     int n=nodes.size(); if(n==0)return 0; int[] parent=new int[n]; for(int i=0;i<n;i++)parent[i]=i;
     List<Set<String>> groups=new ArrayList<>(); List<String> families=new ArrayList<>();
