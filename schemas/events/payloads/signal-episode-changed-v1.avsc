@@ -1,0 +1,117 @@
+{
+  "type": "record",
+  "name": "SignalEpisodeChangedV1",
+  "namespace": "org.ewsfi.events.riskintelligence.v1",
+  "doc": "Revision event for governed signal episode continuity. REOPENED is a transition event, not a durable episode state.",
+  "fields": [
+    {
+      "name": "episodeId",
+      "type": "string"
+    },
+    {
+      "name": "episodeKey",
+      "type": "string"
+    },
+    {
+      "name": "signalType",
+      "type": "string"
+    },
+    {
+      "name": "scopeEntityType",
+      "type": "string"
+    },
+    {
+      "name": "scopeEntityId",
+      "type": "string"
+    },
+    {
+      "name": "transition",
+      "type": {
+        "type": "enum",
+        "name": "EpisodeTransitionV1",
+        "symbols": [
+          "OPENED",
+          "UPDATED",
+          "MOVED_TO_MONITORING",
+          "RESOLVED",
+          "REOPENED",
+          "SUPERSEDED"
+        ]
+      }
+    },
+    {
+      "name": "status",
+      "type": {
+        "type": "enum",
+        "name": "EpisodeStatusV1",
+        "symbols": [
+          "OPEN",
+          "MONITORING",
+          "RESOLVED",
+          "SUPERSEDED"
+        ]
+      }
+    },
+    {
+      "name": "revision",
+      "type": "long"
+    },
+    {
+      "name": "previousRevisionRef",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    },
+    {
+      "name": "policyId",
+      "type": "string"
+    },
+    {
+      "name": "policyVersion",
+      "type": "string"
+    },
+    {
+      "name": "memberSignalIds",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": []
+    },
+    {
+      "name": "evidenceIds",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": []
+    },
+    {
+      "name": "featureSnapshotIds",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": []
+    },
+    {
+      "name": "reopenCount",
+      "type": "int",
+      "default": 0
+    },
+    {
+      "name": "resolutionReasonCode",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    },
+    {
+      "name": "snapshotRef",
+      "type": "string"
+    }
+  ]
+}
