@@ -14,7 +14,7 @@ public final class PolicyValidatorCli {
     JsonNode constraints=read(m,root,"policy-packs/phase1/constraints/phase1-semantic-constraints-v1.json");
     GovernedRegistry registry=GovernedRegistry.from(read(m,root,"registries/phase1-feature-registry-v1.json"),
       read(m,root,"registries/phase1-signal-registry-v1.json"),read(m,root,"registries/risk-dimensions-v1.json"));
-    PolicyPublicationValidator validator=new PolicyPublicationValidator(schema);
+    PolicyPublicationValidator validator=new PolicyPublicationValidator(schema);\n    JsonSchemaGate validationEvidenceSchema=new JsonSchemaGate(read(m,root,"schemas/policies/policy-validation-result-v1.schema.json"));
     JsonSchemaGate validationEvidenceSchema=new JsonSchemaGate(read(m,root,"schemas/policies/policy-validation-result-v1.schema.json"));
     Path dir=root.resolve("policy-packs/phase1/policies"), outDir=root.resolve("tools/policy-validator/target/policy-validation-results");
     Files.createDirectories(outDir); boolean failed=false;
