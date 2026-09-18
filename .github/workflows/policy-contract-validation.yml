@@ -1,8 +1,10 @@
-name: Policy Contract Validation
+name: Risk Intelligence Contract Validation
 
 on:
   pull_request:
     paths:
+      - 'schemas/risk-intelligence/**'
+      - 'tests/fixtures/risk-intelligence/**'
       - 'schemas/policies/**'
       - 'policy-packs/**'
       - 'tests/fixtures/policies/**'
@@ -11,6 +13,8 @@ on:
   push:
     branches: [ master, architecture/part-4-risk-intelligence ]
     paths:
+      - 'schemas/risk-intelligence/**'
+      - 'tests/fixtures/risk-intelligence/**'
       - 'schemas/policies/**'
       - 'policy-packs/**'
       - 'tests/fixtures/policies/**'
@@ -55,7 +59,7 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           import json, pathlib, sys
-          roots = [pathlib.Path('schemas/policies'), pathlib.Path('policy-packs'), pathlib.Path('tests/fixtures/policies')]
+          roots = [pathlib.Path('schemas/policies'), pathlib.Path('schemas/risk-intelligence'), pathlib.Path('policy-packs'), pathlib.Path('tests/fixtures/policies'), pathlib.Path('tests/fixtures/risk-intelligence')]
           files = [p for r in roots if r.exists() for p in r.rglob('*.json')]
           failed = False
           for p in files:
@@ -66,5 +70,5 @@ jobs:
                   failed = True
                   print(f'INVALID {p}: {exc}', file=sys.stderr)
           if failed: sys.exit(1)
-          print(f'Parsed {len(files)} JSON policy artifacts')
+          print(f'Parsed {len(files)} JSON governed contract artifacts')
           PY
