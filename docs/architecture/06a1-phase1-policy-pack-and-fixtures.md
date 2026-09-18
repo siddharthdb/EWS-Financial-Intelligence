@@ -39,14 +39,14 @@ Priority semantics ensure that 30+ DPD produces the HIGH outcome rather than als
 
 These are analytical EWS thresholds only. Jurisdiction-specific delinquency, non-performing, default, accounting or supervisory classifications remain separate classification-policy contracts.
 
-### HIGH_UTILIZATION
+### UTILIZATION_HIGH
 
 Canonical feature: `utilization_ratio`.
 
 Reference configuration:
 
 ```text
-HIGH_UTILIZATION_THRESHOLD = 0.85
+UTILIZATION_HIGH_THRESHOLD = 0.85
 CRITICAL_UTILIZATION_THRESHOLD = 0.95
 ```
 
