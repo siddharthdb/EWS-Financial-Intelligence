@@ -31,6 +31,8 @@ jobs:
           cache: maven
       - name: Compile and test policy validator
         run: mvn -B -f tools/policy-validator/pom.xml test
+      - name: Execute Phase-1 publication gate
+        run: mvn -B -f tools/policy-validator/pom.xml exec:java -Dexec.args="$GITHUB_WORKSPACE"
 
   parse-json-contracts:
     runs-on: ubuntu-latest
