@@ -17,6 +17,12 @@ final class RiskIntelligenceAvroContractTest {
     assertNotNull(s.getField("independentContributorCount"));
     assertNotNull(s.getField("contributors"));
   }
+  @Test void proposedRiskAssessmentEventIsValidAvro() throws Exception {
+    Schema s=parse("schemas/events/payloads/risk-assessment-proposed-v1.avsc");
+    assertEquals("org.ewsfi.events.riskintelligence.v1.RiskAssessmentProposedV1",s.getFullName());
+    assertNotNull(s.getField("aggregationPolicyArtifactHash"));
+    assertNotNull(s.getField("dimensions"));
+  }
   private Schema parse(String path)throws Exception{return new Schema.Parser().parse(Files.readString(repoRoot().resolve(path)));}
   private Path repoRoot(){Path p=Path.of(System.getProperty("user.dir")).toAbsolutePath();while(p!=null&&!Files.exists(p.resolve("schemas")))p=p.getParent();if(p==null)throw new IllegalStateException("Repository root not found");return p;}
 }
