@@ -22,7 +22,7 @@
     {
       "type": "EPISODE",
       "id": "EP-UTL-FAC-1001-001",
-      "analyticalType": "HIGH_UTILIZATION",
+      "analyticalType": "UTILIZATION_HIGH",
       "entity": {
         "type": "FACILITY",
         "id": "FAC-1001"
