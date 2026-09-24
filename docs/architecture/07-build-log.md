@@ -22,6 +22,61 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — max_dpd_30d + DPD_WORSENING (P02) — closes out roadmap item 1.12
+
+**Roadmap items:** 1.18 (DONE)
+
+**What:** Implemented the remainder of the DPD feature/signal family deferred from item 1.12:
+- `ews-feature-processor`: `MaxDpdFeatureTopology` computes `max_dpd_30d`
+  (`docs/architecture/02d-phase1-feature-catalogue.md` §1: "maximum point-in-time DPD observed in
+  window") from `ews.canonical.repayment`, mirroring `FeatureProcessorTopology`'s `SlidingWindows`
+  pattern but aggregating a rolling maximum of `currentDpd` per facility rather than a count.
+  Published to `ews.derived.feature`. Wired as a fourth `@Bean` on the service's shared
+  `StreamsBuilder`.
+- `ews-signal-policy-engine`: `DpdWorseningSignalPolicyLoader` (P02 DPD_WORSENING,
+  `POL-DPD-WORSENING-CORP-001`) + `DpdWorseningSignalTopology`, mirroring `DpdSignalTopology`'s
+  stateful `groupByKey().aggregate()` shape (tracking `{previousMax, currentMax, ...}` per
+  facility) but evaluating a magnitude threshold (`currentMax - previousMax >= 10` days) instead of
+  a zero-crossing. Wired as a fifth `@Bean` on that service's shared `StreamsBuilder`.
+
+**Why:** Closes roadmap item 1.18, which completes item 1.12's original scope (`current_dpd` +
+`DPD_EMERGED` were done first; `max_dpd_30d` + `DPD_WORSENING` were deliberately deferred at the
+time as a genuinely windowed aggregate + a harder trend signal). With this entry, Phase 1 has no
+remaining autonomously-resolvable `NOT_STARTED` rows — only 1.13 and 1.16 remain, both
+human-decision-gated (external API credentials; auth/IAM design).
+
+**Scoping decision:** P02's own contract text calls for "DPD velocity, rolling max, cure/relapse."
+A true velocity would be a rate over time; this policy instead fires on a materially increasing
+`max_dpd_30d` between consecutive observations (a magnitude-threshold proxy), which still captures
+the contract's core intent and naturally satisfies its "do not emit unchanged daily duplicates"
+requirement (an unchanged or decreased max never meets the threshold) — the same kind of documented
+simplification `SignalPolicyLoader`/`DpdSignalPolicyLoader`/`UtilizationSignalPolicyLoader` already
+use for their hard-coded single policies. "Cure/relapse" tracking (detecting a DPD recovery
+followed by a repeat deterioration) is not implemented.
+
+**Files:**
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/topology/MaxDpdFeatureTopology.java`
+- `services/ews-feature-processor/src/test/java/org/ewsfi/featureprocessor/topology/MaxDpdFeatureTopologyTest.java`
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/config/KafkaStreamsConfig.java` (fourth `@Bean`)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/policy/DpdWorseningSignalPolicyLoader.java`
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/DpdWorseningSignalTopology.java`
+- `services/ews-signal-policy-engine/src/test/java/org/ewsfi/signalpolicy/topology/DpdWorseningSignalTopologyTest.java`
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/config/KafkaStreamsConfig.java` (fifth `@Bean`)
+
+**Verification:**
+- `MaxDpdFeatureTopologyTest` (`TopologyTestDriver`): proves `max_dpd_30d` tracks the rolling
+  maximum even after a later DPD dip within the window (5 -> 20 -> 8 still reports max 20), and that
+  two facilities' maxima are computed independently.
+- `DpdWorseningSignalTopologyTest` (`TopologyTestDriver`): proves DPD_WORSENING fires on a +15-day
+  increase (above the 10-day threshold), does not fire on a +5-day increase (below it), and does
+  not emit on an unchanged value (no duplicate).
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules, all tests green.
+
+**Follow-ups:** None for the DPD family as scoped in the roadmap. "Cure/relapse" tracking (per P02's
+own text) is a possible future refinement, not currently tracked as its own row.
+
+---
+
 ## 2026-09-24 — Minimal investigation-case model (open/assign/escalate/close)
 
 **Roadmap items:** 1.15 (DONE)

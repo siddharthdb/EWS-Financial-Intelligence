@@ -6,6 +6,7 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
 import org.ewsfi.signalpolicy.topology.DpdSignalTopology;
+import org.ewsfi.signalpolicy.topology.DpdWorseningSignalTopology;
 import org.ewsfi.signalpolicy.topology.SignalPolicyTopology;
 import org.ewsfi.signalpolicy.topology.UtilizationSignalTopology;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,6 +50,12 @@ public class KafkaStreamsConfig {
     @Bean
     public KStream<String, String> utilizationSignalStream(
             StreamsBuilder streamsBuilder, UtilizationSignalTopology topology) {
+        return topology.build(streamsBuilder);
+    }
+
+    @Bean
+    public KStream<String, String> dpdWorseningSignalStream(
+            StreamsBuilder streamsBuilder, DpdWorseningSignalTopology topology) {
         return topology.build(streamsBuilder);
     }
 }

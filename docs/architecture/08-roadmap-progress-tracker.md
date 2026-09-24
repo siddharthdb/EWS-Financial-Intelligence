@@ -54,7 +54,7 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 | 1.14 | `wc_utilization_ratio` feature + `UTILIZATION_HIGH` (P05) signal | DONE (partial — `wc_available_headroom`/`wc_utilization_delta_30d` and `UTILIZATION_SPIKE` (P06) not yet implemented) | 2026-09-24 — Working-capital utilization: wc_utilization_ratio + UTILIZATION_HIGH |
 | 1.15 | Minimal case/decision model beyond single disposition (case open/assign/escalate/close) | DONE | 2026-09-24 — Minimal investigation-case model (open/assign/escalate/close) |
 | 1.16 | Basic auth/IAM for the Experience API and disposition endpoints | NOT_STARTED | needs a design decision (auth provider, RBAC model) — flag to user |
-| 1.18 | `max_dpd_30d` (windowed) feature + `DPD_WORSENING` (P02) signal | NOT_STARTED | deferred from 1.12 — genuinely windowed aggregate + velocity/trend signal (method S), scoped out of the same firing for rigor |
+| 1.18 | `max_dpd_30d` (windowed) feature + `DPD_WORSENING` (P02) signal | DONE | 2026-09-24 — max_dpd_30d + DPD_WORSENING (P02) — closes out roadmap item 1.12 |
 
 ## Phase 2 — Breadth
 
