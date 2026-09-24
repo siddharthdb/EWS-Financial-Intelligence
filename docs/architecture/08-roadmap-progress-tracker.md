@@ -43,7 +43,7 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 | 1.4 | `ews-persistence-core` shared JPA module | DONE | 2026-09-24 — `ews-persistence-core` shared JPA module |
 | 1.5 | Outbox claim strategy (`SKIP LOCKED`) + publisher worker (real Kafka publish) | DONE | 2026-09-24 — outbox claim + publish |
 | 1.17 | Switch Kafka wire format from JSON to Avro + Schema Registry (per 03-event-architecture.md §10 and ADR-011) | NOT_STARTED | payment-return slice uses JSON as a documented interim simplification — see 2026-09-24 outbox entry |
-| 1.6 | `PaymentInstructionReturnedAdapter` real logic + trigger endpoint | NOT_STARTED | |
+| 1.6 | `PaymentInstructionReturnedAdapter` real logic + trigger endpoint | DONE | 2026-09-24 — payment-return ingestion adapter |
 | 1.7 | Feature processor: `returned_payment_count_30d` real Kafka Streams topology | NOT_STARTED | |
 | 1.8 | Signal policy engine: `REPEATED_PAYMENT_RETURN` (P03) real topology | NOT_STARTED | |
 | 1.9 | Case workflow: real disposition endpoints (accept/reject) | NOT_STARTED | |

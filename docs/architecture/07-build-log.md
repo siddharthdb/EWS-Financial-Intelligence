@@ -22,6 +22,37 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — Payment-return ingestion adapter
+
+**Roadmap items:** 1.6
+
+**What:** `ews-ingestion-service` gained real logic: `PaymentInstructionReturnedAdapter.record(...)`
+builds an interim JSON envelope (new shared `org.ewsfi.contracts.interim.JsonEventEnvelope` in
+`ews-schemas`, since this is wire-format DTO code both producer and consumer need, not something
+`jsonschema2pojo`/`avro-maven-plugin` generate) and stages it via `OutboxEvent.newEvent(...)` to
+topic `ews.canonical.account-transaction` (per `03c-topic-and-partition-strategy.md` §2), keyed by
+`accountId`, in the same `@Transactional` method — satisfying ADR-003's core guarantee that the
+business fact and the outbox insert share one local transaction. `PaymentReturnIngestionController`
+exposes `POST /api/v1/internal/payment-returns`, explicitly documented as a stand-in for the real
+internal payment-system integration that doesn't exist yet, not a claim of one.
+
+**Why:** This is the entry point for the payment-return vertical slice — the fact that flows through
+outbox → Kafka → feature computation → signal detection.
+
+**Files:** `platform/ews-schemas/src/main/java/org/ewsfi/contracts/interim/JsonEventEnvelope.java`
+(new), `services/ews-ingestion-service/src/main/java/org/ewsfi/ingestion/adapter/internal/*.java`.
+
+**Verification:** New `PaymentInstructionReturnedAdapterTest` (`@SpringBootTest` against the real
+local Postgres `ews` database) posts a request through the adapter and asserts a `NEW` outbox row
+was created with the correct topic, partition key, and payload contents. `mvn -B -ntp verify` green
+across all 14 modules (7 tests total: outbox 1, ingestion 1, persistence-core 2, contract tests 2 —
+plus the reactor's other modules with no tests of their own yet).
+
+**Follow-ups:** `CompaniesHouseAdapter` remains an empty stub (roadmap item 1.13, blocked on an API
+credential decision).
+
+---
+
 ## 2026-09-24 — Outbox claim + publish (real Kafka)
 
 **Roadmap items:** 1.5
