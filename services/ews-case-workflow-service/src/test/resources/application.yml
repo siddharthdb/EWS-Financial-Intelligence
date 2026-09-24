@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ews
+    username: ews
+    password: ews
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  kafka:
+    bootstrap-servers: localhost:19999
+
+ews:
+  outbox:
+    # Large interval so the real @Scheduled publisher doesn't race with test assertions; this
+    # controller's tests only check DB state (signal status + outbox row), not Kafka publication.
+    publish-interval-ms: 3600000

@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: ews-experience-api
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ews
+    username: ews
+    password: ews
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+server:
+  port: 8080

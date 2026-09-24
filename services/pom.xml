@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.ewsfi</groupId>
+    <artifactId>ews-financial-intelligence</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>services</artifactId>
+  <packaging>pom</packaging>
+  <name>EWS Service Modules</name>
+
+  <!--
+    Module boundaries follow the logical domains in docs/architecture/01-architecture-blueprint.md
+    Section 23, consolidated per that section's explicit note that these are logical boundaries,
+    not a mandate for one microservice per domain. Anomaly/graph/NLP/correlation, AI-gateway/reasoning,
+    model-governance and financial-statement-intelligence domains are intentionally not scaffolded as
+    modules yet: they are Phase-2/3 per docs/architecture/06-gap-analysis-and-implementation-roadmap.md
+    Section 7.
+  -->
+  <modules>
+    <module>ews-ingestion-service</module>
+    <module>ews-core-registry-service</module>
+    <module>ews-feature-processor</module>
+    <module>ews-signal-policy-engine</module>
+    <module>ews-case-workflow-service</module>
+    <module>ews-experience-api</module>
+  </modules>
+</project>

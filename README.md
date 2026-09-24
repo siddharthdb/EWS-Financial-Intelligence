@@ -53,8 +53,30 @@ Evidence -> Observation/Event -> Feature -> Signal -> Risk Assessment
 
 ### Cross-part taxonomy and decisions
 - [Global Corporate Signal Taxonomy](docs/architecture/04-signal-taxonomy.md)
-- [ADR-003 — Application-Managed Transactional Outbox](docs/architecture/adr/ADR-003-application-managed-transactional-outbox.md)
-- [ADR-004 — Kafka Streams First](docs/architecture/adr/ADR-004-kafka-streams-first.md)
+- Architecture Decision Records: see [docs/adr/README.md](docs/adr/README.md) for the full index (ADR-001, 002, 003, 004, 005, 011 written; ADR-006–010 planned)
+
+### Part IV — assessment and ongoing build tracking
+- [Gap Analysis and Implementation Roadmap](docs/architecture/06-gap-analysis-and-implementation-roadmap.md)
+- [Build Log](docs/architecture/07-build-log.md) — dated record of every implementation session
+- [Roadmap Progress Tracker](docs/architecture/08-roadmap-progress-tracker.md) — what's done, what's next
+
+## Phase-1 spine skeleton
+
+A structural, no-business-logic scaffold now exists for the Phase-1 spine described in
+`01-architecture-blueprint.md` §25 and the gap-analysis roadmap's §7:
+
+- Java 21 / Spring Boot 3 Maven multi-module project (`pom.xml`, `platform/`, `services/`, `test/`) --
+  see each module's own description in its `pom.xml` for what it stands in for architecturally.
+- `platform/ews-schemas` generates Java classes directly from the contracts under `schemas/`.
+- `platform/ews-platform-outbox-starter` implements the shape (not yet the logic) of ADR-003's
+  application-managed transactional outbox.
+- `db/migration/V1__init_phase1_baseline.sql` -- Postgres DDL derived from the `schemas/` contracts.
+- `docker-compose.yml` -- local dev stack matching the Phase-1 storage baseline (`01-architecture-blueprint.md` §9).
+- `.github/workflows/ci.yml` -- validates every schema contract parses and that the Maven build succeeds.
+
+No feature computation, signal detection, or source-adapter logic is implemented yet -- every service
+module is an empty, buildable shell. See `docs/architecture/06-gap-analysis-and-implementation-roadmap.md`
+§7 for what comes next.
 
 ## Executable contracts
 

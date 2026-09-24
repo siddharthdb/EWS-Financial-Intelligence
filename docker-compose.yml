@@ -1,0 +1,138 @@
+# EWS Financial Intelligence Platform -- Phase-1 local dev stack.
+#
+# Matches the Phase-1 storage baseline in docs/architecture/01-architecture-blueprint.md Section 9
+# (Kafka, PostgreSQL, Elasticsearch, Redis, S3-compatible object storage). Nothing in this skeleton's
+# application code talks to Postgres/Elasticsearch/Redis/MinIO yet -- they are present so the stack
+# matches the documented baseline and `docker compose up` proves the whole spine boots.
+#
+# Services generally depend only on kafka + schema-registry, since no business logic has been
+# implemented against the other stores yet.
+
+services:
+  kafka:
+    image: apache/kafka:3.8.0
+    container_name: ews-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:19092,CONTROLLER://0.0.0.0:19093,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:19092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:19093
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      CLUSTER_ID: ews-dev-cluster-01
+
+  kafka-topics-init:
+    image: apache/kafka:3.8.0
+    container_name: ews-kafka-topics-init
+    depends_on:
+      - kafka
+    restart: "no"
+    entrypoint: ["/bin/bash", "-c"]
+    # Topic list per docs/architecture/03c-topic-and-partition-strategy.md Section 2 (11
+    # ews.canonical.* + 6 ews.derived.*) plus ews.state.feature-current (Section 3). Placeholder
+    # partition counts (6) -- real sizing is a Phase-1 build task, not a skeleton concern.
+    command: >
+      "
+      echo 'Waiting for Kafka...' &&
+      until kafka-topics.sh --bootstrap-server kafka:19092 --list; do sleep 2; done &&
+      for topic in \
+        ews.canonical.counterparty \
+        ews.canonical.facility \
+        ews.canonical.account-transaction \
+        ews.canonical.repayment \
+        ews.canonical.trade-finance \
+        ews.canonical.financial-statement \
+        ews.canonical.collateral \
+        ews.canonical.rating \
+        ews.canonical.relationship \
+        ews.canonical.external-intelligence \
+        ews.canonical.market \
+        ews.derived.feature \
+        ews.derived.signal \
+        ews.derived.risk \
+        ews.derived.classification \
+        ews.derived.decision \
+        ews.derived.case \
+        ews.state.feature-current \
+      ; do
+        kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic \"$$topic\" --partitions 6 --replication-factor 1
+      done &&
+      echo 'Topic bootstrap complete.'
+      "
+
+  schema-registry:
+    image: apicurio/apicurio-registry:3.0.6
+    container_name: ews-schema-registry
+    depends_on:
+      - kafka
+    ports:
+      - "8081:8080"
+    environment:
+      # In-memory storage profile for local dev only; see
+      # docs/architecture/adr/ADR-011-schema-registry-baseline-apicurio.md for the note that
+      # Postgres-backed storage is required before anything resembling production.
+      APICURIO_STORAGE_KIND: sql
+      APICURIO_STORAGE_SQL_KIND: h2
+
+  postgres:
+    image: postgres:16
+    container_name: ews-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ews
+      POSTGRES_USER: ews
+      POSTGRES_PASSWORD: ews
+    volumes:
+      - ./db/migration:/docker-entrypoint-initdb.d:ro
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: ews-elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+
+  redis:
+    image: redis:7-alpine
+    container_name: ews-redis
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio:latest
+    container_name: ews-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ews-dev
+      MINIO_ROOT_PASSWORD: ews-dev-secret
+    command: server /data --console-address ":9001"
+
+  # Optional: local topic/registry inspection UI. Not part of the Section-9 storage baseline;
+  # near-zero-cost convenience for local development.
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: ews-kafka-ui
+    depends_on:
+      - kafka
+      - schema-registry
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: ews-dev
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:19092
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8080/apis/ccompat/v7
+    profiles:
+      - optional

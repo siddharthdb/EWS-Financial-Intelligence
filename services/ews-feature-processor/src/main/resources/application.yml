@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: ews-feature-processor
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ews
+    username: ews
+    password: ews
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+    streams:
+      application-id: ews-feature-processor
+
+server:
+  port: 8083

@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ews
+    username: ews
+    password: ews
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers}
+
+ews:
+  outbox:
+    publish-interval-ms: 3600000

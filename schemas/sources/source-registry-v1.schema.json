@@ -11,7 +11,7 @@
     "freshnessSlo": {"type": ["string", "null"]}, "rateLimitRef": {"type": ["string", "null"]}, "credentialClass": {"type": ["string", "null"]}, "checkpointStrategy": {"type": ["string", "null"]}, "entityResolutionRequired": {"type": "boolean", "default": true},
     "rights": {"type": "object", "additionalProperties": false, "required": ["riskAnalyticsAllowed", "rawRetentionAllowed", "derivedRetentionAllowed", "redistributionAllowed", "llmProcessingAllowed", "modelInferenceAllowed", "modelTrainingAllowed", "crossBorderTransferAllowed"], "properties": {
       "riskAnalyticsAllowed": {"type": "boolean"}, "rawRetentionAllowed": {"type": "boolean"}, "derivedRetentionAllowed": {"type": "boolean"}, "redistributionAllowed": {"type": "boolean"}, "llmProcessingAllowed": {"type": "boolean"}, "modelInferenceAllowed": {"type": "boolean"}, "modelTrainingAllowed": {"type": "boolean"}, "crossBorderTransferAllowed": {"type": "boolean"}, "rawRetentionPeriod": {"type": ["string", "null"]}, "derivedRetentionPeriod": {"type": ["string", "null"]}, "licenceRef": {"type": ["string", "null"]}, "restrictions": {"type": "array", "items": {"type": "string"}}
-    },
+    }},
     "evidencePolicyRef": {"type": ["string", "null"]}, "owner": {"type": "string"}, "status": {"type": "string", "enum": ["PROPOSED", "APPROVED", "ACTIVE", "SUSPENDED", "RETIRED"]}
   }
 }
