@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.ewsfi</groupId>
+    <artifactId>platform</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>ews-persistence-core</artifactId>
+  <packaging>jar</packaging>
+  <name>EWS Persistence Core</name>
+  <description>
+    Shared JPA entities and Spring Data repositories for the canonical tables in
+    db/migration/V1__init_phase1_baseline.sql that multiple services both read and write:
+    canonical_event_envelope, feature_value, and signal_instance (with its evidence/risk-intent/
+    risk-dimension/disposition-tag child tables). Exists to avoid duplicating entity definitions
+    across ews-feature-processor (writes feature_value), ews-signal-policy-engine (writes
+    signal_instance), ews-case-workflow-service (updates signal_instance status) and
+    ews-experience-api (reads signal_instance + feature_value for evidence drill-down).
+
+    Entities are hand-written rather than generated from the JSON Schema contracts under schemas/,
+    because jsonschema2pojo (used by ews-schemas) produces plain POJOs, not JPA-annotated entities;
+    field names and allowed enum values are kept in sync with the schemas by convention and checked
+    indirectly by ews-event-contracts-test parsing the same source contracts.
+  </description>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

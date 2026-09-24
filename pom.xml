@@ -55,6 +55,11 @@
         <artifactId>ews-platform-outbox-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.ewsfi</groupId>
+        <artifactId>ews-persistence-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 

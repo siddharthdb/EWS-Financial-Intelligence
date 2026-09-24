@@ -17,5 +17,6 @@
   <modules>
     <module>ews-schemas</module>
     <module>ews-platform-outbox-starter</module>
+    <module>ews-persistence-core</module>
   </modules>
 </project>

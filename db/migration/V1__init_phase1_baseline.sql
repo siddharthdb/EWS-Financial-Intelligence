@@ -73,7 +73,7 @@ CREATE TABLE canonical_event_envelope (
     effective_time               TIMESTAMPTZ,
     knowledge_time               TIMESTAMPTZ NOT NULL,
     ingested_at                 TIMESTAMPTZ NOT NULL,
-    jurisdiction                CHAR(2),
+    jurisdiction                VARCHAR(2),
     market                     VARCHAR(50),
     source_system                VARCHAR(200) NOT NULL,
     source_provider              VARCHAR(200),
@@ -133,7 +133,7 @@ CREATE TABLE feature_value (
     semantic_scope              VARCHAR(40),
     entity_type                VARCHAR(100) NOT NULL,
     entity_id                 VARCHAR(200) NOT NULL,
-    primary_jurisdiction          CHAR(2),
+    primary_jurisdiction          VARCHAR(2),
     market                    VARCHAR(50),
     accounting_basis             VARCHAR(100),
     state                     VARCHAR(20) NOT NULL,
@@ -142,7 +142,7 @@ CREATE TABLE feature_value (
     value_boolean               BOOLEAN,
     value_string                TEXT,
     unit                     VARCHAR(50),
-    currency                   CHAR(3),
+    currency                   VARCHAR(3),
     effective_from              TIMESTAMPTZ,
     effective_to               TIMESTAMPTZ,
     knowledge_time              TIMESTAMPTZ NOT NULL,
@@ -194,7 +194,7 @@ CREATE TABLE signal_instance (
     signal_id                VARCHAR(200) PRIMARY KEY,
     signal_type               VARCHAR(200) NOT NULL,
     semantic_scope             VARCHAR(40) NOT NULL,
-    primary_jurisdiction         CHAR(2),
+    primary_jurisdiction         VARCHAR(2),
     market                   VARCHAR(50),
     entity_type               VARCHAR(100) NOT NULL,
     entity_id                 VARCHAR(200) NOT NULL,
@@ -290,7 +290,7 @@ CREATE TABLE classification_state (
     classification_id       VARCHAR(200) PRIMARY KEY,
     namespace              VARCHAR(60) NOT NULL,
     value                 VARCHAR(200) NOT NULL,
-    jurisdiction             CHAR(2),
+    jurisdiction             VARCHAR(2),
     entity_type              VARCHAR(100) NOT NULL,
     entity_id               VARCHAR(200) NOT NULL,
     status                 VARCHAR(20) NOT NULL,
@@ -333,7 +333,7 @@ CREATE TABLE entity_resolution (
     source_id              VARCHAR(200) NOT NULL,
     source_entity_id          VARCHAR(200) NOT NULL,
     source_name             VARCHAR(400),
-    source_jurisdiction        CHAR(2),
+    source_jurisdiction        VARCHAR(2),
     canonical_entity_type       VARCHAR(100),
     canonical_entity_id        VARCHAR(200),
     status                 VARCHAR(20) NOT NULL,
@@ -406,7 +406,7 @@ CREATE TABLE source_registry (
 CREATE TABLE source_registry_jurisdiction (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     source_id    VARCHAR(200) NOT NULL REFERENCES source_registry (source_id),
-    jurisdiction  CHAR(2) NOT NULL
+    jurisdiction  VARCHAR(2) NOT NULL
 );
 
 CREATE TABLE source_registry_restriction (

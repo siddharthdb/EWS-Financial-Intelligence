@@ -74,13 +74,30 @@ jobs:
           sys.exit(1 if failed else 0)
           PY
 
-  # Placeholder Maven build: proves Avro code-gen (ews-schemas), JSON Schema POJO-gen, and every
-  # service-shell module actually compile. Also runs ews-event-contracts-test, a second, JVM-native
-  # schema check via the Avro Maven plugin's own parser.
+  # Maven build: proves Avro code-gen (ews-schemas), JSON Schema POJO-gen, and every service-shell
+  # module actually compile. Also runs ews-event-contracts-test (a second, JVM-native schema check
+  # via the Avro Maven plugin's own parser) and ews-persistence-core's Postgres-backed integration
+  # tests (schemas/architecture/07-build-log.md, 2026-09-24 payment-return slice entry) against the
+  # postgres service below, which mirrors docker-compose.yml's postgres service (db: ews, user/pass:
+  # ews/ews) and has db/migration/V1__init_phase1_baseline.sql applied before the build runs.
   build:
     name: Maven build
     runs-on: ubuntu-latest
     needs: validate-schemas
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ews
+          POSTGRES_USER: ews
+          POSTGRES_PASSWORD: ews
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -89,6 +106,11 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
+
+      - name: Apply database migration
+        env:
+          PGPASSWORD: ews
+        run: psql -h localhost -U ews -d ews -f db/migration/V1__init_phase1_baseline.sql
 
       - name: Build with Maven
         run: mvn -B -ntp verify

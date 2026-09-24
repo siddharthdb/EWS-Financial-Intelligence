@@ -55,8 +55,10 @@ Evidence -> Observation/Event -> Feature -> Signal -> Risk Assessment
 - [Global Corporate Signal Taxonomy](docs/architecture/04-signal-taxonomy.md)
 - Architecture Decision Records: see [docs/adr/README.md](docs/adr/README.md) for the full index (ADR-001, 002, 003, 004, 005, 011 written; ADR-006–010 planned)
 
-### Part IV — assessment
+### Part IV — assessment and ongoing build tracking
 - [Gap Analysis and Implementation Roadmap](docs/architecture/06-gap-analysis-and-implementation-roadmap.md)
+- [Build Log](docs/architecture/07-build-log.md) — dated record of every implementation session
+- [Roadmap Progress Tracker](docs/architecture/08-roadmap-progress-tracker.md) — what's done, what's next
 
 ## Phase-1 spine skeleton
 
