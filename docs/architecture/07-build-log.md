@@ -22,6 +22,44 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — Machine-readable topic registry
+
+**Roadmap items:** 0.8
+
+**What:** Added `docs/architecture/topic-registry.json`, a single authoritative machine-readable
+file mapping every event type named across the architecture docs to its topic, key field, schema
+artifact (where one exists), owning service, and a default data-classification tag. Populated from
+`03c-topic-and-partition-strategy.md` (18 topics: 11 `ews.canonical.*`, 6 `ews.derived.*`, plus
+`ews.state.feature-current`) and `03d-phase1-event-catalogue.md` (Wave A/B/C event catalogue). Only
+5 of the ~48 cataloged event types have an actual schema artifact today (the ones this session's
+payment-return slice implemented); every other entry has `schemaArtifact: null`, an honest
+statement that the contract doesn't exist yet rather than a fabricated placeholder path.
+
+**Why:** This is coherence-review backlog item 3
+(`05-coherence-review-parts-i-iii.md` §5: "Generate a machine-readable topic registry mapping event
+type -> schema artifact -> topic -> key strategy -> owner -> retention/security class"). It gives
+any future source adapter or signal-detection work a single place to look up "what topic does this
+event go to, keyed by what, owned by which service" instead of re-deriving it from prose across
+three different architecture documents each time.
+
+**A documented limitation:** `dataClassification` values are informative defaults (`INTERNAL` for
+internal facts, `CONFIDENTIAL` for externally-sourced facts, `RESTRICTED` for classification state),
+not real per-source rights data — `schemas/sources/source-registry-v1.schema.json` has no populated
+source entries yet. Said explicitly in the registry's own `notesOnDataClassification` field rather
+than presented as authoritative.
+
+**Files:** `docs/architecture/topic-registry.json` (new),
+`test/ews-event-contracts-test/src/test/java/org/ewsfi/contracts/TopicRegistryTest.java` (new),
+`test/ews-event-contracts-test/pom.xml` (added `jackson-databind`).
+
+**Verification:** New `TopicRegistryTest` (3 tests, JVM-native, no broker/DB needed — same style as
+the existing `AvroSchemaParseTest`/`JsonSchemaParseTest`) checks: every event's `topic` is one of
+the declared topics (catches a typo'd or invented topic name), every non-null `schemaArtifact` path
+resolves to a real file under `schemas/` (catches a stale or invented path), and there are no
+duplicate `eventType` entries. `mvn -B -ntp verify` green across all 14 modules, 22 tests total.
+
+---
+
 ## 2026-09-24 — Autonomous continuation Routine established
 
 **Roadmap items:** none (process/infrastructure, not a build item)

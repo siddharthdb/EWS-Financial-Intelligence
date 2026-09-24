@@ -26,7 +26,7 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 | 0.5 | Schema CI (parse every Avro/JSON Schema contract) | DONE | 2026-09-24 (session: ADRs + skeleton) — `.github/workflows/ci.yml` |
 | 0.6 | JVM-native schema round-trip tests | DONE | 2026-09-24 (session: ADRs + skeleton) — `ews-event-contracts-test` |
 | 0.7 | Fix pre-existing malformed JSON in `source-registry-v1.schema.json` | DONE | 2026-09-24 (session: ADRs + skeleton) |
-| 0.8 | Machine-readable topic registry (event type → schema → topic → key → owner → retention) | NOT_STARTED | |
+| 0.8 | Machine-readable topic registry (event type → schema → topic → key → owner → retention) | DONE | 2026-09-24 — machine-readable topic registry |
 | 0.9 | Shared schema artifacts/references for repeated envelope types | NOT_STARTED | |
 | 0.10 | Automated terminology checks for deprecated signal aliases | NOT_STARTED | |
 | 0.11 | Decide permanent owned schema namespace (replace draft `org.ewsfi`) | NOT_STARTED | needs a human decision — do not resolve autonomously |
