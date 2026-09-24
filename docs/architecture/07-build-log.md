@@ -60,6 +60,52 @@ duplicate `eventType` entries. `mvn -B -ntp verify` green across all 14 modules,
 
 ---
 
+## 2026-09-24 — Generated topic flow diagram
+
+**Roadmap items:** 0.12
+
+**What:** Added `scripts/generate_topic_flow_diagram.py`, which reads
+`docs/architecture/topic-registry.json` and generates
+`docs/architecture/09-generated-topic-flow-diagram.md`: a Mermaid flowchart of owner service →
+topic edges, plus companion tables (full event → topic → key → owner → data-classification mapping,
+and declared topics with retention modes). Every node, edge, and table row is derived directly from
+the registry — the doc is regenerated (`python3 scripts/generate_topic_flow_diagram.py`), never
+hand-edited. A `--check` mode fails if the committed doc doesn't match what the registry would
+currently generate, and is now wired into `.github/workflows/ci.yml`'s `validate-schemas` job, so
+the diagram can never silently drift out of sync with the registry it's generated from.
+
+**Why:** Coherence-review backlog item 7 (`05-coherence-review-parts-i-iii.md` §5: "Add
+architecture diagrams generated from the normalized Parts I-III model"). Every diagram in the
+existing architecture docs is hand-drawn ASCII art; this is the first diagram that is provably
+derived from structured data rather than manually kept in sync by convention.
+
+**A real bug found and fixed before committing:** the first version of `mermaid_id()` only replaced
+`.` and `-` characters, leaving the `unassigned (Phase 2 -- no owning service yet)` owner name (from
+`topic-registry.json`'s Phase-2 placeholder rows) with spaces and parentheses in a Mermaid node ID —
+which is invalid Mermaid syntax. Caught this by actually reading the generated file rather than
+trusting the script ran without error, then verified the fix by installing `@mermaid-js/mermaid-cli`
+and rendering the extracted diagram to a real SVG (had to pass a `--no-sandbox` Puppeteer config
+since this environment runs as root) — confirmed it renders cleanly both before commit and that the
+broken version would *not* have rendered, proving the fix mattered rather than assuming it did.
+
+**Files:** `scripts/generate_topic_flow_diagram.py` (new),
+`docs/architecture/09-generated-topic-flow-diagram.md` (new, generated),
+`.github/workflows/ci.yml` (new freshness-check step), `README.md` (doc index entry).
+
+**Verification:** `python3 scripts/generate_topic_flow_diagram.py --check` passes against the
+committed output. Rendered the diagram to a real 811KB SVG via `mermaid-cli` with no errors,
+confirming valid Mermaid syntax (not just "the script didn't crash"). `mvn -B -ntp verify` remains
+green across all 14 modules, 23 tests (this increment added no Java code, only Python + generated
+Markdown).
+
+**Follow-ups:** Only one diagram (topic flow) is generated so far; the Level-0 architecture diagram
+in `01-architecture-blueprint.md` §2 and the event-processing flow in `03-event-architecture.md`
+remain hand-drawn ASCII art, since neither currently has a normalized *data* source (as opposed to
+prose) to generate from — a real future increment once, e.g., the logical service/layer structure
+is itself captured as structured data.
+
+---
+
 ## 2026-09-24 — Automated deprecated-terminology check
 
 **Roadmap items:** 0.10

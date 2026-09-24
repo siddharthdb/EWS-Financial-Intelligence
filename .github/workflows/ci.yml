@@ -47,6 +47,9 @@ jobs:
           sys.exit(1 if failed else 0)
           PY
 
+      - name: Check the generated topic flow diagram is up to date
+        run: python3 scripts/generate_topic_flow_diagram.py --check
+
       - name: Parse every JSON Schema contract under schemas/
         run: |
           python - <<'PY'

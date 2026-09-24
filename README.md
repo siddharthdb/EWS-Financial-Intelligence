@@ -59,6 +59,7 @@ Evidence -> Observation/Event -> Feature -> Signal -> Risk Assessment
 - [Gap Analysis and Implementation Roadmap](docs/architecture/06-gap-analysis-and-implementation-roadmap.md)
 - [Build Log](docs/architecture/07-build-log.md) — dated record of every implementation session
 - [Roadmap Progress Tracker](docs/architecture/08-roadmap-progress-tracker.md) — what's done, what's next
+- [Generated Topic Flow Diagram](docs/architecture/09-generated-topic-flow-diagram.md) — auto-generated from `docs/architecture/topic-registry.json`; regenerate with `python3 scripts/generate_topic_flow_diagram.py`
 
 ## Phase-1 spine skeleton
 
