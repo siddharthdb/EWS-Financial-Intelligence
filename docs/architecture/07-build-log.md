@@ -22,6 +22,78 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — DPD feature/signal family: current_dpd + DPD_EMERGED (P01)
+
+**Roadmap items:** 1.12 (DONE, partial), 1.18 (NOT_STARTED, new — carries the deferred remainder)
+
+**What:** Implemented the second Phase-1 signal family end-to-end, mirroring the payment-return
+slice's proven pattern: ingest -> outbox -> Kafka -> feature -> signal.
+- `ews-ingestion-service`: `ObligationDpdChangedAdapter` + `ObligationDpdChangedRequest` +
+  `ObligationDpdChangedController` (`POST /api/v1/internal/obligation-dpd-changes`) record an
+  `obligation.dpd.changed` observation and stage it via the outbox to `ews.canonical.repayment`,
+  keyed by `facilityId`, in the same local transaction (ADR-003).
+- `ews-feature-processor`: `DpdFeatureTopology` consumes `ews.canonical.repayment`, filters to
+  `obligation.dpd.changed`, and computes `current_dpd` via `groupByKey().reduce((agg, next) ->
+  next)` — a non-windowed "latest value" `KTable`, deliberately not a `SlidingWindows` aggregate,
+  since the feature catalogue defines `current_dpd` as the DPD as of the most recent observation,
+  not a windowed aggregate. Publishes to `ews.derived.feature`. Wired as a second `@Bean` on the
+  service's shared `StreamsBuilder`.
+- `ews-signal-policy-engine`: `DpdSignalPolicyLoader` (P01 DPD_EMERGED policy,
+  `POL-DPD-EMERGED-CORP-001`) + `DpdSignalTopology` consume `ews.derived.feature` filtered to
+  `current_dpd`, and use a stateful `groupByKey().aggregate(...)` keeping a small JSON-encoded
+  `{previousDpd, currentDpd, ...}` state per facility in a `Materialized` state store, to detect a
+  genuine 0-or-unknown-to-positive DPD transition. Emits `signal.detected` (`signalType:
+  DPD_EMERGED`) to `ews.derived.signal` on that transition only. Wired as a third `@Bean` on that
+  service's shared `StreamsBuilder`.
+- `ews-case-workflow-service` and `ews-experience-api` required no changes — both are already
+  signal-type-agnostic.
+
+**Why:** `docs/architecture/02d-phase1-feature-catalogue.md` §1 defines `current_dpd`; P01
+DPD_EMERGED is in `docs/architecture/02a-priority-signal-contracts.md` §4. This is the second
+Phase-1 vertical slice, proving the pattern generalizes beyond payment-return to a "latest known
+value" feature shape (vs. payment-return's genuinely windowed count) and a stateful
+transition-detection signal shape (vs. payment-return's stateless per-value policy evaluation).
+
+**Scoping decision:** `current_dpd` (latest-value) and `max_dpd_30d` (a genuinely windowed
+aggregate, like `returned_payment_count_30d`) are different enough in Kafka Streams shape, and
+DPD_EMERGED (a simple transition rule) vs. DPD_WORSENING (a velocity/trend signal, method S per the
+taxonomy) are different enough in complexity, that this increment deliberately scopes to
+`current_dpd` + `DPD_EMERGED` only — mirroring how item 0.9 was done as "DONE (partial)" rather than
+rushed. `max_dpd_30d` + DPD_WORSENING are carried forward as new tracker row 1.18.
+
+**Files:**
+- `services/ews-ingestion-service/src/main/java/org/ewsfi/ingestion/adapter/internal/ObligationDpdChangedAdapter.java`,
+  `ObligationDpdChangedRequest.java`, `ObligationDpdChangedController.java`
+- `services/ews-ingestion-service/src/test/java/org/ewsfi/ingestion/adapter/internal/ObligationDpdChangedAdapterTest.java`
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/topology/DpdFeatureTopology.java`
+- `services/ews-feature-processor/src/test/java/org/ewsfi/featureprocessor/topology/DpdFeatureTopologyTest.java`
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/config/KafkaStreamsConfig.java` (second `@Bean`)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/policy/DpdSignalPolicyLoader.java`
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/DpdSignalTopology.java`
+- `services/ews-signal-policy-engine/src/test/java/org/ewsfi/signalpolicy/topology/DpdSignalTopologyTest.java`
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/config/KafkaStreamsConfig.java` (third `@Bean`)
+
+**Verification:**
+- `DpdFeatureTopologyTest` (`TopologyTestDriver`, no broker): proves `current_dpd` reflects only the
+  latest observed value per facility (3 inputs -> latest output is `12`, not a windowed count of 3),
+  and that unrelated event types produce no output.
+- `DpdSignalTopologyTest` (`TopologyTestDriver`): proves DPD_EMERGED fires exactly once on a genuine
+  0-to-positive transition, and does **not** fire on a positive-to-higher-positive transition
+  (worsening) or a 0-to-0 no-op.
+- `ObligationDpdChangedAdapterTest` (real local Postgres, `ews`/`ews`@`localhost:5432`): asserts an
+  outbox row is created with `eventType=obligation.dpd.changed`,
+  `kafkaTopic=ews.canonical.repayment`, `partitionKey=fac-test-001`, `status=NEW`.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules, all tests green (including
+  the 3 new test classes above).
+
+**Follow-ups:** `max_dpd_30d` (windowed aggregate) and P02 DPD_WORSENING (velocity/trend signal,
+method S) deferred to new tracker row 1.18. The single-policy-per-class pattern
+(`DpdSignalPolicyLoader` loaded from Java constants, not the `signal_policy` table) is the same
+deliberate simplification `SignalPolicyLoader` already uses; loading arbitrary persisted policies
+remains future work once more signal families exist.
+
+---
+
 ## 2026-09-24 — Machine-readable topic registry
 
 **Roadmap items:** 0.8

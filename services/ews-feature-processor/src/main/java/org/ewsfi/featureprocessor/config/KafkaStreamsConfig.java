@@ -5,6 +5,7 @@ import java.util.Map;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
+import org.ewsfi.featureprocessor.topology.DpdFeatureTopology;
 import org.ewsfi.featureprocessor.topology.FeatureProcessorTopology;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -38,6 +39,12 @@ public class KafkaStreamsConfig {
             StreamsBuilder streamsBuilder, FeatureProcessorTopology topology) {
         // Spring Kafka builds the actual Topology/KafkaStreams instance from the shared
         // StreamsBuilder bean after all @Bean methods that touch it have run.
+        return topology.build(streamsBuilder);
+    }
+
+    @Bean
+    public KStream<String, String> dpdFeatureStream(
+            StreamsBuilder streamsBuilder, DpdFeatureTopology topology) {
         return topology.build(streamsBuilder);
     }
 }
