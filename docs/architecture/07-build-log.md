@@ -22,6 +22,60 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — Outbox claim + publish (real Kafka)
+
+**Roadmap items:** 1.5
+
+**What:** Implemented the actual outbox mechanics in `platform/ews-platform-outbox-starter`:
+- `OutboxEvent` gained the full column set from `outbox_event` in
+  `db/migration/V1__init_phase1_baseline.sql` (previously only a handful of fields existed), a
+  `newEvent(...)` factory generating a stable `eventId`, and `markPublished`/`markFailed` mutators.
+- `OutboxClaimStrategy` runs a single native
+  `UPDATE ... WHERE event_id IN (SELECT ... FOR UPDATE SKIP LOCKED) RETURNING *` statement in its
+  own `REQUIRES_NEW` transaction, so concurrent publisher instances never contend for the same rows
+  (ADR-003, `03b-outbox-reference-design.md`).
+- `OutboxPublisherWorker` claims a batch, publishes each row via `KafkaTemplate<String, String>`
+  outside the claim transaction (per `03-event-architecture.md` §11: "Kafka publication occurs
+  outside DB row-lock holding"), and marks each row `PUBLISHED` (with partition/offset) or `FAILED`
+  in its own `REQUIRES_NEW` transaction.
+- `EwsOutboxAutoConfiguration` now declares its own `KafkaTemplate<String, String>` bean (Spring
+  Boot's own `KafkaAutoConfiguration` default template is typed `<Object, Object>` and would not
+  satisfy the `<String, String>` dependency) and enables `@Scheduled` so the publisher runs on a
+  timer (`ews.outbox.publish-interval-ms`, default 1s).
+
+**Why:** This is the mechanism every other module in the payment-return slice depends on to move a
+canonical event from a local database transaction into Kafka reliably. ADR-003 and
+`03-event-architecture.md` §11 specify the pattern in detail; this entry converts that spec into
+working code for the first time.
+
+**A documented deviation:** `payload`/`headers` are stored and published as JSON strings, not Avro
+binary. `03-event-architecture.md` §10 states Avro + Schema Registry as the recommended production
+default, and ADR-011 commits to Apicurio Registry as the concrete product — but wiring a real
+Avro/Schema-Registry producer path requires a running registry, which requires Docker, which is not
+available in this sandboxed environment (confirmed in the 2026-09-24 ADR/skeleton session). Using
+JSON on the wire for this slice is faster to build and fully testable without that dependency, at
+the cost of diverging from the documented target wire format. Tracked explicitly as roadmap item
+1.17 rather than silently left as a gap.
+
+**Files:** `platform/ews-platform-outbox-starter/src/main/java/org/ewsfi/platform/outbox/*.java`,
+`platform/ews-platform-outbox-starter/pom.xml` (switched to `spring-boot-starter-data-jpa` for
+Hibernate's `@JdbcTypeCode`/`SqlTypes.JSON`, needed to map the `jsonb` columns correctly).
+
+**Verification:** New `OutboxPublisherWorkerTest` uses `@EmbeddedKafka` (in-process, no Docker
+needed) plus the real local Postgres `ews` database: inserts a `NEW` outbox row, calls
+`publishClaimedBatch()` directly (not waiting on the scheduler, for determinism), then asserts (a) a
+real consumer on the embedded broker receives the message with the expected key and payload, and
+(b) the row's status flipped to `PUBLISHED` in the database. First run surfaced a genuine, expected
+finding: Postgres's `jsonb` column type canonicalizes stored JSON (reorders object keys, normalizes
+whitespace), so the payload read back by the claim query was semantically but not byte-for-byte
+identical to what was inserted — the test's raw-string assertion was wrong, not the pipeline; fixed
+by comparing parsed JSON trees instead. `mvn -B -ntp verify` green across all 14 modules (5 tests
+total: outbox 1, persistence-core 2, contract tests 2).
+
+**Follow-ups:** Roadmap item 1.17 (Avro + Schema Registry wire format) is now tracked and open.
+
+---
+
 ## 2026-09-24 — `ews-persistence-core` shared JPA module
 
 **Roadmap items:** 1.4

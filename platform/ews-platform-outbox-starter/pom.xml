@@ -16,22 +16,15 @@
   <description>
     Shared Spring Boot starter implementing the application-managed transactional outbox pattern
     mandated by docs/architecture/adr/ADR-003-application-managed-transactional-outbox.md for every
-    EWS-owned service. Skeleton only: entity/repository/publisher shapes exist but contain no
-    persistence or Kafka publication logic yet.
+    EWS-owned service: claims NEW rows with a native SKIP LOCKED query (OutboxClaimStrategy) and
+    publishes them to Kafka outside the row-lock-holding transaction (OutboxPublisherWorker), per
+    docs/architecture/03-event-architecture.md Section 11.
   </description>
 
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-autoconfigure</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.data</groupId>
-      <artifactId>spring-data-jpa</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.persistence</groupId>
-      <artifactId>jakarta.persistence-api</artifactId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.kafka</groupId>
@@ -40,6 +33,21 @@
     <dependency>
       <groupId>org.ewsfi</groupId>
       <artifactId>ews-schemas</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.kafka</groupId>
+      <artifactId>spring-kafka-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
