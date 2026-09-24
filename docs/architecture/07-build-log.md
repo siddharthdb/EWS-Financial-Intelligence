@@ -22,6 +22,65 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — Kafka Streams uncaught-exception handling + defensive input filtering (roadmap 3.6)
+
+**Roadmap items:** 3.6 (continues the same partial item; fourth production-hardening finding)
+
+**What:** Two related changes to `ews-feature-processor` and `ews-signal-policy-engine`:
+1. Configured a `StreamsUncaughtExceptionHandler` (via a `StreamsBuilderFactoryBeanConfigurer` bean,
+   `streamsUncaughtExceptionHandlerConfigurer()`, in each service's `KafkaStreamsConfig`) returning
+   `REPLACE_THREAD` for any uncaught exception. Without this, Kafka Streams' default behavior is to
+   let the failing thread die, which — with the default single stream thread — kills the whole
+   Kafka Streams client and halts every topology in the application, not just the one that hit a bad
+   record.
+2. Added defensive input validation to `MaxDpdFeatureTopology`: a new `hasNumericCurrentDpd` filter,
+   applied alongside the existing `isDpdChangedEvent` filter, so a record whose `currentDpd` is not
+   numeric is dropped before it ever reaches the `.aggregate()` call.
+
+**Why both were needed (the nuance found):** Initially assumed `REPLACE_THREAD` alone would be
+sufficient recovery and wrote an end-to-end test to prove it: publish a malformed
+`obligation.dpd.changed` record (`currentDpd: "not-a-number"`) to crash `MaxDpdFeatureTopology`'s
+aggregator with a `ClassCastException`, then publish a valid record afterward and assert it still
+gets processed. The first half passed (the client survives, confirmed via `KafkaStreams.state()`
+never reaching `ERROR`) but the second half consistently failed. Root cause: Kafka Streams' at-least-
+once semantics mean the crashing record's offset is never committed, so the replacement thread
+re-reads and re-crashes on the *same* record indefinitely — the partition never advances, so no
+later record on it is processed either. `REPLACE_THREAD` keeps the client alive (real value as
+defense-in-depth for genuinely unanticipated failures) but cannot substitute for not crashing in the
+first place. The actual fix for this specific, anticipatable failure mode is to never let a
+malformed record reach the aggregator, mirroring the `isDpdChangedEvent`/`tryParse`-returns-false
+defensive idiom already used elsewhere in this codebase.
+
+**Files:**
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/config/KafkaStreamsConfig.java`
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/config/KafkaStreamsConfig.java`
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/topology/MaxDpdFeatureTopology.java`
+- `services/ews-feature-processor/src/test/java/org/ewsfi/featureprocessor/topology/MaxDpdFeatureTopologyTest.java`
+  (new test: `aMalformedNonNumericCurrentDpdIsSkippedRatherThanCrashingTheAggregator`, proving via
+  `TopologyTestDriver` that the malformed record is silently skipped and a subsequent valid record on
+  the same facility is still processed correctly)
+- `services/ews-feature-processor/src/test/java/org/ewsfi/featureprocessor/config/StreamsUncaughtExceptionHandlerTest.java`
+  (rewritten: the original end-to-end live-crash-and-recover version is replaced with a focused
+  wiring test asserting the configurer sets `REPLACE_THREAD`, since a full live integration test of
+  forward progress past a poison-pill record is unsound given the redelivery semantics above)
+
+**Verification:**
+- `MaxDpdFeatureTopologyTest`: all 5 tests pass, including the new regression test proving the
+  malformed record no longer crashes the topology and a subsequent valid record for the same
+  facility is still correctly aggregated.
+- `StreamsUncaughtExceptionHandlerTest`: passes, asserting `streamsUncaughtExceptionHandlerConfigurer()`
+  installs a handler that returns `REPLACE_THREAD`.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules.
+
+**Follow-ups:** `DpdFeatureTopology`, `UtilizationFeatureTopology`, `UtilizationDeltaFeatureTopology`,
+`FilingDelayFeatureTopology`, and the signal-policy-engine topologies extract numeric/typed fields
+from event payloads the same way `MaxDpdFeatureTopology` did; none have been audited yet for the
+same crash vector on malformed input. A future increment should apply the same
+extract-and-validate-before-aggregate pattern wherever a topology casts a JSON field to a numeric or
+enum type, rather than assuming well-formed input from upstream.
+
+---
+
 ## 2026-09-24 — Kafka listener retry-with-backoff extended to ews-signal-policy-engine (roadmap 3.6)
 
 **Roadmap items:** 3.6 (continues the same partial item; closes the follow-up from the previous entry)

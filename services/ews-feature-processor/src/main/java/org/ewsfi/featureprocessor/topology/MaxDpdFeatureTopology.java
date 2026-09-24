@@ -53,7 +53,7 @@ public class MaxDpdFeatureTopology {
                 builder.stream(CANONICAL_TOPIC, Consumed.with(Serdes.String(), Serdes.String()));
 
         KStream<String, String> dpdChanges =
-                canonical.filter((key, value) -> isDpdChangedEvent(value));
+                canonical.filter((key, value) -> isDpdChangedEvent(value) && hasNumericCurrentDpd(value));
 
         KTable<Windowed<String>, Integer> windowedMax =
                 dpdChanges
@@ -84,6 +84,25 @@ public class MaxDpdFeatureTopology {
         try {
             JsonEventEnvelope envelope = objectMapper.readValue(value, JsonEventEnvelope.class);
             return DPD_CHANGED_EVENT_TYPE.equals(envelope.getEventType());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Defensive input validation (roadmap 3.6): a record whose {@code currentDpd} is not numeric
+     * would otherwise reach {@link #extractCurrentDpd(String)} inside the {@code .aggregate()} call
+     * and throw, crashing the stream thread. Kafka Streams' at-least-once semantics mean an uncaught
+     * exception there does not skip the record -- even with a {@code StreamsUncaughtExceptionHandler}
+     * replacing the thread, the offset is never committed and the replacement thread re-reads and
+     * re-crashes on the same record indefinitely, permanently blocking that partition. Filtering the
+     * record out here, before it ever reaches the aggregator, is the only way to actually recover.
+     */
+    private boolean hasNumericCurrentDpd(String value) {
+        try {
+            JsonEventEnvelope envelope = objectMapper.readValue(value, JsonEventEnvelope.class);
+            Map<String, Object> data = envelope.getData();
+            return data.get("currentDpd") instanceof Number;
         } catch (Exception e) {
             return false;
         }

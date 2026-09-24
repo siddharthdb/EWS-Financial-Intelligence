@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
+import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
 import org.apache.kafka.streams.kstream.KStream;
 import org.ewsfi.featureprocessor.topology.DpdFeatureTopology;
 import org.ewsfi.featureprocessor.topology.FeatureProcessorTopology;
@@ -17,6 +18,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafkaStreams;
 import org.springframework.kafka.annotation.KafkaStreamsDefaultConfiguration;
 import org.springframework.kafka.config.KafkaStreamsConfiguration;
+import org.springframework.kafka.config.StreamsBuilderFactoryBeanConfigurer;
 
 /**
  * Wires {@link FeatureProcessorTopology} into a running Kafka Streams application via Spring
@@ -26,6 +28,24 @@ import org.springframework.kafka.config.KafkaStreamsConfiguration;
 @Configuration
 @EnableKafkaStreams
 public class KafkaStreamsConfig {
+
+    /**
+     * Roadmap item 3.6 (production hardening): without an explicit
+     * {@link StreamsUncaughtExceptionHandler}, Kafka Streams' default behavior on an uncaught
+     * exception in a stream thread (e.g. {@code MaxDpdFeatureTopology}'s aggregator throwing a
+     * {@code ClassCastException} if a well-formed {@code obligation.dpd.changed} envelope somehow
+     * carries a non-numeric {@code currentDpd}) is to let that thread die -- with only one stream
+     * thread configured (the default), that kills the whole Kafka Streams client, halting every
+     * topology in this application, not just the one that hit the bad record. {@code REPLACE_THREAD}
+     * is Kafka's own documented mitigation: the failed thread is replaced and processing continues,
+     * rather than one edge-case record taking down feature computation platform-wide.
+     */
+    @Bean
+    public StreamsBuilderFactoryBeanConfigurer streamsUncaughtExceptionHandlerConfigurer() {
+        return factoryBean ->
+                factoryBean.setStreamsUncaughtExceptionHandler(
+                        throwable -> StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.REPLACE_THREAD);
+    }
 
     @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
     private String bootstrapServers;

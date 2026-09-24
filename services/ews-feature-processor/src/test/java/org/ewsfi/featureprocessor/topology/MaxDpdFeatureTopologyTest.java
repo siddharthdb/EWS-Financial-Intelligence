@@ -113,6 +113,46 @@ class MaxDpdFeatureTopologyTest {
     }
 
     @Test
+    void aMalformedNonNumericCurrentDpdIsSkippedRatherThanCrashingTheAggregator() {
+        // Roadmap 3.6: before the defensive hasNumericCurrentDpd filter was added, this record
+        // reached extractCurrentDpd inside the .aggregate() call and threw a ClassCastException,
+        // crashing the stream thread. Kafka's at-least-once redelivery means an uncaught exception
+        // there does not skip the record even with REPLACE_THREAD configured -- the replacement
+        // thread just re-reads and re-crashes on the same offset forever. The only real fix is to
+        // never let the malformed record reach the aggregator in the first place.
+        Map<String, Object> malformedData = new LinkedHashMap<>();
+        malformedData.put("facilityId", "fac-malformed");
+        malformedData.put("counterpartyId", "cp-1");
+        malformedData.put("previousDpd", null);
+        malformedData.put("currentDpd", "not-a-number");
+        malformedData.put("asOfDate", "2026-09-24");
+        JsonEventEnvelope malformedEnvelope =
+                new JsonEventEnvelope(
+                        UUID.randomUUID().toString(),
+                        "obligation.dpd.changed",
+                        Instant.now().toString(),
+                        "FACILITY",
+                        "fac-malformed",
+                        malformedData);
+
+        inputTopic.pipeInput("fac-malformed", toJson(malformedEnvelope), Instant.now());
+        assertThat(outputTopic.isEmpty())
+                .as("a malformed currentDpd must be silently filtered out, not crash the topology")
+                .isTrue();
+
+        // A subsequent valid record on the same facility must still be processed normally,
+        // proving the filter doesn't just avoid a crash but leaves the topology fully functional.
+        inputTopic.pipeInput("fac-malformed", dpdChangedJson("fac-malformed", 17), Instant.now());
+        List<KeyValue<String, String>> outputs = outputTopic.readKeyValuesToList();
+        assertThat(outputs)
+                .anySatisfy(
+                        kv -> {
+                            assertThat(kv.key).isEqualTo("fac-malformed");
+                            assertThat(parse(kv.value).getValueNumeric()).isEqualTo("17");
+                        });
+    }
+
+    @Test
     void unrelatedEventTypesProduceNoOutput() {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("something", "else");

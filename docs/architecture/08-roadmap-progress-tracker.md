@@ -79,7 +79,7 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 | 3.3 | NLP/document intelligence for filings/news/audit reports | NOT_STARTED | |
 | 3.4 | Retail domain extension | NOT_STARTED | |
 | 3.5 | Full multi-jurisdiction richness beyond India/US/UK reference implementations | NOT_STARTED | |
-| 3.6 | Production hardening: performance benchmarks, failure tests, DR rehearsal, security integration | DONE (partial — three failure tests written; found and fixed a real outbox publish-retry bug and a Kafka listener silent-failure bug, now fixed in both feature-processor and signal-policy-engine. Performance benchmarks, DR rehearsal, security integration remain unimplemented) | 2026-09-24 — Kafka listener retry-with-backoff extended to ews-signal-policy-engine |
+| 3.6 | Production hardening: performance benchmarks, failure tests, DR rehearsal, security integration | DONE (partial — four failure tests written; found and fixed a real outbox publish-retry bug, a Kafka listener silent-failure bug (fixed in both feature-processor and signal-policy-engine), and a Kafka Streams poison-pill crash-loop gap (StreamsUncaughtExceptionHandler added to both Streams apps as defense-in-depth, plus defensive input filtering in MaxDpdFeatureTopology as the actual fix — REPLACE_THREAD alone does not skip an uncommitted poison-pill record). Remaining feature/signal topologies not yet audited for the same input-validation gap. Performance benchmarks, DR rehearsal, security integration remain unimplemented) | 2026-09-24 — Kafka Streams uncaught-exception handling + defensive input filtering |
 
 ## Items requiring a human decision (never resolve autonomously)
 
