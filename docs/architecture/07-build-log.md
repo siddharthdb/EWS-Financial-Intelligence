@@ -22,6 +22,63 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — Avro binary wire-format codec (roadmap 1.17, partial)
+
+**Roadmap items:** 1.17 (DONE, partial — see Follow-ups for what remains)
+
+**What:** Added `AvroBinarySerde<T extends SpecificRecordBase>`, a small generic codec in
+`ews-schemas` that serializes/deserializes any of the module's generated Avro `SpecificRecord`
+classes to/from Avro's binary wire encoding (`SpecificDatumWriter`/`SpecificDatumReader` over
+`BinaryEncoder`/`BinaryDecoder`, using the record's own compiled `SCHEMA$` as both writer and
+reader schema — no Schema Registry lookup involved). Added `AvroBinarySerdeTest`, which round-trips
+real generated instances (not stubs) of `CanonicalEventEnvelopeV1`, `PaymentInstructionReturnedV1`,
+and `ObligationDpdChangedV1` — including nested records, enums, and Avro logical types (UUID,
+timestamp-micros `Instant`, date `LocalDate`, decimal `ByteBuffer`) — through real byte-array
+encode/decode and asserts full field-for-field equality on the round trip.
+
+**Why:** Roadmap item 1.17 calls for switching the Kafka wire format from the interim JSON
+(`org.ewsfi.contracts.interim.*`, used by every topology and listener built so far) to
+"Avro + Schema Registry" per `docs/architecture/03-event-architecture.md` Section 10 and ADR-011
+(Apicurio Registry). This entry implements the Avro binary codec half of that migration — real,
+tested binary serialization against the platform's own generated Avro classes — which is the part
+achievable without external infrastructure.
+
+**Scoping decision:** A live Schema Registry (Apicurio, per ADR-011) is deployed via
+`docker-compose.yml`, but no Docker daemon is available in this build/dev environment (documented
+constraint since the first skeleton session), so registry-backed schema resolution cannot be
+exercised here. Rather than fabricate or mock a registry, this entry ships the registry-independent
+half — compile-time schema agreement between producer and consumer, enforced by both sides sharing
+this module's generated classes — as an honest, real, working building block, and defers the
+registry integration itself.
+
+Wiring this codec into the live pipeline (outbox publisher, all four services' Kafka Streams
+`Consumed`/`Produced`, and the `@KafkaListener` persistence listeners) is **not** done in this
+entry: `outbox_event.payload` is currently a shared JSON-text column read/written by every existing
+producer, and switching it to binary is an atomic, cross-cutting change that needs its own
+carefully sequenced migration (schema column type change, coordinated producer/consumer cutover,
+re-verification of every existing test in the payment-return and DPD slices) rather than being
+folded into this bounded increment on top of an already-large scope.
+
+**Files:**
+- `platform/ews-schemas/src/main/java/org/ewsfi/contracts/avro/AvroBinarySerde.java`
+- `platform/ews-schemas/src/test/java/org/ewsfi/contracts/avro/AvroBinarySerdeTest.java`
+- `platform/ews-schemas/pom.xml` (added `junit-jupiter`/`assertj-core` test-scoped deps; merged a
+  stray duplicate `<build>` block introduced while editing)
+
+**Verification:**
+- `AvroBinarySerdeTest`: 3/3 tests green — envelope, payment-return payload, and DPD payload all
+  round-trip byte-for-byte with full field equality, including nested records/enums/logical types.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules, all existing tests still
+  green (confirms this addition didn't disturb the live JSON-based pipelines).
+
+**Follow-ups:** Remaining for item 1.17: (1) live Apicurio Schema Registry integration once Docker
+is available; (2) migrate `outbox_event.payload` to binary and switch the outbox publisher,
+`FeatureProcessorTopology`/`DpdFeatureTopology`, `SignalPolicyTopology`/`DpdSignalTopology`, and
+both `@KafkaListener` persistence listeners from the interim JSON classes to this codec — a
+dedicated future increment given its cross-cutting blast radius.
+
+---
+
 ## 2026-09-24 — DPD feature/signal family: current_dpd + DPD_EMERGED (P01)
 
 **Roadmap items:** 1.12 (DONE, partial), 1.18 (NOT_STARTED, new — carries the deferred remainder)
