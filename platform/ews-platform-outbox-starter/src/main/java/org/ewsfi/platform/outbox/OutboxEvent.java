@@ -6,6 +6,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -23,10 +24,33 @@ import org.hibernate.type.SqlTypes;
  * remains Avro + Schema Registry per docs/architecture/03-event-architecture.md Section 10 and
  * ADR-011; switching to it is tracked as roadmap item 1.17 in
  * docs/architecture/08-roadmap-progress-tracker.md.
+ *
+ * <p>{@link #markFailed} retries a failed publish (row returns to {@code NEW} with a future
+ * {@code availableAt}) up to {@link #MAX_PUBLISH_ATTEMPTS} times before treating it as a permanent,
+ * terminal {@code FAILED} -- a real bug in the original implementation, found and fixed while
+ * building the first production-hardening (roadmap 3.6) failure test: {@code markFailed} always set
+ * status to the terminal {@code FAILED}, and {@link OutboxClaimStrategy}'s claim query only ever
+ * selects {@code status = 'NEW'} rows, so a single transient Kafka publish failure (a broker
+ * hiccup, a timeout) permanently stranded the event with no retry, contrary to ADR-003's
+ * at-least-once delivery guarantee.
  */
 @Entity
 @Table(name = "outbox_event")
 public class OutboxEvent {
+
+    /**
+     * Maximum publish attempts (including the current one, already incremented by
+     * {@link OutboxClaimStrategy}'s claim query before this row reaches {@link #markFailed}) before
+     * a failure is treated as permanent rather than retried. Roadmap item 3.6 (production
+     * hardening): a transient Kafka publish failure must not permanently strand an event -- see
+     * this class's and {@link OutboxPublisherWorker}'s Javadoc for the bug this fixed.
+     */
+    public static final int MAX_PUBLISH_ATTEMPTS = 5;
+
+    /** Fixed backoff before a retryable failure becomes reclaimable again. A documented
+     * simplification: true exponential backoff would need per-attempt-count scaling, not
+     * implemented here since the scheduled publisher already polls every second regardless. */
+    static final Duration RETRY_BACKOFF = Duration.ofSeconds(5);
 
     @Id
     @Column(name = "event_id")
@@ -134,10 +158,23 @@ public class OutboxEvent {
         this.kafkaOffset = kafkaOffset;
     }
 
+    /**
+     * Records a publish failure. If {@code publishAttempts} (already incremented by this attempt's
+     * claim) hasn't exceeded {@link #MAX_PUBLISH_ATTEMPTS}, the row goes back to {@code NEW} with
+     * {@code availableAt} pushed into the future by {@link #RETRY_BACKOFF} -- reclaimable again by
+     * {@link OutboxClaimStrategy}'s {@code WHERE status = 'NEW' AND available_at <= :now} claim
+     * query once the backoff elapses. Only after exhausting all attempts does the row become
+     * terminally {@code FAILED} (a real dead-letter state, needing operational intervention).
+     */
     public void markFailed(String errorCode, String errorMessage) {
-        this.status = OutboxEventStatus.FAILED;
         this.lastErrorCode = errorCode;
         this.lastErrorMessage = errorMessage;
+        if (this.publishAttempts >= MAX_PUBLISH_ATTEMPTS) {
+            this.status = OutboxEventStatus.FAILED;
+        } else {
+            this.status = OutboxEventStatus.NEW;
+            this.availableAt = Instant.now().plus(RETRY_BACKOFF);
+        }
     }
 
     public UUID getEventId() {
@@ -166,5 +203,13 @@ public class OutboxEvent {
 
     public int getPublishAttempts() {
         return publishAttempts;
+    }
+
+    public Instant getAvailableAt() {
+        return availableAt;
+    }
+
+    public String getLastErrorCode() {
+        return lastErrorCode;
     }
 }

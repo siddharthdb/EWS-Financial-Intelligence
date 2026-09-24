@@ -22,6 +22,57 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — Outbox publish-retry bug found and fixed (roadmap 3.6, partial)
+
+**Roadmap items:** 3.6 (DONE, partial — one production-hardening finding; see Follow-ups)
+
+**What:** Every autonomously-resolvable Phase 2 row was either done or flagged human-decision-gated
+this firing (see the previous commit), so this entry starts Phase 3 item 3.6 ("production
+hardening: performance benchmarks, failure tests, DR rehearsal, security integration") with its
+most concretely scoped, human-decision-free piece: a real failure test of the outbox publisher's
+retry behavior under `ews-platform-outbox-starter` — used by every service in the platform.
+
+Writing that test surfaced a genuine bug, present since the outbox starter was first built:
+`OutboxEvent.markFailed` unconditionally set status to the terminal `FAILED`, and
+`OutboxClaimStrategy`'s claim query only ever selects `status = 'NEW'` rows. A single transient
+Kafka publish failure (a broker hiccup, a send timeout) therefore **permanently stranded** the
+event — no retry, ever — contrary to ADR-003's stated at-least-once delivery guarantee. The
+`available_at`/`publish_attempts` columns already existed in the schema, clearly designed to
+support retry-with-backoff, but the retry path itself was never wired up.
+
+**Fix:** `OutboxEvent.markFailed` now checks `publishAttempts` (already incremented by the claim
+query before this call) against a new `MAX_PUBLISH_ATTEMPTS` constant (5): below it, the row goes
+back to `NEW` with `availableAt` pushed `RETRY_BACKOFF` (5 seconds, a fixed rather than exponential
+backoff — documented simplification) into the future, making it reclaimable again once that
+elapses; at or above it, the row becomes terminally `FAILED` (a real dead-letter state needing
+operational intervention, which is correct — not every failure should retry forever).
+
+**Files:**
+- `platform/ews-platform-outbox-starter/src/main/java/org/ewsfi/platform/outbox/OutboxEvent.java`
+  (`markFailed` retry logic, `MAX_PUBLISH_ATTEMPTS`/`RETRY_BACKOFF` constants, new getters)
+- `platform/ews-platform-outbox-starter/src/test/java/org/ewsfi/platform/outbox/OutboxEventTest.java` (new)
+- `platform/ews-platform-outbox-starter/src/test/java/org/ewsfi/platform/outbox/OutboxClaimStrategyTest.java` (new)
+
+**Verification:**
+- `OutboxEventTest` (pure unit test, no infra): proves a failure below the max attempts returns the
+  row to `NEW` with a future `availableAt`, and a failure at the max attempts makes it terminally
+  `FAILED`.
+- `OutboxClaimStrategyTest` (real Postgres): proves the actual claim SQL behavior end-to-end — a
+  retried row is correctly excluded from claiming until its backoff elapses, then correctly
+  reclaimed once it has (`publishAttempts` reaching 2, proving it's the *same* row cycling through,
+  not a new one); and a row driven to permanent `FAILED` through repeated claim+fail cycles is never
+  reclaimed again. This is the test that would have caught the original bug: before the fix, the
+  first assertion in each test (`status == NEW` after a failure) would have failed, since `markFailed`
+  always set `FAILED`.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules including the pre-existing
+  `OutboxPublisherWorkerTest` (proves the fix didn't regress the successful-publish path).
+
+**Follow-ups:** Exponential (rather than fixed) backoff, a metrics/alert on rows reaching permanent
+`FAILED` (currently only visible via a direct query), and the broader 3.6 scope (performance
+benchmarks, DR rehearsal, security integration) remain unimplemented.
+
+---
+
 ## 2026-09-24 — financial_statement_filing_delay_days + REQUIRED_MONITORING_INFORMATION_DELAY (P18)
 
 **Roadmap items:** 2.8 (DONE, partial — one of the P10–P34 contracts implemented)
