@@ -79,7 +79,7 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 | 3.3 | NLP/document intelligence for filings/news/audit reports | NOT_STARTED | |
 | 3.4 | Retail domain extension | NOT_STARTED | |
 | 3.5 | Full multi-jurisdiction richness beyond India/US/UK reference implementations | NOT_STARTED | |
-| 3.6 | Production hardening: performance benchmarks, failure tests, DR rehearsal, security integration | DONE (partial — one failure test written; found and fixed a real outbox publish-retry bug. Performance benchmarks, DR rehearsal, security integration remain unimplemented) | 2026-09-24 — Outbox publish-retry bug found and fixed |
+| 3.6 | Production hardening: performance benchmarks, failure tests, DR rehearsal, security integration | DONE (partial — two failure tests written; found and fixed a real outbox publish-retry bug and a Kafka listener silent-failure bug (feature-processor only; signal-policy-engine has the same gap, not yet fixed). Performance benchmarks, DR rehearsal, security integration remain unimplemented) | 2026-09-24 — Kafka listener retry-with-backoff, second production-hardening finding |
 
 ## Items requiring a human decision (never resolve autonomously)
 

@@ -22,6 +22,62 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — Kafka listener retry-with-backoff, second production-hardening finding (roadmap 3.6)
+
+**Roadmap items:** 3.6 (continues the same partial item as the previous entry)
+
+**What:** Continuing item 3.6 with the same "write a real failure test, fix what it finds" method
+that surfaced the outbox bug: added retry-with-backoff error handling for
+`ews-feature-processor`'s `@KafkaListener`-based persistence consumer.
+- `KafkaListenerErrorHandlingConfig`: a `CommonErrorHandler` bean (`DefaultErrorHandler` with a
+  3-retry, 500ms `FixedBackOff`), which Spring Boot's autoconfigured listener container factory
+  picks up automatically (`ConcurrentKafkaListenerContainerFactoryConfigurer` detects any
+  `CommonErrorHandler` bean in the context) — no manual container factory redefinition needed.
+- `FeatureValuePersistenceListener.onFeatureValue` no longer catches exceptions internally; letting
+  them propagate is what lets the container's error handler retry.
+
+**Why it matters (the bug found):** Before this, `onFeatureValue` caught every exception and only
+logged a warning — Kafka's offset still committed as if processing succeeded. A transient failure
+(a momentary Postgres connection blip, a fleeting network issue) silently dropped the feature value
+**forever**, with no retry and no operational signal beyond a log line nobody may ever read. Same
+class of bug as the outbox one from the previous entry, in a different part of the pipeline: a
+transient failure being treated as if it were permanent, with no visibility.
+
+**Fix:** Failures now retry up to 3 times (500ms apart) before being logged clearly as a permanent
+failure (record topic/partition/offset/exception) — a real, unambiguous operability signal rather
+than a routine WARN indistinguishable from normal noise. A genuine dead-letter topic is a documented
+follow-up, not implemented here.
+
+**Scoping decision:** Applied to `ews-feature-processor` only, as the representative pattern for
+roadmap item 3.6; `ews-signal-policy-engine`'s `SignalInstancePersistenceListener` has the identical
+gap (also swallows exceptions with a bare `log.warn`) and should get the same treatment in a future
+firing. Retries apply uniformly to every exception type (a permanently malformed payload is retried
+the same as a transient DB error) — distinguishing retryable from non-retryable exceptions is a
+follow-up, not implemented here.
+
+**Files:**
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/config/KafkaListenerErrorHandlingConfig.java` (new)
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/persistence/FeatureValuePersistenceListener.java`
+- `services/ews-feature-processor/src/test/java/org/ewsfi/featureprocessor/persistence/FeatureValuePersistenceListenerRetryTest.java` (new)
+
+**Verification:**
+- `FeatureValuePersistenceListenerRetryTest`: injects a `FeatureValueRepository` wrapper (via a
+  `@Primary` `@TestConfiguration` bean) that fails `save()` with a `DataAccessResourceFailureException`
+  exactly twice for a specific feature value before delegating to the real, Postgres-backed
+  repository. Proves the row is eventually persisted — genuine container-level redelivery (the same
+  Kafka record re-invoking the listener, not a mocked-away retry) recovering into a real Postgres
+  write. Before this fix, the equivalent scenario would have silently dropped the row on the first
+  failure; this test would have failed against the old code (the row would never appear).
+- Pre-existing `FeatureValuePersistenceListenerTest` (the successful-publish path) still green,
+  confirming no regression.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules.
+
+**Follow-ups:** Apply the identical fix to `SignalInstancePersistenceListener` in
+`ews-signal-policy-engine` (same bug, not yet fixed there); add a real dead-letter topic instead of
+log-only permanent-failure recording; distinguish retryable vs. non-retryable exception types.
+
+---
+
 ## 2026-09-24 — Outbox publish-retry bug found and fixed (roadmap 3.6, partial)
 
 **Roadmap items:** 3.6 (DONE, partial — one production-hardening finding; see Follow-ups)
