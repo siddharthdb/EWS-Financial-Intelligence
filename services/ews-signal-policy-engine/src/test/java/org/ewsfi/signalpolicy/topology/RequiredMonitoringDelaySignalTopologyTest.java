@@ -105,6 +105,34 @@ class RequiredMonitoringDelaySignalTopologyTest {
         assertThat(outputTopic.isEmpty()).isTrue();
     }
 
+    @Test
+    void malformedNonNumericValueIsSkippedRatherThanCrashingTheTopology() {
+        // Roadmap 3.6: a malformed valueNumeric must be filtered out, not thrown from inside the
+        // stateless .filter() (which would crash-loop the stream thread on the record forever).
+        JsonFeatureValue malformed =
+                new JsonFeatureValue(
+                        UUID.randomUUID().toString(),
+                        "FD-FILING-DELAY-DAYS-001",
+                        "financial_statement_filing_delay_days",
+                        "1.0",
+                        "COUNTERPARTY",
+                        "0000320195",
+                        "VALUE",
+                        "INTEGER",
+                        "not-a-number",
+                        Instant.now().toString(),
+                        Instant.now().toString(),
+                        null,
+                        null,
+                        "COMPLETE",
+                        "1.0");
+        inputTopic.pipeInput("0000320195", toJson(malformed));
+        assertThat(outputTopic.isEmpty()).isTrue();
+
+        pipeDelay("0000320195", 120);
+        assertThat(outputTopic.readValuesToList()).hasSize(1);
+    }
+
     private void pipeDelay(String cik, int delayDays) {
         JsonFeatureValue featureValue =
                 new JsonFeatureValue(

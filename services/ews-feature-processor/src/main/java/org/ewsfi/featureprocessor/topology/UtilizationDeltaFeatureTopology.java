@@ -71,7 +71,14 @@ public class UtilizationDeltaFeatureTopology {
                         .aggregate(
                                 () -> toStateJson(new BaselineState(0.0, 0, 0.0)),
                                 (facilityId, featureValueJson, aggJson) -> {
-                                    double ratio = extractRatio(featureValueJson);
+                                    // Roadmap 3.6: a malformed valueNumeric must leave the baseline
+                                    // state unchanged, not throw from inside .aggregate() -- see
+                                    // MaxDpdFeatureTopology for why an uncaught exception here would
+                                    // crash-loop the stream thread on the same record forever.
+                                    Double ratio = tryExtractRatio(featureValueJson);
+                                    if (ratio == null) {
+                                        return aggJson;
+                                    }
                                     BaselineState previous = parseState(aggJson);
                                     return toStateJson(
                                             new BaselineState(previous.sum + ratio, previous.count + 1, ratio));
@@ -101,12 +108,12 @@ public class UtilizationDeltaFeatureTopology {
         }
     }
 
-    private double extractRatio(String featureValueJson) {
+    private Double tryExtractRatio(String featureValueJson) {
         try {
             JsonFeatureValue featureValue = objectMapper.readValue(featureValueJson, JsonFeatureValue.class);
             return Double.parseDouble(featureValue.getValueNumeric());
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to extract wc_utilization_ratio value", e);
+            return null;
         }
     }
 

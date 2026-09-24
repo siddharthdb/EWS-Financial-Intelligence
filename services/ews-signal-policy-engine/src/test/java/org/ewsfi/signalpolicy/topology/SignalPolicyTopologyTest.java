@@ -86,6 +86,37 @@ class SignalPolicyTopologyTest {
     }
 
     @Test
+    void malformedNonNumericValueIsSkippedRatherThanCrashingTheTopology() throws Exception {
+        // Roadmap 3.6: a malformed valueNumeric must be filtered out, not thrown from inside the
+        // stateless .filter() (which would crash-loop the stream thread on the record forever).
+        JsonFeatureValue malformed =
+                new JsonFeatureValue(
+                        UUID.randomUUID().toString(),
+                        "FD-RETURNED-PAYMENT-COUNT-30D-001",
+                        "returned_payment_count_30d",
+                        "1.0",
+                        "ACCOUNT",
+                        "acct-malformed",
+                        "VALUE",
+                        "INTEGER",
+                        "not-a-number",
+                        Instant.now().toString(),
+                        Instant.now().toString(),
+                        Instant.now().toString(),
+                        Instant.now().toString(),
+                        "COMPLETE",
+                        "1.0");
+        inputTopic.pipeInput("acct-malformed", MAPPER.writeValueAsString(malformed), Instant.now());
+        assertThat(outputTopic.isEmpty()).isTrue();
+
+        // A subsequent valid record on the same account must still be processed correctly.
+        String featureValueId = UUID.randomUUID().toString();
+        inputTopic.pipeInput(
+                "acct-malformed", featureValueJson(featureValueId, "acct-malformed", 3), Instant.now());
+        assertThat(outputTopic.readKeyValuesToList()).hasSize(1);
+    }
+
+    @Test
     void unrelatedFeatureNameProducesNoSignal() throws Exception {
         JsonFeatureValue other =
                 new JsonFeatureValue(

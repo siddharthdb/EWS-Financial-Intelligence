@@ -22,6 +22,73 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — Systemic audit: same poison-pill crash vector across the remaining topologies (roadmap 3.6)
+
+**Roadmap items:** 3.6 (continues the same partial item; closes the explicit follow-up from the
+previous entry: "Remaining feature/signal topologies not yet audited for the same input-validation
+gap")
+
+**What:** Audited every topology in `ews-feature-processor` and `ews-signal-policy-engine` for the
+same unvalidated-numeric-cast crash vector found in `MaxDpdFeatureTopology`, and found the same real
+gap in 6 of them:
+- `UtilizationFeatureTopology` (feature-processor): the `KTable-KTable` join's `ValueJoiner`
+  (`toUtilizationFeatureJson`) cast `currentOutstanding`/`currentLimit` to `Number` without
+  validation and threw on failure. Fixed by validating both fields and returning `null` instead of
+  throwing — a `null` from a `KTable` join's `ValueJoiner` is a legitimate tombstone/delete for that
+  key, which `build()` now filters out of the published stream, rather than an error.
+- `UtilizationDeltaFeatureTopology` (feature-processor): the windowed `.aggregate()` lambda called
+  `Double.parseDouble` on `valueNumeric` unguarded. Fixed by returning the unchanged aggregate state
+  (skipping the malformed record) instead of throwing.
+- `SignalPolicyTopology`, `UtilizationSignalTopology`, `UtilizationSpikeSignalTopology`,
+  `RequiredMonitoringDelaySignalTopology` (signal-policy-engine): all four share an identical
+  stateless shape (`.filter(matchesPolicy)`) where `matchesPolicy` called `Long/Double/Integer
+  .parseXxx` on `valueNumeric` unguarded. Fixed by wrapping each parse in a try/catch that returns
+  `false` (filters the record out) instead of throwing.
+- `DpdSignalTopology`, `DpdWorseningSignalTopology` (signal-policy-engine): both share an identical
+  stateful shape (`.aggregate()` tracking a previous/current transition) where the aggregator lambda
+  called `Integer.parseInt` on `valueNumeric` unguarded. Fixed the same way as
+  `UtilizationDeltaFeatureTopology`: return the unchanged transition state instead of throwing.
+- `FilingDelayFeatureTopology` was already fully defensive (`tryComputeDelayFeature` wraps
+  everything in a single try/catch returning `null`) — no change needed.
+
+**Why:** The previous entry's fix to `MaxDpdFeatureTopology` was a single instance of a systemic
+pattern: every topology that extracts a numeric field from a `JsonFeatureValue`/`JsonEventEnvelope`
+without validating it first has the same poison-pill crash-loop exposure (an uncaught exception
+inside `.filter()`/`.aggregate()`/a `KTable` `ValueJoiner` is not skipped under Kafka's at-least-once
+redelivery, so the stream thread — even with `REPLACE_THREAD` configured — re-reads and re-crashes on
+the same record forever). Auditing and fixing the remaining instances now, while the pattern and its
+fix are fresh, is materially cheaper than doing it as six separate future increments.
+
+**Files:**
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/topology/UtilizationFeatureTopology.java`
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/topology/UtilizationDeltaFeatureTopology.java`
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/SignalPolicyTopology.java`
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/UtilizationSignalTopology.java`
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/UtilizationSpikeSignalTopology.java`
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/RequiredMonitoringDelaySignalTopology.java`
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/DpdSignalTopology.java`
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/DpdWorseningSignalTopology.java`
+- Corresponding `*Test.java` files for all six (new `malformed*` regression tests added to each,
+  using `TopologyTestDriver`)
+
+**Verification:**
+- Each new regression test proves two things per topology: (1) the malformed record produces no
+  corrupted output (either no output at all, or — for `UtilizationDeltaFeatureTopology`, where
+  `SlidingWindows` still opens new windows at the malformed record's timestamp — only output whose
+  value reflects the uncorrupted pre-malformed baseline), and (2) a subsequent valid record on the
+  same entity is still processed correctly, proving the topology remains fully functional afterward,
+  not just non-crashing.
+- One test (`RequiredMonitoringDelaySignalTopologyTest`) initially failed because the "recovery"
+  record used a `delayDays` value (90) that doesn't clear the policy's own `> 90` threshold; fixed by
+  using the same value (120) the pre-existing threshold test already uses.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules.
+
+**Follow-ups:** None identified — this was the last group of topologies in the platform as of this
+entry. Any future topology should apply the same extract-and-validate-before-aggregate/filter/join
+pattern from the start, per the doc comments left on each fixed method.
+
+---
+
 ## 2026-09-24 — Kafka Streams uncaught-exception handling + defensive input filtering (roadmap 3.6)
 
 **Roadmap items:** 3.6 (continues the same partial item; fourth production-hardening finding)

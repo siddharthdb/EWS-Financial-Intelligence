@@ -59,7 +59,15 @@ public class DpdSignalTopology {
                                 (facilityId, featureValueJson, aggJson) -> {
                                     JsonFeatureValue featureValue = tryParse(featureValueJson);
                                     DpdState previous = parseState(aggJson);
-                                    int currentDpd = Integer.parseInt(featureValue.getValueNumeric());
+                                    // Roadmap 3.6: a malformed (non-numeric) valueNumeric must leave
+                                    // the transition state unchanged, not throw from inside
+                                    // .aggregate() -- an uncaught exception here does not skip the
+                                    // record under Kafka's at-least-once redelivery, so the stream
+                                    // thread would crash-loop on it forever (see MaxDpdFeatureTopology).
+                                    Integer currentDpd = tryParseInt(featureValue.getValueNumeric());
+                                    if (currentDpd == null) {
+                                        return aggJson;
+                                    }
                                     return toStateJson(
                                             new DpdState(
                                                     previous.currentDpd,
@@ -106,6 +114,14 @@ public class DpdSignalTopology {
         try {
             return objectMapper.readValue(json, JsonFeatureValue.class);
         } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Integer tryParseInt(String value) {
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
             return null;
         }
     }

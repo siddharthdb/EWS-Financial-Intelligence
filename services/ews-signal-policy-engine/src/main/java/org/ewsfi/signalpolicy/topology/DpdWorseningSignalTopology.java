@@ -54,7 +54,13 @@ public class DpdWorseningSignalTopology {
                                 (facilityId, featureValueJson, aggJson) -> {
                                     JsonFeatureValue featureValue = tryParse(featureValueJson);
                                     DpdWorseningState previous = parseState(aggJson);
-                                    int currentMax = Integer.parseInt(featureValue.getValueNumeric());
+                                    // Roadmap 3.6: leave state unchanged on a malformed valueNumeric
+                                    // rather than throwing from inside .aggregate() -- see
+                                    // DpdSignalTopology/MaxDpdFeatureTopology for why.
+                                    Integer currentMax = tryParseInt(featureValue.getValueNumeric());
+                                    if (currentMax == null) {
+                                        return aggJson;
+                                    }
                                     return toStateJson(
                                             new DpdWorseningState(
                                                     previous.currentMax,
@@ -101,6 +107,14 @@ public class DpdWorseningSignalTopology {
         try {
             return objectMapper.readValue(json, JsonFeatureValue.class);
         } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Integer tryParseInt(String value) {
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
             return null;
         }
     }

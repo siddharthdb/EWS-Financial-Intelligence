@@ -64,7 +64,13 @@ public class UtilizationSpikeSignalTopology {
         if (featureValue.getValueNumeric() == null) {
             return false;
         }
-        double delta = Double.parseDouble(featureValue.getValueNumeric());
+        // Roadmap 3.6: same defensive filtering as SignalPolicyTopology/UtilizationSignalTopology.
+        double delta;
+        try {
+            delta = Double.parseDouble(featureValue.getValueNumeric());
+        } catch (NumberFormatException e) {
+            return false;
+        }
         return UtilizationSpikeSignalPolicyLoader.evaluate(delta);
     }
 

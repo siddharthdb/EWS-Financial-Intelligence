@@ -96,6 +96,38 @@ class DpdSignalTopologyTest {
         assertThat(outputTopic.isEmpty()).isTrue();
     }
 
+    @Test
+    void malformedNonNumericValueLeavesStateUnchangedRatherThanCrashingTheTopology() {
+        // Roadmap 3.6: a malformed valueNumeric inside the stateful .aggregate() must leave the
+        // transition state unchanged, not throw (which would crash-loop the stream thread forever).
+        JsonFeatureValue malformed =
+                new JsonFeatureValue(
+                        UUID.randomUUID().toString(),
+                        "FD-CURRENT-DPD-001",
+                        "current_dpd",
+                        "1.0",
+                        "FACILITY",
+                        "fac-malformed",
+                        "VALUE",
+                        "INTEGER",
+                        "not-a-number",
+                        Instant.now().toString(),
+                        Instant.now().toString(),
+                        null,
+                        null,
+                        "COMPLETE",
+                        "1.0");
+        inputTopic.pipeInput("fac-malformed", toJson(malformed));
+        assertThat(outputTopic.isEmpty()).isTrue();
+
+        // A subsequent genuine 0-or-unknown -> positive transition on the same facility must still
+        // fire correctly, proving the malformed record didn't corrupt the transition state.
+        pipeCurrentDpd("fac-malformed", 7);
+        List<String> outputs = outputTopic.readValuesToList();
+        assertThat(outputs).hasSize(1);
+        assertThat(parse(outputs.get(0)).getSignalType()).isEqualTo("DPD_EMERGED");
+    }
+
     private void pipeCurrentDpd(String facilityId, int currentDpd) {
         JsonFeatureValue featureValue =
                 new JsonFeatureValue(

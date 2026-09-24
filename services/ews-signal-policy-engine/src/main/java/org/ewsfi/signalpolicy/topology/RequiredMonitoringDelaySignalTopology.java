@@ -61,7 +61,13 @@ public class RequiredMonitoringDelaySignalTopology {
         if (featureValue.getValueNumeric() == null) {
             return false;
         }
-        int delayDays = Integer.parseInt(featureValue.getValueNumeric());
+        // Roadmap 3.6: same defensive filtering as SignalPolicyTopology/UtilizationSignalTopology.
+        int delayDays;
+        try {
+            delayDays = Integer.parseInt(featureValue.getValueNumeric());
+        } catch (NumberFormatException e) {
+            return false;
+        }
         return RequiredMonitoringDelaySignalPolicyLoader.evaluate(delayDays);
     }
 

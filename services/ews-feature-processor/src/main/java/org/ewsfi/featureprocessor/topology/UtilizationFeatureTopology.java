@@ -85,7 +85,8 @@ public class UtilizationFeatureTopology {
                                 .withKeySerde(Serdes.String())
                                 .withValueSerde(Serdes.String()));
 
-        KStream<String, String> featureValues = utilization.toStream();
+        KStream<String, String> featureValues =
+                utilization.toStream().filter((key, value) -> value != null);
         featureValues.to(FEATURE_TOPIC, Produced.with(Serdes.String(), Serdes.String()));
         return featureValues;
     }
@@ -99,6 +100,15 @@ public class UtilizationFeatureTopology {
         }
     }
 
+    /**
+     * Roadmap 3.6: returns {@code null} (rather than throwing) when either side's numeric field is
+     * malformed. A {@code null} from a {@code KTable-KTable} join's {@code ValueJoiner} is not an
+     * error -- Kafka Streams treats it as a legitimate tombstone/delete for that key in the result
+     * table, which {@link #build} then filters out of the published stream. Throwing here instead
+     * would crash the stream thread from inside a join computation; per {@link MaxDpdFeatureTopology},
+     * an uncaught exception does not skip the record under at-least-once redelivery, so the thread
+     * would crash-loop on the same record forever even with {@code REPLACE_THREAD} configured.
+     */
     private String toUtilizationFeatureJson(String outstandingJson, String limitJson) {
         Instant now = Instant.now();
         try {
@@ -108,6 +118,11 @@ public class UtilizationFeatureTopology {
 
             Map<String, Object> outstandingData = outstandingEnvelope.getData();
             Map<String, Object> limitData = limitEnvelope.getData();
+
+            if (!(outstandingData.get("currentOutstanding") instanceof Number)
+                    || !(limitData.get("currentLimit") instanceof Number)) {
+                return null;
+            }
 
             double outstanding = ((Number) outstandingData.get("currentOutstanding")).doubleValue();
             double limit = ((Number) limitData.get("currentLimit")).doubleValue();
@@ -132,7 +147,7 @@ public class UtilizationFeatureTopology {
                             TRANSFORMATION_VERSION);
             return objectMapper.writeValueAsString(featureValue);
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to build JsonFeatureValue for wc_utilization_ratio", e);
+            return null;
         }
     }
 }

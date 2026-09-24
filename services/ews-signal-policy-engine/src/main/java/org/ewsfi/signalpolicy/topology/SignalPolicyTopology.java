@@ -68,7 +68,16 @@ public class SignalPolicyTopology {
         if (featureValue.getValueNumeric() == null) {
             return false;
         }
-        long count = Long.parseLong(featureValue.getValueNumeric());
+        // Roadmap 3.6: a malformed (non-numeric) valueNumeric must be filtered out here, not thrown
+        // from inside a stateless .filter() -- Kafka's at-least-once redelivery means an uncaught
+        // exception there does not skip the record, so the stream thread would crash-loop on it
+        // forever even with a StreamsUncaughtExceptionHandler configured (see MaxDpdFeatureTopology).
+        long count;
+        try {
+            count = Long.parseLong(featureValue.getValueNumeric());
+        } catch (NumberFormatException e) {
+            return false;
+        }
         return SignalPolicyLoader.evaluate(count);
     }
 

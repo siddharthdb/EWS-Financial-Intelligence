@@ -118,6 +118,51 @@ class UtilizationDeltaFeatureTopologyTest {
         assertThat(outputTopic.isEmpty()).isTrue();
     }
 
+    @Test
+    void malformedNonNumericValueLeavesBaselineUnchangedRatherThanCrashingTheTopology() {
+        // Roadmap 3.6: a malformed valueNumeric inside the stateful .aggregate() must leave the
+        // baseline state unchanged, not throw (which would crash-loop the stream thread forever).
+        Instant base = Instant.parse("2026-09-01T00:00:00Z");
+        pipeUtilizationRatio("fac-malformed", 0.60, base);
+        readDeltaOutputs(); // drain the output from the first valid observation
+
+        JsonFeatureValue malformed =
+                new JsonFeatureValue(
+                        UUID.randomUUID().toString(),
+                        "FD-WC-UTILIZATION-RATIO-001",
+                        "wc_utilization_ratio",
+                        "1.0",
+                        "FACILITY",
+                        "fac-malformed",
+                        "VALUE",
+                        "DECIMAL",
+                        "not-a-number",
+                        base.plusSeconds(30).toString(),
+                        base.plusSeconds(30).toString(),
+                        null,
+                        null,
+                        "COMPLETE",
+                        "1.0");
+        inputTopic.pipeInput("fac-malformed", toJson(malformed), base.plusSeconds(30));
+
+        // SlidingWindows still opens new windows at this record's timestamp (folding in the
+        // surrounding valid records), so output is not necessarily suppressed entirely -- but every
+        // emitted delta must still reflect only the genuine 0.60 observation's baseline (mean 0.60,
+        // latest 0.60 -> delta 0.0), proving the malformed value itself never entered the running
+        // sum/count rather than corrupting it.
+        for (KeyValue<String, String> kv : readDeltaOutputs()) {
+            assertThat(Double.parseDouble(parse(kv.value).getValueNumeric())).isCloseTo(0.0, within(0.001));
+        }
+
+        // The next valid observation must still compute a correct delta against the pre-malformed
+        // baseline (just the single 0.60 observation), proving the malformed record was skipped
+        // rather than corrupting the running sum/count.
+        pipeUtilizationRatio("fac-malformed", 0.60, base.plusSeconds(60));
+        List<KeyValue<String, String>> outputs = readDeltaOutputs();
+        JsonFeatureValue last = parse(outputs.get(outputs.size() - 1).value);
+        assertThat(Double.parseDouble(last.getValueNumeric())).isCloseTo(0.0, within(0.001));
+    }
+
     private List<KeyValue<String, String>> readDeltaOutputs() {
         return outputTopic.readKeyValuesToList().stream()
                 .filter(kv -> "wc_utilization_delta_30d".equals(parse(kv.value).getFeatureName()))

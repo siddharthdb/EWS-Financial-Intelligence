@@ -112,6 +112,34 @@ class UtilizationSpikeSignalTopologyTest {
         assertThat(outputTopic.isEmpty()).isTrue();
     }
 
+    @Test
+    void malformedNonNumericValueIsSkippedRatherThanCrashingTheTopology() {
+        // Roadmap 3.6: a malformed valueNumeric must be filtered out, not thrown from inside the
+        // stateless .filter() (which would crash-loop the stream thread on the record forever).
+        JsonFeatureValue malformed =
+                new JsonFeatureValue(
+                        UUID.randomUUID().toString(),
+                        "FD-WC-UTILIZATION-DELTA-30D-001",
+                        "wc_utilization_delta_30d",
+                        "1.0",
+                        "FACILITY",
+                        "fac-malformed",
+                        "VALUE",
+                        "DECIMAL",
+                        "not-a-number",
+                        Instant.now().toString(),
+                        Instant.now().toString(),
+                        null,
+                        null,
+                        "COMPLETE",
+                        "1.0");
+        inputTopic.pipeInput("fac-malformed", toJson(malformed));
+        assertThat(outputTopic.isEmpty()).isTrue();
+
+        pipeDelta("fac-malformed", 0.25);
+        assertThat(outputTopic.readValuesToList()).hasSize(1);
+    }
+
     private void pipeDelta(String facilityId, double delta) {
         JsonFeatureValue featureValue =
                 new JsonFeatureValue(

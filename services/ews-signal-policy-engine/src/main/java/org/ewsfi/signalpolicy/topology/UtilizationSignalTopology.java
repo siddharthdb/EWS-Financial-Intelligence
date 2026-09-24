@@ -60,7 +60,15 @@ public class UtilizationSignalTopology {
         if (featureValue.getValueNumeric() == null) {
             return false;
         }
-        double ratio = Double.parseDouble(featureValue.getValueNumeric());
+        // Roadmap 3.6: filter out a malformed valueNumeric here rather than letting parseDouble
+        // throw from inside a stateless .filter() -- see SignalPolicyTopology for why an uncaught
+        // exception here would crash-loop the stream thread on the same record indefinitely.
+        double ratio;
+        try {
+            ratio = Double.parseDouble(featureValue.getValueNumeric());
+        } catch (NumberFormatException e) {
+            return false;
+        }
         return UtilizationSignalPolicyLoader.evaluate(ratio);
     }
 

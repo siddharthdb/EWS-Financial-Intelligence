@@ -107,6 +107,41 @@ class UtilizationFeatureTopologyTest {
         assertThat(Double.parseDouble(parse(lastForB.value).getValueNumeric())).isEqualTo(0.9);
     }
 
+    @Test
+    void malformedNonNumericSideIsSkippedRatherThanCrashingTheJoin() {
+        // Roadmap 3.6: a malformed currentLimit/currentOutstanding must not crash the KTable-KTable
+        // join's ValueJoiner (which would crash-loop the stream thread on the record forever); the
+        // join must instead emit nothing for that pairing, exactly as if the value hadn't arrived.
+        inputTopic.pipeInput(
+                "fac-malformed", malformedLimitChangedJson("fac-malformed"), Instant.now());
+        inputTopic.pipeInput(
+                "fac-malformed", outstandingChangedJson("fac-malformed", 40000.0), Instant.now());
+        assertThat(outputTopic.isEmpty()).isTrue();
+
+        // A subsequent valid limit for the same facility must still join correctly.
+        inputTopic.pipeInput("fac-malformed", limitChangedJson("fac-malformed", 100000.0), Instant.now());
+        var outputs = outputTopic.readKeyValuesToList();
+        assertThat(outputs).hasSize(1);
+        assertThat(Double.parseDouble(parse(outputs.get(0).value).getValueNumeric())).isEqualTo(0.4);
+    }
+
+    private static String malformedLimitChangedJson(String facilityId) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("facilityId", facilityId);
+        data.put("counterpartyId", "cp-1");
+        data.put("currentLimit", "not-a-number");
+        data.put("currency", "USD");
+        data.put("asOfDate", "2026-09-24");
+        return toJson(
+                new JsonEventEnvelope(
+                        UUID.randomUUID().toString(),
+                        "facility.limit.changed",
+                        Instant.now().toString(),
+                        "FACILITY",
+                        facilityId,
+                        data));
+    }
+
     private static String limitChangedJson(String facilityId, double currentLimit) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("facilityId", facilityId);

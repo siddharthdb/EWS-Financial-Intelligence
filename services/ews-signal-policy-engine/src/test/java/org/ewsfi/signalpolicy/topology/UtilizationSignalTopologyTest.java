@@ -105,6 +105,34 @@ class UtilizationSignalTopologyTest {
         assertThat(outputTopic.isEmpty()).isTrue();
     }
 
+    @Test
+    void malformedNonNumericValueIsSkippedRatherThanCrashingTheTopology() {
+        // Roadmap 3.6: a malformed valueNumeric must be filtered out, not thrown from inside the
+        // stateless .filter() (which would crash-loop the stream thread on the record forever).
+        JsonFeatureValue malformed =
+                new JsonFeatureValue(
+                        UUID.randomUUID().toString(),
+                        "FD-WC-UTILIZATION-RATIO-001",
+                        "wc_utilization_ratio",
+                        "1.0",
+                        "FACILITY",
+                        "fac-malformed",
+                        "VALUE",
+                        "DECIMAL",
+                        "not-a-number",
+                        Instant.now().toString(),
+                        Instant.now().toString(),
+                        null,
+                        null,
+                        "COMPLETE",
+                        "1.0");
+        inputTopic.pipeInput("fac-malformed", toJson(malformed));
+        assertThat(outputTopic.isEmpty()).isTrue();
+
+        pipeUtilization("fac-malformed", 0.95);
+        assertThat(outputTopic.readValuesToList()).hasSize(1);
+    }
+
     private void pipeUtilization(String facilityId, double ratio) {
         JsonFeatureValue featureValue =
                 new JsonFeatureValue(
