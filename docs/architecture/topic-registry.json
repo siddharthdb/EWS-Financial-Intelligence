@@ -24,9 +24,9 @@
   "events": [
     {"eventType": "obligation.dpd.changed", "topic": "ews.canonical.repayment", "keyField": "facilityId", "schemaArtifact": "schemas/events/payloads/obligation-dpd-changed-v1.avsc", "owner": "ews-ingestion-service", "dataClassification": "INTERNAL"},
     {"eventType": "payment.instruction.returned", "topic": "ews.canonical.account-transaction", "keyField": "accountId", "schemaArtifact": "schemas/events/payloads/payment-instruction-returned-v1.avsc", "owner": "ews-ingestion-service", "dataClassification": "INTERNAL"},
-    {"eventType": "facility.limit.changed", "topic": "ews.canonical.facility", "keyField": "facilityId", "schemaArtifact": null, "owner": "ews-core-registry-service", "dataClassification": "INTERNAL"},
+    {"eventType": "facility.limit.changed", "topic": "ews.canonical.facility", "keyField": "facilityId", "schemaArtifact": "schemas/events/payloads/facility-limit-changed-v1.avsc", "owner": "ews-core-registry-service", "dataClassification": "INTERNAL"},
     {"eventType": "facility.drawing_power.changed", "topic": "ews.canonical.facility", "keyField": "facilityId", "schemaArtifact": null, "owner": "ews-core-registry-service", "dataClassification": "INTERNAL"},
-    {"eventType": "facility.outstanding.changed", "topic": "ews.canonical.facility", "keyField": "facilityId", "schemaArtifact": null, "owner": "ews-core-registry-service", "dataClassification": "INTERNAL"},
+    {"eventType": "facility.outstanding.changed", "topic": "ews.canonical.facility", "keyField": "facilityId", "schemaArtifact": "schemas/events/payloads/facility-outstanding-changed-v1.avsc", "owner": "ews-core-registry-service", "dataClassification": "INTERNAL"},
     {"eventType": "trade_finance.lc.devolved", "topic": "ews.canonical.trade-finance", "keyField": "facilityId", "schemaArtifact": null, "owner": "ews-ingestion-service", "dataClassification": "INTERNAL"},
     {"eventType": "trade_finance.guarantee.invoked", "topic": "ews.canonical.trade-finance", "keyField": "facilityId", "schemaArtifact": null, "owner": "ews-ingestion-service", "dataClassification": "INTERNAL"},
     {"eventType": "financial.statement.received", "topic": "ews.canonical.financial-statement", "keyField": "counterpartyId", "schemaArtifact": null, "owner": "ews-ingestion-service", "dataClassification": "CONFIDENTIAL"},

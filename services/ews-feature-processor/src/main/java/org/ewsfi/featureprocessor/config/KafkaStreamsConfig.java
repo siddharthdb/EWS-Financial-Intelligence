@@ -7,6 +7,7 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
 import org.ewsfi.featureprocessor.topology.DpdFeatureTopology;
 import org.ewsfi.featureprocessor.topology.FeatureProcessorTopology;
+import org.ewsfi.featureprocessor.topology.UtilizationFeatureTopology;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,6 +46,12 @@ public class KafkaStreamsConfig {
     @Bean
     public KStream<String, String> dpdFeatureStream(
             StreamsBuilder streamsBuilder, DpdFeatureTopology topology) {
+        return topology.build(streamsBuilder);
+    }
+
+    @Bean
+    public KStream<String, String> utilizationFeatureStream(
+            StreamsBuilder streamsBuilder, UtilizationFeatureTopology topology) {
         return topology.build(streamsBuilder);
     }
 }

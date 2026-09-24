@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "FacilityOutstandingChangedV1",
+  "namespace": "org.ewsfi.events.facility.v1",
+  "doc": "Authoritative jurisdiction-neutral change in a facility's eligible outstanding exposure (docs/architecture/03d-phase1-event-catalogue.md Section 3, facility.outstanding.changed). Feeds utilization_ratio together with facility.limit.changed.",
+  "fields": [
+    {"name": "facilityId", "type": "string"},
+    {"name": "counterpartyId", "type": "string"},
+    {"name": "currentOutstanding", "type": "double"},
+    {"name": "currency", "type": "string"},
+    {"name": "asOfDate", "type": {"type": "int", "logicalType": "date"}}
+  ]
+}

@@ -51,7 +51,7 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 | 1.11 | Integration tests for the full payment-return slice (embedded Kafka + Postgres) | DONE | covered incrementally by each step's own tests (19 tests total across the slice) rather than one combined end-to-end test — see 2026-09-24 experience-api entry |
 | 1.12 | `current_dpd` feature + `DPD_EMERGED` (P01) signal | DONE (partial — see 1.18 for `max_dpd_30d`/`DPD_WORSENING`) | 2026-09-24 — DPD feature/signal family: current_dpd + DPD_EMERGED |
 | 1.13 | UK Companies House source adapter (real HTTP integration) | NOT_STARTED | needs an API key/credential decision — flag to user |
-| 1.14 | `wc_utilization_ratio` / `wc_available_headroom` features + `UTILIZATION_HIGH` (P05) / `UTILIZATION_SPIKE` (P06) signals | NOT_STARTED | |
+| 1.14 | `wc_utilization_ratio` feature + `UTILIZATION_HIGH` (P05) signal | DONE (partial — `wc_available_headroom`/`wc_utilization_delta_30d` and `UTILIZATION_SPIKE` (P06) not yet implemented) | 2026-09-24 — Working-capital utilization: wc_utilization_ratio + UTILIZATION_HIGH |
 | 1.15 | Minimal case/decision model beyond single disposition (case open/assign/escalate/close) | NOT_STARTED | |
 | 1.16 | Basic auth/IAM for the Experience API and disposition endpoints | NOT_STARTED | needs a design decision (auth provider, RBAC model) — flag to user |
 | 1.18 | `max_dpd_30d` (windowed) feature + `DPD_WORSENING` (P02) signal | NOT_STARTED | deferred from 1.12 — genuinely windowed aggregate + velocity/trend signal (method S), scoped out of the same firing for rigor |

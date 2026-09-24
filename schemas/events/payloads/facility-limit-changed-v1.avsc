@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "FacilityLimitChangedV1",
+  "namespace": "org.ewsfi.events.facility.v1",
+  "doc": "Authoritative jurisdiction-neutral change in a facility's approved/committed capacity (docs/architecture/03d-phase1-event-catalogue.md Section 3, facility.limit.changed). Product-specific capacity semantics (e.g. working-capital drawing power/borrowing base) are a separate specialization event, not this one.",
+  "fields": [
+    {"name": "facilityId", "type": "string"},
+    {"name": "counterpartyId", "type": "string"},
+    {"name": "currentLimit", "type": "double"},
+    {"name": "currency", "type": "string"},
+    {"name": "asOfDate", "type": {"type": "int", "logicalType": "date"}}
+  ]
+}

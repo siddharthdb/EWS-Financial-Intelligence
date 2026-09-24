@@ -22,6 +22,84 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — Working-capital utilization: wc_utilization_ratio + UTILIZATION_HIGH (P05)
+
+**Roadmap items:** 1.14 (DONE, partial — see Follow-ups for what remains)
+
+**What:** Implemented the third Phase-1 signal family, and the first one requiring two
+independently-changing inputs joined together rather than a single event stream.
+- `ews-core-registry-service` (previously skeleton-only, no business logic): `CanonicalEventPublisher`
+  (shared outbox-staging helper) plus `FacilityEventAdapter` + `FacilityController`, recording
+  `facility.limit.changed` (`POST /api/v1/facilities/{facilityId}/limit`) and
+  `facility.outstanding.changed` (`POST /api/v1/facilities/{facilityId}/outstanding`), both staged
+  via the outbox to `ews.canonical.facility`, keyed by `facilityId`, in the same local transaction
+  (ADR-003). New Avro contracts `schemas/events/payloads/facility-limit-changed-v1.avsc` and
+  `facility-outstanding-changed-v1.avsc` (topic registry previously listed these event types with
+  `schemaArtifact: null`; now populated).
+- `ews-feature-processor`: `UtilizationFeatureTopology` computes `wc_utilization_ratio`
+  (`eligible_outstanding / applicable_capacity`) by filtering `ews.canonical.facility` into two
+  separate latest-value `KTable`s (one per event type, since both types share the same topic and
+  key — a single `builder.table(...)` over the raw topic would let one type's value overwrite the
+  other's), then joining them with an inner `KTable.join`, which only emits once both a limit and
+  an outstanding observation exist for a facility and re-emits whenever either side changes.
+  Publishes to `ews.derived.feature`. Wired as a third `@Bean` on the service's shared
+  `StreamsBuilder`.
+- `ews-signal-policy-engine`: `UtilizationSignalPolicyLoader` (P05 UTILIZATION_HIGH,
+  `POL-UTILIZATION-HIGH-CORP-001`, threshold `>= 0.9`) + `UtilizationSignalTopology`, a stateless
+  per-value threshold evaluator mirroring `SignalPolicyTopology` exactly (no transition state
+  needed, unlike `DpdSignalTopology`). Wired as a fourth `@Bean` on that service's shared
+  `StreamsBuilder`.
+- `ews-case-workflow-service` and `ews-experience-api` required no changes — both remain
+  signal-type-agnostic.
+
+**Why:** `docs/architecture/02d-phase1-feature-catalogue.md` §1 defines `wc_utilization_ratio`; P05
+UTILIZATION_HIGH is in `docs/architecture/02a-priority-signal-contracts.md` §4. This proves the
+established ingest→feature→signal pattern generalizes a third way: a feature computed from a
+**join** of two independent event streams, not just a windowed count (payment-return) or a
+single-stream latest value (DPD).
+
+**Scoping decision:** `applicable_capacity` here is the baseline sanctioned limit from
+`facility.limit.changed`, not the working-capital drawing-power/borrowing-base specialization
+(`facility.drawing_power.changed`, still unimplemented — the catalogue's own §1 draws this
+distinction). If the limit is `0`, the ratio is reported as `0.0` rather than dividing by zero — a
+documented simplification. P06 UTILIZATION_SPIKE (a velocity/trend signal against a rolling
+baseline, method S) and `wc_available_headroom`/`wc_utilization_delta_30d` are deferred, mirroring
+how DPD_WORSENING/`max_dpd_30d` were deferred from item 1.12.
+
+**Files:**
+- `schemas/events/payloads/facility-limit-changed-v1.avsc`, `facility-outstanding-changed-v1.avsc`
+- `docs/architecture/topic-registry.json` (populated `schemaArtifact` for both event types)
+- `services/ews-core-registry-service/src/main/java/org/ewsfi/coreregistry/outbox/CanonicalEventPublisher.java`
+- `services/ews-core-registry-service/src/main/java/org/ewsfi/coreregistry/facility/FacilityEventAdapter.java`,
+  `FacilityLimitChangedRequest.java`, `FacilityOutstandingChangedRequest.java`, `FacilityController.java`
+- `services/ews-core-registry-service/src/test/java/org/ewsfi/coreregistry/facility/FacilityEventAdapterTest.java`
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/topology/UtilizationFeatureTopology.java`
+- `services/ews-feature-processor/src/test/java/org/ewsfi/featureprocessor/topology/UtilizationFeatureTopologyTest.java`
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/config/KafkaStreamsConfig.java` (third `@Bean`)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/policy/UtilizationSignalPolicyLoader.java`
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/UtilizationSignalTopology.java`
+- `services/ews-signal-policy-engine/src/test/java/org/ewsfi/signalpolicy/topology/UtilizationSignalTopologyTest.java`
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/config/KafkaStreamsConfig.java` (fourth `@Bean`)
+
+**Verification:**
+- `FacilityEventAdapterTest` (real local Postgres): asserts outbox rows for both event types, each
+  with the correct `eventType`, `kafkaTopic=ews.canonical.facility`, `partitionKey`, `status=NEW`.
+- `UtilizationFeatureTopologyTest` (`TopologyTestDriver`): proves no output until both a limit and
+  an outstanding value are known for a facility, that the ratio recomputes correctly when
+  outstanding changes (0.8 → 0.95 against a fixed limit), and that two facilities' utilizations are
+  computed independently (0.5 vs. 0.9).
+- `UtilizationSignalTopologyTest` (`TopologyTestDriver`): proves UTILIZATION_HIGH fires at/above the
+  0.9 threshold, does not fire below it, and ignores unrelated feature names.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules, all tests green —
+  `ews-core-registry-service` now carries real, passing tests for the first time.
+
+**Follow-ups:** P06 UTILIZATION_SPIKE, `wc_available_headroom`, `wc_utilization_delta_30d`, and the
+working-capital drawing-power specialization (`facility.drawing_power.changed`) remain
+`NOT_STARTED`/unimplemented — no new tracker row added yet since none of this firing's other work
+depended on them; a future firing can add one when it picks this up.
+
+---
+
 ## 2026-09-24 — Avro binary wire-format codec (roadmap 1.17, partial)
 
 **Roadmap items:** 1.17 (DONE, partial — see Follow-ups for what remains)
