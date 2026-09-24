@@ -9,6 +9,7 @@ import org.ewsfi.signalpolicy.topology.DpdSignalTopology;
 import org.ewsfi.signalpolicy.topology.DpdWorseningSignalTopology;
 import org.ewsfi.signalpolicy.topology.SignalPolicyTopology;
 import org.ewsfi.signalpolicy.topology.UtilizationSignalTopology;
+import org.ewsfi.signalpolicy.topology.UtilizationSpikeSignalTopology;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -56,6 +57,12 @@ public class KafkaStreamsConfig {
     @Bean
     public KStream<String, String> dpdWorseningSignalStream(
             StreamsBuilder streamsBuilder, DpdWorseningSignalTopology topology) {
+        return topology.build(streamsBuilder);
+    }
+
+    @Bean
+    public KStream<String, String> utilizationSpikeSignalStream(
+            StreamsBuilder streamsBuilder, UtilizationSpikeSignalTopology topology) {
         return topology.build(streamsBuilder);
     }
 }

@@ -61,8 +61,8 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 | # | Item | Status | Build log entry |
 |---|---|---|---|
 | 2.1 | US SEC/EDGAR source adapter | DONE (partial — most-recent 10-K/10-Q detection only; 8-K item classification, XBRL extraction, CIK watch-list, and entity resolution not yet implemented) | 2026-09-24 — SEC EDGAR connector: the platform's first genuine external-source integration |
-| 2.2 | India regulatory source adapter(s) | NOT_STARTED | |
-| 2.3 | Statistical/anomaly detection engine (method `S`/`A` signals) | NOT_STARTED | |
+| 2.2 | India regulatory source adapter(s) | NOT_STARTED | blocked — no keyless public API found; see human-decision list |
+| 2.3 | Statistical/anomaly detection engine (method `S`/`A` signals) | DONE (partial — first method-S signal only: `wc_utilization_delta_30d` + `UTILIZATION_SPIKE` (P06); true anomaly-method (A) detection and the financial-statement-based signals in 04-signal-taxonomy.md §4 remain unimplemented) | 2026-09-24 — wc_utilization_delta_30d + UTILIZATION_SPIKE (P06): first statistical (method S) signal |
 | 2.4 | First real ML model (method `ML` signals) + model registry integration | NOT_STARTED | |
 | 2.5 | AI Gateway (ADR-006, not yet written) | NOT_STARTED | needs ADR-006 first |
 | 2.6 | Governed GenAI explanation capability | NOT_STARTED | depends on 2.5 |
@@ -87,6 +87,12 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 - 0.13 — legacy system discovery (needs access this session doesn't have)
 - 1.13 — external API credentials/licensing for source adapters
 - 1.16 — auth/IAM provider and RBAC model choice
+- 2.2 — India regulatory source adapter(s): checked during the 2026-09-24 firing that added the
+  SEC EDGAR connector (roadmap 2.1) for a keyless-public-API equivalent — MCA21 (India's company
+  registry) returned HTTP 403 on an unauthenticated request (login/session-gated), and India's
+  open-government data portal (`api.data.gov.in`) requires a registered API key. Unlike SEC EDGAR,
+  no genuinely keyless official source was found reachable from this environment; which India
+  source to target and how to obtain access is a licensing/credential decision, same class as 1.13
 - Any item where the "right" answer depends on real analyst throughput data, regulatory sign-off,
   or a source's actual licensing terms (per `docs/architecture/06-gap-analysis-and-implementation-roadmap.md`
   §8 "Risks & Open Questions")

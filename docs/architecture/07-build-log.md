@@ -22,6 +22,71 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — wc_utilization_delta_30d + UTILIZATION_SPIKE (P06): first statistical (method S) signal
+
+**Roadmap items:** 2.3 (DONE, partial — see Follow-ups), closes the `UTILIZATION_SPIKE`/
+`wc_available_headroom` follow-up left open by item 1.14
+
+**What:** Implemented the platform's first genuinely statistical (method S) feature and signal —
+every prior feature was a deterministic count, latest value, max, or ratio; none compared an
+observation against a computed statistical baseline.
+- `ews-feature-processor`: `UtilizationDeltaFeatureTopology` computes `wc_utilization_delta_30d`
+  (`docs/architecture/02d-phase1-feature-catalogue.md` §1: "current utilization minus configured
+  30-day baseline... Used by utilization-spike detection"). Consumes `ews.derived.feature` filtered
+  to `wc_utilization_ratio` — a "feature on a feature," composing `UtilizationFeatureTopology`'s
+  output rather than recomputing from raw canonical events. Maintains a `SlidingWindows` aggregate
+  tracking `{sum, count, latestValue}` per facility over the same 30-day window other DPD/payment
+  features use, and emits `delta = latestValue - (sum / count)`. Wired as a fifth `@Bean` on the
+  service's shared `StreamsBuilder`.
+- `ews-signal-policy-engine`: `UtilizationSpikeSignalPolicyLoader` (P06 UTILIZATION_SPIKE,
+  `POL-UTILIZATION-SPIKE-CORP-001`, threshold `delta >= 0.15`) + `UtilizationSpikeSignalTopology`,
+  a stateless per-value threshold evaluator mirroring `UtilizationSignalTopology` — no additional
+  state needed here since the upstream feature already encodes the baseline comparison, unlike
+  `DpdSignalTopology`/`DpdWorseningSignalTopology`, which compare consecutive raw values themselves.
+  Wired as a sixth `@Bean` on that service's shared `StreamsBuilder`.
+
+**Why:** Roadmap item 2.3 calls for a statistical/anomaly detection engine (method `S`/`A` signals).
+Rather than start a new, disconnected engine, this entry builds the first real method-S signal on
+top of infrastructure already proven this session (`wc_utilization_ratio` from item 1.14), which
+both demonstrates the pattern and closes out P06 UTILIZATION_SPIKE — explicitly deferred when 1.14
+was scoped down to UTILIZATION_HIGH only.
+
+**Also this firing:** investigated roadmap item 2.2 (India regulatory source adapter) to see
+whether, like SEC EDGAR, a keyless public API exists. It does not: MCA21 (India's company registry)
+returned HTTP 403 unauthenticated (session/login-gated), and `api.data.gov.in` (India's open
+government data portal) requires a registered API key. Added 2.2 to the tracker's human-decision
+list with this finding rather than silently skipping it or fabricating access.
+
+**Files:**
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/topology/UtilizationDeltaFeatureTopology.java`
+- `services/ews-feature-processor/src/test/java/org/ewsfi/featureprocessor/topology/UtilizationDeltaFeatureTopologyTest.java`
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/config/KafkaStreamsConfig.java` (fifth `@Bean`)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/policy/UtilizationSpikeSignalPolicyLoader.java`
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/UtilizationSpikeSignalTopology.java`
+- `services/ews-signal-policy-engine/src/test/java/org/ewsfi/signalpolicy/topology/UtilizationSpikeSignalTopologyTest.java`
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/config/KafkaStreamsConfig.java` (sixth `@Bean`)
+- `docs/architecture/08-roadmap-progress-tracker.md` (2.2 flagged, human-decision list updated)
+
+**Verification:**
+- `UtilizationDeltaFeatureTopologyTest` (`TopologyTestDriver`): proves the delta reflects deviation
+  from the rolling mean, not just the latest raw value (mean of `{0.50, 0.50, 0.90}` = 0.6333, delta
+  for the last observation = 0.2667, asserted to 3 decimal places), and that a steady utilization
+  series produces a near-zero delta.
+- `UtilizationSpikeSignalTopologyTest` (`TopologyTestDriver`): proves UTILIZATION_SPIKE fires at/
+  above the 0.15 threshold, does not fire below it or on a negative delta, and ignores unrelated
+  feature names.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules, all tests green.
+
+**Follow-ups:** `wc_available_headroom` (currency-denominated, not a ratio) and true anomaly-method
+(A) detection (e.g. a proper z-score against a standard deviation, rather than a fixed delta
+threshold) remain unimplemented. Roadmap item 2.3's broader scope (statistical models for the
+financial-performance signals in `04-signal-taxonomy.md` §4, e.g. `EBITDA_MARGIN_DERIORATION`)
+needs financial-statement data ingestion this platform doesn't have yet (the SEC EDGAR connector
+from item 2.1 only detects that a filing exists, not its XBRL contents) — a substantially larger
+future increment.
+
+---
+
 ## 2026-09-24 — SEC EDGAR connector: the platform's first genuine external-source integration
 
 **Roadmap items:** 2.1 (DONE, partial — see Follow-ups)
