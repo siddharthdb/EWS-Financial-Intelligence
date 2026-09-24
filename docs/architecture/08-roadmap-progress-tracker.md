@@ -63,11 +63,11 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 | 2.1 | US SEC/EDGAR source adapter | DONE (partial — most-recent 10-K/10-Q detection only; 8-K item classification, XBRL extraction, CIK watch-list, and entity resolution not yet implemented) | 2026-09-24 — SEC EDGAR connector: the platform's first genuine external-source integration |
 | 2.2 | India regulatory source adapter(s) | NOT_STARTED | blocked — no keyless public API found; see human-decision list |
 | 2.3 | Statistical/anomaly detection engine (method `S`/`A` signals) | DONE (partial — first method-S signal only: `wc_utilization_delta_30d` + `UTILIZATION_SPIKE` (P06); true anomaly-method (A) detection and the financial-statement-based signals in 04-signal-taxonomy.md §4 remain unimplemented) | 2026-09-24 — wc_utilization_delta_30d + UTILIZATION_SPIKE (P06): first statistical (method S) signal |
-| 2.4 | First real ML model (method `ML` signals) + model registry integration | NOT_STARTED | |
+| 2.4 | First real ML model (method `ML` signals) + model registry integration | NOT_STARTED | blocked — see human-decision list |
 | 2.5 | AI Gateway (ADR-006, not yet written) | NOT_STARTED | needs ADR-006 first |
 | 2.6 | Governed GenAI explanation capability | NOT_STARTED | depends on 2.5 |
 | 2.7 | Model governance platform (ADR-010, not yet written) | NOT_STARTED | needs ADR-010 first |
-| 2.8 | Expand priority signal contracts P10–P34 implementations | NOT_STARTED | |
+| 2.8 | Expand priority signal contracts P10–P34 implementations | DONE (partial — P18 REQUIRED_MONITORING_INFORMATION_DELAY only; every other P10–P34 contract needs financial-statement XBRL contents this platform doesn't parse yet) | 2026-09-24 — financial_statement_filing_delay_days + REQUIRED_MONITORING_INFORMATION_DELAY (P18) |
 | 2.9 | Jurisdiction classification adapters (US CECL/supervisory, UK IFRS9/SICR, IN SMA/NPA) | NOT_STARTED | |
 
 ## Phase 3 — Platform maturity
@@ -93,6 +93,18 @@ build next, and the reference a periodic user check-in is measured against. Mirr
   open-government data portal (`api.data.gov.in`) requires a registered API key. Unlike SEC EDGAR,
   no genuinely keyless official source was found reachable from this environment; which India
   source to target and how to obtain access is a licensing/credential decision, same class as 1.13
+- 2.4 — First real ML model + model registry integration: checked every method-`ML`-tagged signal
+  in `docs/architecture/04-signal-taxonomy.md` (`DEBIT_CREDIT_PATTERN_ANOMALY`,
+  `ROUND_TRIPPING_PATTERN`/`_SUSPECTED`, `REFINANCING_RISK_INCREASE`,
+  `MARKET_IMPLIED_CREDIT_STRESS`, `CONTAGION_SCORE_SPIKE`) against everything this platform
+  currently ingests (payment returns, DPD, facility limit/outstanding, SEC filing metadata only,
+  not filing contents) — none is honestly implementable without either new data ingestion (full
+  transaction ledgers, graph/relationship data, market pricing) this platform doesn't have, or
+  inventing an ungoverned signal type outside the taxonomy. Separately, no historical labeled
+  outcome data exists anywhere in this platform yet to train against. Which composite/ML capability
+  to build first, and what to train it on (synthetic vs. deferred until real data exists), is a
+  product/model-governance decision, not one to resolve autonomously by fabricating training data
+  or a training-data proxy for a real business outcome
 - Any item where the "right" answer depends on real analyst throughput data, regulatory sign-off,
   or a source's actual licensing terms (per `docs/architecture/06-gap-analysis-and-implementation-roadmap.md`
   §8 "Risks & Open Questions")

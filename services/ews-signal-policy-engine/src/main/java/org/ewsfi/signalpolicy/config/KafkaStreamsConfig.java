@@ -7,6 +7,7 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
 import org.ewsfi.signalpolicy.topology.DpdSignalTopology;
 import org.ewsfi.signalpolicy.topology.DpdWorseningSignalTopology;
+import org.ewsfi.signalpolicy.topology.RequiredMonitoringDelaySignalTopology;
 import org.ewsfi.signalpolicy.topology.SignalPolicyTopology;
 import org.ewsfi.signalpolicy.topology.UtilizationSignalTopology;
 import org.ewsfi.signalpolicy.topology.UtilizationSpikeSignalTopology;
@@ -63,6 +64,12 @@ public class KafkaStreamsConfig {
     @Bean
     public KStream<String, String> utilizationSpikeSignalStream(
             StreamsBuilder streamsBuilder, UtilizationSpikeSignalTopology topology) {
+        return topology.build(streamsBuilder);
+    }
+
+    @Bean
+    public KStream<String, String> requiredMonitoringDelaySignalStream(
+            StreamsBuilder streamsBuilder, RequiredMonitoringDelaySignalTopology topology) {
         return topology.build(streamsBuilder);
     }
 }

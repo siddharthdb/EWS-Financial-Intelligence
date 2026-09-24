@@ -22,6 +22,72 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — financial_statement_filing_delay_days + REQUIRED_MONITORING_INFORMATION_DELAY (P18)
+
+**Roadmap items:** 2.8 (DONE, partial — one of the P10–P34 contracts implemented)
+
+**What:** Built the first feature/signal pair directly on top of the SEC EDGAR connector (roadmap
+item 2.1), closing the loop from "detect a filing exists" to a real governed signal.
+- `ews-feature-processor`: `FilingDelayFeatureTopology` computes
+  `financial_statement_filing_delay_days` = `filingDate - reportDate` from
+  `ews.canonical.financial-statement`'s `financial.statement.received` events. The first stateless,
+  purely per-event feature in the platform -- every prior feature needed windowing or cross-event
+  state; this one doesn't, since both dates already arrive on the same event. Wired as a sixth
+  `@Bean` on the service's shared `StreamsBuilder`.
+- `ews-signal-policy-engine`: `RequiredMonitoringDelaySignalPolicyLoader` (P18
+  REQUIRED_MONITORING_INFORMATION_DELAY, `POL-REQUIRED-MONITORING-DELAY-CORP-001`, threshold
+  `> 90` days) + `RequiredMonitoringDelaySignalTopology`, a stateless per-value threshold evaluator
+  mirroring `SignalPolicyTopology`/`UtilizationSignalTopology`. Wired as an eighth `@Bean` on that
+  service's shared `StreamsBuilder`.
+
+**Why:** Roadmap item 2.8 calls for expanding P10–P34 priority signal contract implementations.
+Nearly every P10–P34 contract needs financial-statement *contents* (DSCR, leverage, cash flow) this
+platform doesn't parse yet (the SEC connector only detects that a filing exists, not its XBRL
+data). P18 REQUIRED_MONITORING_INFORMATION_DELAY is the one contract in that range genuinely
+implementable from metadata already ingested (`filingDate`/`reportDate`), making it the natural next
+step after 2.1/2.3 rather than starting an unrelated, disconnected slice.
+
+**Scoping decision:** SEC's own regulatory filing deadlines vary by filer category (10-K:
+60/75/90 days for large-accelerated/accelerated/non-accelerated filers; 10-Q: 40/40/45 days) and by
+form type. This policy does not track filer category, using a single conservative 90-day threshold
+(the maximum across every category/form this platform ingests) — a filing this flags is genuinely
+late under every category; one that isn't flagged may still be late under a stricter category not
+modeled here. Tracking filer category (present in SEC's response as `category`) is a natural, small
+follow-up, not implemented this pass.
+
+**Also this firing:** investigated roadmap item 2.4 (first ML model + model registry) against every
+method-`ML`-tagged signal in the taxonomy (`DEBIT_CREDIT_PATTERN_ANOMALY`, `ROUND_TRIPPING_*`,
+`REFINANCING_RISK_INCREASE`, `MARKET_IMPLIED_CREDIT_STRESS`, `CONTAGION_SCORE_SPIKE`) — none is
+honestly implementable without new data ingestion (full transaction ledgers, graph/relationship
+data, market pricing) this platform doesn't have, or inventing an ungoverned signal type, and no
+historical labeled outcome data exists anywhere in the platform to train against. Added to the
+tracker's human-decision list with this finding rather than fabricating training data or forcing an
+ungrounded signal type.
+
+**Files:**
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/topology/FilingDelayFeatureTopology.java`
+- `services/ews-feature-processor/src/test/java/org/ewsfi/featureprocessor/topology/FilingDelayFeatureTopologyTest.java`
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/config/KafkaStreamsConfig.java` (sixth `@Bean`)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/policy/RequiredMonitoringDelaySignalPolicyLoader.java`
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/RequiredMonitoringDelaySignalTopology.java`
+- `services/ews-signal-policy-engine/src/test/java/org/ewsfi/signalpolicy/topology/RequiredMonitoringDelaySignalTopologyTest.java`
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/config/KafkaStreamsConfig.java` (eighth `@Bean`)
+- `docs/architecture/08-roadmap-progress-tracker.md` (2.4 flagged, human-decision list updated)
+
+**Verification:**
+- `FilingDelayFeatureTopologyTest` (`TopologyTestDriver`): proves the delay computes correctly
+  (2026-03-31 to 2026-06-15 = 76 days), that filings with a blank `reportDate` are skipped, and that
+  unrelated event types produce no output.
+- `RequiredMonitoringDelaySignalTopologyTest` (`TopologyTestDriver`): proves the signal fires above
+  the 90-day threshold, does not fire within it, and ignores unrelated feature names.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules, all tests green.
+
+**Follow-ups:** Filer-category-aware deadlines (using SEC's own `category` field), and the
+remaining P10–P34 contracts that need financial-statement XBRL contents rather than filing
+metadata, remain unimplemented.
+
+---
+
 ## 2026-09-24 — wc_utilization_delta_30d + UTILIZATION_SPIKE (P06): first statistical (method S) signal
 
 **Roadmap items:** 2.3 (DONE, partial — see Follow-ups), closes the `UTILIZATION_SPIKE`/

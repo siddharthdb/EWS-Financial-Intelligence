@@ -7,6 +7,7 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
 import org.ewsfi.featureprocessor.topology.DpdFeatureTopology;
 import org.ewsfi.featureprocessor.topology.FeatureProcessorTopology;
+import org.ewsfi.featureprocessor.topology.FilingDelayFeatureTopology;
 import org.ewsfi.featureprocessor.topology.MaxDpdFeatureTopology;
 import org.ewsfi.featureprocessor.topology.UtilizationDeltaFeatureTopology;
 import org.ewsfi.featureprocessor.topology.UtilizationFeatureTopology;
@@ -66,6 +67,12 @@ public class KafkaStreamsConfig {
     @Bean
     public KStream<String, String> utilizationDeltaFeatureStream(
             StreamsBuilder streamsBuilder, UtilizationDeltaFeatureTopology topology) {
+        return topology.build(streamsBuilder);
+    }
+
+    @Bean
+    public KStream<String, String> filingDelayFeatureStream(
+            StreamsBuilder streamsBuilder, FilingDelayFeatureTopology topology) {
         return topology.build(streamsBuilder);
     }
 }
