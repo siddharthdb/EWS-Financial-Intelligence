@@ -45,7 +45,7 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 | 1.17 | Switch Kafka wire format from JSON to Avro + Schema Registry (per 03-event-architecture.md §10 and ADR-011) | NOT_STARTED | payment-return slice uses JSON as a documented interim simplification — see 2026-09-24 outbox entry |
 | 1.6 | `PaymentInstructionReturnedAdapter` real logic + trigger endpoint | DONE | 2026-09-24 — payment-return ingestion adapter |
 | 1.7 | Feature processor: `returned_payment_count_30d` real Kafka Streams topology | DONE | 2026-09-24 — feature processor topology |
-| 1.8 | Signal policy engine: `REPEATED_PAYMENT_RETURN` (P03) real topology | NOT_STARTED | |
+| 1.8 | Signal policy engine: `REPEATED_PAYMENT_RETURN` (P03) real topology | DONE | 2026-09-24 — signal policy engine |
 | 1.9 | Case workflow: real disposition endpoints (accept/reject) | NOT_STARTED | |
 | 1.10 | Experience API: real proposed-signal query + evidence drill-down | NOT_STARTED | |
 | 1.11 | Integration tests for the full payment-return slice (embedded Kafka + Postgres) | NOT_STARTED | |

@@ -1,6 +1,4 @@
 spring:
-  application:
-    name: ews-signal-policy-engine
   datasource:
     url: jdbc:postgresql://localhost:5432/ews
     username: ews
@@ -10,13 +8,11 @@ spring:
       ddl-auto: validate
     open-in-view: false
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${spring.embedded.kafka.brokers}
     consumer:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       auto-offset-reset: earliest
+      group-id: ews-signal-policy-engine-persistence-test
     streams:
-      application-id: ews-signal-policy-engine
-
-server:
-  port: 8084
+      application-id: ews-signal-policy-engine-test

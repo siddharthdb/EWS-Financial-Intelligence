@@ -22,6 +22,48 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — Signal policy engine: `REPEATED_PAYMENT_RETURN` (P03)
+
+**Roadmap items:** 1.8
+
+**What:** `SignalPolicyTopology` (the "signal policy engine" named in ADR-004) consumes
+`ews.derived.feature`, evaluates a hard-coded rule-method policy
+(`SignalPolicyLoader`: `returned_payment_count_30d >= 3`, matching the shape of the jurisdiction-
+neutral policy example in `04-signal-taxonomy.md` §18), and emits `signal.detected` JSON
+(`JsonSignalDetected`, new in `ews-schemas`'s interim package) to `ews.derived.signal` whenever the
+threshold is met. Each signal's `signalId` is deterministically derived
+(`UUID.nameUUIDFromBytes(featureValueId)`) so re-processing the same feature value under Kafka's
+at-least-once delivery produces the same ID rather than a duplicate proposed signal.
+`SignalInstancePersistenceListener` (`@KafkaListener`, mirroring the feature-processor's
+computation/persistence split) persists each as a `signal_instance` row with its evidence child
+row — and explicitly does **not** overwrite a row that already exists, since by the time a
+re-delivered message arrives an analyst may have already accepted or rejected the signal.
+
+**Why:** This is the signal-detection link in the payment-return slice's chain, and the first place
+in the codebase evidence-first governance (ADR-005) and the human-validation gate (ADR-002) become
+concrete: every persisted `signal_instance` carries at least one `evidenceIds` entry (enforced by
+`SignalInstance`'s constructor, added in the persistence-core session) and starts life in `PROPOSED`
+status, never `ACTIVE`, pending human disposition (implemented next).
+
+**A documented simplification:** a single hard-coded policy, not the persisted, versioned
+`signal_policy` table (`schemas/signals/signal-policy-v1.schema.json`) that the architecture
+specifies. Loading and evaluating arbitrary persisted policies is real future work once more than
+one signal family exists — flagged in code (`SignalPolicyLoader`'s Javadoc), not silently assumed.
+
+**Files:** `platform/ews-schemas/src/main/java/org/ewsfi/contracts/interim/JsonSignalDetected.java`
+(new), `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/**`.
+
+**Verification:** `SignalPolicyTopologyTest` (`TopologyTestDriver`, no broker) proves the threshold
+rule, the below-threshold no-op case, and the unrelated-feature-name no-op case.
+`SignalInstancePersistenceListenerTest` (`@EmbeddedKafka` + real Postgres) proves both the
+happy-path persistence (with evidence) and — deliberately, since this is exactly the kind of subtle
+correctness property that's easy to get wrong — that a re-delivered `signal.detected` message does
+**not** clobber a signal an analyst already moved to `ACCEPTED`. `mvn -B -ntp verify` green across
+all 14 modules, 14 tests total (outbox 1, ingestion 1, feature-processor 3, signal-policy-engine 5,
+persistence-core 2, contract tests 2).
+
+---
+
 ## 2026-09-24 — Feature processor: `returned_payment_count_30d`
 
 **Roadmap items:** 1.7
