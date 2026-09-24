@@ -22,6 +22,52 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — ADR-010: Model Governance Platform (roadmap 2.7)
+
+**Roadmap items:** 2.7 (moves NOT_STARTED -> DONE (partial); named this ADR as its own explicit
+prerequisite in the tracker, mirroring how 2.5 named ADR-006)
+
+**What:** Wrote `docs/architecture/adr/ADR-010-model-governance-platform.md` (the seventh ADR for
+this platform), recording the model registry/approval/lifecycle contract every future ML- or
+graph-method model must satisfy: a mandatory registry entry (training/validation population,
+calibration version, market/jurisdiction/segment/product, permitted/prohibited uses, use-case
+approval) before any such model can back a live signal detector; approval that is scoped per
+use-case/jurisdiction/population/calibration rather than a global blanket flag (directly per
+`02-canonical-risk-model.md` §17's own worked example: EWS approval is not CECL/IFRS9/IRB approval);
+and the full ordered lifecycle from `01-architecture-blueprint.md` §19 (governed data/features ->
+training -> validation -> backtesting -> registry -> approval -> serving -> monitoring ->
+retirement) enforced as a structural field, not an informal process note. Keeps MLflow as an
+implementation candidate rather than a hard dependency, preserving §19's own framing rather than
+prematurely committing to a specific product. Updated `docs/adr/README.md` to move ADR-010 from
+"Planned" to "Written."
+
+**Why:** Unlike ADR-006 (where the evidence spine the AI Gateway would gate genuinely didn't exist
+until recently), the governance contract here was already fully specified in the blueprint (§19) and
+canonical risk model (§17) with nothing left to discover by waiting -- and the tracker names this
+ADR as 2.7's own explicit prerequisite the same way ADR-006 was 2.5's. Deliberately does not invent
+a first model to register: no signal implemented so far is ML- or graph-method (all are rule- or
+statistics-method), and roadmap item 2.4 (first real ML model) remains independently blocked on its
+own already-recorded human decision (what to build first, what to train on) -- this ADR governs the
+platform a model would register into, not the decision of which model to build, so it does not
+unblock 2.4.
+
+**Files:**
+- `docs/architecture/adr/ADR-010-model-governance-platform.md` (new)
+- `docs/adr/README.md`
+
+**Verification:**
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules (doc-only change).
+- Cross-checked every normative claim against its cited source (`01-architecture-blueprint.md` §19,
+  `02-canonical-risk-model.md` §17, the tracker's existing 2.4/2.9 human-decision entries) rather
+  than inventing governance requirements not already specified somewhere in the platform's docs.
+
+**Follow-ups:** ADR-007 (hybrid AI deployment), ADR-008 (graph intelligence adoption), and ADR-009
+(feature-store strategy) remain unwritten; ADR-008 in particular is now item 3.1's own named
+prerequisite, the same pattern that produced this entry and the ADR-006 one, and is a reasonable
+next candidate for a future firing once the higher-priority Phase 0-2 rows are exhausted.
+
+---
+
 ## 2026-09-24 — ADR-006: AI Gateway and Model Access (roadmap 2.5)
 
 **Roadmap items:** 2.5 (moves NOT_STARTED -> DONE (partial); named this ADR as its own explicit
