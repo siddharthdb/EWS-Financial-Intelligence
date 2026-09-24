@@ -120,6 +120,18 @@ public class FeatureValue {
         return valueNumeric;
     }
 
+    public OffsetDateTime getWindowStart() {
+        return windowStart;
+    }
+
+    public OffsetDateTime getWindowEnd() {
+        return windowEnd;
+    }
+
+    public OffsetDateTime getCalculatedAt() {
+        return calculatedAt;
+    }
+
     public OffsetDateTime getKnowledgeTime() {
         return knowledgeTime;
     }

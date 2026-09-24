@@ -22,6 +22,54 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — Experience API: evidence drill-down (payment-return slice complete)
+
+**Roadmap items:** 1.10, 1.11
+
+**What:** `ProposedSignalQueryController` gives `ews-experience-api` — standing in for Layer 9
+("Experience") of `01-architecture-blueprint.md` §2 — its first real handlers:
+`GET /api/v1/proposed-signals?status=PROPOSED` lists signals by status, and
+`GET /api/v1/proposed-signals/{id}` returns one signal with its evidence drill-down resolved: each
+`evidenceIds` entry is looked up as a `feature_value` row and returned inline
+(`ProposedSignalView`/`FeatureValueEvidenceView`), per the drill-down chain in
+`01-architecture-blueprint.md` §16 ("Explanation -> Signal -> ... -> Features -> Observations ->
+Evidence -> Original source"). This is deliberately read-only — accept/reject stays in
+`ews-case-workflow-service` — matching `EA-01`'s command/query separation
+(`03-event-architecture.md` §2).
+
+**Why:** This closes the payment-return vertical slice end-to-end: ingest → outbox → Kafka →
+feature → signal → human disposition → **experience API view**. Every link in that chain now has
+real, tested logic, not a stub.
+
+**A documented gap:** the drill-down only reaches feature values, not further back to the original
+canonical events/evidence — `FeatureValue` doesn't carry `observationIds`/`sourceRecordIds` lineage
+in this slice (that's in the full `feature_value_lineage_ref` DDL table, unused so far). The full
+chain to "original transaction/document/external source" is real future work, documented in
+`ProposedSignalView`'s own Javadoc, not silently claimed as done.
+
+**Also added:** getters on `SignalInstance` (severity, confidenceValue, materialityBand, detectedAt,
+knowledgeTime, policyId, policyVersion) and `FeatureValue` (windowStart, windowEnd, calculatedAt) in
+`ews-persistence-core` — needed by the view DTOs here and not previously exposed.
+
+**Files:** `services/ews-experience-api/src/main/java/org/ewsfi/experience/signals/*.java`,
+`platform/ews-persistence-core/.../signal/SignalInstance.java`,
+`platform/ews-persistence-core/.../feature/FeatureValue.java` (new getters only).
+
+**Verification:** New `ProposedSignalQueryControllerTest` (`MockMvc`, real Postgres) seeds a real
+`feature_value` row and a `signal_instance` whose `evidenceIds` references it, then asserts the
+`GET /{id}` response actually resolves and inlines that evidence (not just echoes the ID), plus a
+404 case for an unknown signal. `mvn -B -ntp verify` green across all 14 modules — **19 tests
+total** across the whole payment-return slice (outbox 1, ingestion 1, feature-processor 3,
+signal-policy-engine 5, case-workflow 3, experience-api 2, persistence-core 2, contract tests 2).
+No single combined "walk the whole slice in one test" integration test exists; coverage is
+per-hop instead, each proven against real Postgres and (where relevant) real/embedded Kafka.
+
+**This completes Part B of the payment-return vertical slice** (plan: "Phase 3: Payment-Return
+Vertical Slice + Autonomous Continuation Loop"). Next: set up the autonomous continuation Routine
+(Part C) to keep working through `08-roadmap-progress-tracker.md`.
+
+---
+
 ## 2026-09-24 — Case-workflow disposition endpoints (the human-validation gate)
 
 **Roadmap items:** 1.9

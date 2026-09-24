@@ -162,6 +162,34 @@ public class SignalInstance {
         this.status = status;
     }
 
+    public String getSeverity() {
+        return severity;
+    }
+
+    public double getConfidenceValue() {
+        return confidenceValue;
+    }
+
+    public String getMaterialityBand() {
+        return materialityBand;
+    }
+
+    public OffsetDateTime getDetectedAt() {
+        return detectedAt;
+    }
+
+    public OffsetDateTime getKnowledgeTime() {
+        return knowledgeTime;
+    }
+
+    public String getPolicyId() {
+        return policyId;
+    }
+
+    public String getPolicyVersion() {
+        return policyVersion;
+    }
+
     public Set<String> getEvidenceIds() {
         return evidenceIds;
     }

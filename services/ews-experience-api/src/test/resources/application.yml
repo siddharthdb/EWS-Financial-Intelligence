@@ -1,6 +1,4 @@
 spring:
-  application:
-    name: ews-experience-api
   datasource:
     url: jdbc:postgresql://localhost:5432/ews
     username: ews
@@ -9,6 +7,3 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
-
-server:
-  port: 8080

@@ -47,8 +47,8 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 | 1.7 | Feature processor: `returned_payment_count_30d` real Kafka Streams topology | DONE | 2026-09-24 — feature processor topology |
 | 1.8 | Signal policy engine: `REPEATED_PAYMENT_RETURN` (P03) real topology | DONE | 2026-09-24 — signal policy engine |
 | 1.9 | Case workflow: real disposition endpoints (accept/reject) | DONE | 2026-09-24 — case-workflow disposition endpoints |
-| 1.10 | Experience API: real proposed-signal query + evidence drill-down | NOT_STARTED | |
-| 1.11 | Integration tests for the full payment-return slice (embedded Kafka + Postgres) | NOT_STARTED | |
+| 1.10 | Experience API: real proposed-signal query + evidence drill-down | DONE | 2026-09-24 — experience-api evidence drill-down |
+| 1.11 | Integration tests for the full payment-return slice (embedded Kafka + Postgres) | DONE | covered incrementally by each step's own tests (19 tests total across the slice) rather than one combined end-to-end test — see 2026-09-24 experience-api entry |
 | 1.12 | `current_dpd` / `max_dpd_30d` features + `DPD_EMERGED` (P01) / `DPD_WORSENING` (P02) signals | NOT_STARTED | second Phase-1 signal family, after payment-return slice proves the pattern |
 | 1.13 | UK Companies House source adapter (real HTTP integration) | NOT_STARTED | needs an API key/credential decision — flag to user |
 | 1.14 | `wc_utilization_ratio` / `wc_available_headroom` features + `UTILIZATION_HIGH` (P05) / `UTILIZATION_SPIKE` (P06) signals | NOT_STARTED | |
