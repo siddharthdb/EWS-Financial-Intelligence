@@ -56,6 +56,9 @@ Evidence -> Observation/Event -> Feature -> Signal -> Risk Assessment
 - [ADR-003 — Application-Managed Transactional Outbox](docs/architecture/adr/ADR-003-application-managed-transactional-outbox.md)
 - [ADR-004 — Kafka Streams First](docs/architecture/adr/ADR-004-kafka-streams-first.md)
 
+### Part IV — assessment
+- [Gap Analysis and Implementation Roadmap](docs/architecture/06-gap-analysis-and-implementation-roadmap.md)
+
 ## Executable contracts
 
 Machine-readable contracts are under `schemas/` for events, features, signals, classifications, identity/entity resolution and source governance. Contracts are currently **DRAFT / PRE-PUBLICATION**: compatibility/version guarantees become binding when an artifact is first published to the governed schema registry or explicitly marked `PUBLISHED`. After publication, breaking semantic or wire-format changes require a new major contract in accordance with `03h-schema-governance-and-registry.md`.
