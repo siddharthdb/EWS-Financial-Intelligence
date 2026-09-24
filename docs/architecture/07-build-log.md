@@ -22,6 +22,50 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — Case-workflow disposition endpoints (the human-validation gate)
+
+**Roadmap items:** 1.9
+
+**What:** `SignalDispositionController` implements the mandatory gate ADR-002 requires:
+`GET /api/v1/signals?status=PROPOSED` lists proposed signals; `POST /api/v1/signals/{id}/disposition`
+(`{"disposition": "ACCEPTED"|"REJECTED", "reason": "..."}`) validates the signal is currently
+`PROPOSED` (409 Conflict otherwise — a signal can only be dispositioned once), updates
+`signal_instance.status`, and publishes an immutable `signal.disposition.recorded` event
+(`JsonSignalDisposition`, new in `ews-schemas`'s interim package) via the outbox to
+`ews.derived.decision`, in the same transaction as the status update.
+
+**Why:** This is the human-validation link in the payment-return slice's chain — the point where
+`00-vision-and-principles.md`'s "AI does not own the risk state. Evidence does." stops being a
+principle and becomes enforced behavior: no signal reaches a terminal state without an explicit,
+recorded human decision, and that decision itself becomes an immutable event, not just a database
+mutation.
+
+**A documented gap:** `actorId`/`actorRole` on the disposition event are hard-coded placeholders
+(`"unauthenticated-analyst"` / `"ANALYST"`), not real attribution — there is no authentication yet
+(roadmap item 1.16, not started). Dispositions work correctly but are not yet properly attributable
+to a real analyst; flagged in the controller's own Javadoc, not silently assumed.
+
+**A real bug found and fixed:** the controller's first version used `@PathVariable String signalId`
+and `@RequestParam(defaultValue = "PROPOSED") String status` without explicit parameter names.
+Spring MVC needs either the `-parameters` javac flag (not set in this project) or an explicit name
+to resolve a path/query parameter by reflection; without either, every request failed with
+`IllegalArgumentException: Name for argument of type [java.lang.String] not specified`. All three
+new controller tests caught this immediately. Fixed with explicit `@PathVariable("signalId")` and
+`@RequestParam(name = "status", ...)` rather than adding a global compiler flag, since explicit
+names are more robust than relying on every future build configuration preserving `-parameters`. A
+repo-wide grep confirmed no other controller had the same latent bug.
+
+**Files:** `platform/ews-schemas/src/main/java/org/ewsfi/contracts/interim/JsonSignalDisposition.java`
+(new), `services/ews-case-workflow-service/src/main/java/org/ewsfi/caseworkflow/disposition/*.java`.
+
+**Verification:** New `SignalDispositionControllerTest` (`@SpringBootTest` + `MockMvc`, real
+Postgres) covers: accepting a proposed signal updates its status and creates the outbox row;
+dispositioning an already-dispositioned signal returns 409; an invalid disposition value returns
+400. `mvn -B -ntp verify` green across all 14 modules, 17 tests total (outbox 1, ingestion 1,
+feature-processor 3, signal-policy-engine 5, case-workflow 3, persistence-core 2, contract tests 2).
+
+---
+
 ## 2026-09-24 — Signal policy engine: `REPEATED_PAYMENT_RETURN` (P03)
 
 **Roadmap items:** 1.8
