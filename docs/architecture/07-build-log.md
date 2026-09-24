@@ -22,6 +22,63 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — ADR-008: Graph Intelligence Adoption (roadmap 3.1)
+
+**Roadmap items:** 3.1 (moves NOT_STARTED -> DONE (partial); named this ADR as its own explicit
+prerequisite, mirroring how 2.5 named ADR-006 and 2.7 named ADR-010)
+
+**What:** Wrote `docs/architecture/adr/ADR-008-graph-intelligence-adoption.md` (the eighth ADR for
+this platform), deciding how relationship/graph data is represented: a first-class, temporal
+`party_relationship` table in Postgres (`source_entity_type`/`id`, `target_entity_type`/`id`,
+`relationship_type`, effective period, observation/knowledge period, source/evidence, jurisdiction,
+confidence, resolution method — mirroring `02-canonical-risk-model.md` §5's edge model field-for-
+field), queried with recursive SQL for the near-term traversal depths the taxonomy's cataloged
+graph-method signals need, rather than adopting a dedicated graph database now. A dedicated graph
+product is explicitly deferred as its own future decision, per `01-architecture-blueprint.md` §9's
+already-settled rule that "Dedicated graph, analytical or feature-store products are introduced only
+where validated workloads justify them" — no relationship data source exists yet in this platform, so
+no workload exists to validate a product choice against. Graph-method (`G`) signals are decided to
+consume the relationship table the same way every other method consumes `feature_value`/
+`canonical_event_envelope` — a new input shape to the existing pipeline, not a parallel one. No
+`party_relationship` table, source adapter, or graph-method signal is implemented by this ADR.
+Updated `docs/adr/README.md` to move ADR-008 from "Planned" to "Written."
+
+**Why:** `02-canonical-risk-model.md` §5 (relationship model) and §20 ("Graph relationships and
+external identities are temporal/provenance-bearing") already fully specify the edge shape;
+`04-signal-taxonomy.md` §1 already catalogues seven concrete graph-method signals
+(`RELATED_PARTY_EXPOSURE_SPIKE`, `ROUND_TRIPPING_PATTERN`, `RELATIONSHIP_RISK_CONCENTRATION`,
+`CONTAGION_SCORE_SPIKE`, and others); and the research docs treat graph analytics as settled product
+direction ("first-class for group/related-party/end-use intelligence"). What remained genuinely
+undecided was sequencing — graph database now, or not yet — and `01-architecture-blueprint.md` §9
+already answers that platform-wide, so this ADR applies the existing rule rather than re-litigating
+it. Deliberately does not build a `party_relationship` table or any graph-method signal in this
+entry: no source adapter in this platform currently ingests relationship data (the SEC EDGAR
+connector extracts only filing metadata, not officer/beneficial-owner relationships from filing
+contents), so populating or querying such a table now would mean fabricating sample data — the same
+"invented input" pattern this project has consistently avoided.
+
+**Files:**
+- `docs/architecture/adr/ADR-008-graph-intelligence-adoption.md` (new)
+- `docs/adr/README.md`
+
+**Verification:**
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules (doc-only change).
+- Confirmed no `party_relationship` or equivalent table exists in `db/migration/V1__init_phase1_baseline.sql`
+  (only `entity_resolution`, a same-entity matching record, exists — a different concept from a
+  between-entity relationship edge), so the ADR's Context section accurately states nothing is built
+  yet rather than overclaiming partial implementation.
+- Cross-checked every normative claim against its cited source (`02-canonical-risk-model.md` §5/§6/
+  §20, `01-architecture-blueprint.md` §9, `04-signal-taxonomy.md` §1, the research notes) rather than
+  inventing graph-architecture requirements not already specified somewhere in the platform's docs.
+
+**Follow-ups:** ADR-007 (hybrid AI deployment) and ADR-009 (feature-store strategy) remain unwritten.
+ADR-009 in particular has no equivalent already-settled sequencing rule the way ADR-008's graph
+question did, so it needs its own research pass rather than being writable from existing docs alone
+— a materially different, harder task than the three ADRs written this session (ADR-006/008/010),
+each of which had a concrete blueprint/canonical-model section to ground the decision in.
+
+---
+
 ## 2026-09-24 — ADR-010: Model Governance Platform (roadmap 2.7)
 
 **Roadmap items:** 2.7 (moves NOT_STARTED -> DONE (partial); named this ADR as its own explicit

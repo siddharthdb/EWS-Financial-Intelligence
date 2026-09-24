@@ -74,7 +74,7 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 
 | # | Item | Status | Build log entry |
 |---|---|---|---|
-| 3.1 | Graph intelligence adoption (ADR-008, not yet written) + graph-method signals | NOT_STARTED | |
+| 3.1 | Graph intelligence adoption (ADR-008, not yet written) + graph-method signals | DONE (partial — ADR-008 written, deciding relationships are represented as a first-class temporal `party_relationship` table in Postgres (per 02-canonical-risk-model.md §5's edge model), queried with recursive SQL, per 01-architecture-blueprint.md §9's explicit rule that a dedicated graph database is "introduced only where validated workloads justify them." No `party_relationship` table, relationship-data source adapter, or graph-method signal exists yet — no source in this platform currently ingests relationship data at all) | 2026-09-24 — ADR-008: Graph Intelligence Adoption |
 | 3.2 | Portfolio Cockpit (Layer 9 Experience UI) | NOT_STARTED | needs its own design pass first — Layer 9 has the least spec depth of any layer |
 | 3.3 | NLP/document intelligence for filings/news/audit reports | NOT_STARTED | |
 | 3.4 | Retail domain extension | NOT_STARTED | |
