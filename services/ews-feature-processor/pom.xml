@@ -15,15 +15,25 @@
   <name>EWS Feature Processor</name>
   <description>
     The "operational feature processor" Kafka Streams application named in
-    docs/architecture/adr/ADR-004-kafka-streams-first.md. Computes governed features
-    (docs/architecture/02d-phase1-feature-catalogue.md) from canonical event topics. Skeleton only --
-    topology is empty, no stateful processing wired yet.
+    docs/architecture/adr/ADR-004-kafka-streams-first.md. FeatureProcessorTopology computes
+    returned_payment_count_30d (docs/architecture/02d-phase1-feature-catalogue.md Section 1) from
+    ews.canonical.account-transaction into ews.derived.feature; FeatureValuePersistenceListener
+    persists each emitted feature value via ews-persistence-core.
   </description>
 
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.kafka</groupId>
@@ -38,8 +48,22 @@
       <artifactId>ews-schemas</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.ewsfi</groupId>
+      <artifactId>ews-persistence-core</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-streams-test-utils</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.kafka</groupId>
+      <artifactId>spring-kafka-test</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

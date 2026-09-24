@@ -22,6 +22,49 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — Feature processor: `returned_payment_count_30d`
+
+**Roadmap items:** 1.7
+
+**What:** `FeatureProcessorTopology` (the "operational feature processor" named in ADR-004) consumes
+`ews.canonical.account-transaction`, filters to countable payment returns (excludes `TECHNICAL` and
+`BENEFICIARY_DETAIL` reason categories per P03's policy in
+`02a-priority-signal-contracts.md`), and computes `returned_payment_count_30d` using Kafka Streams'
+`SlidingWindows` — a genuinely rolling 30-day count as of each new event, not a fixed-bucket
+tumbling/hopping count, matching the feature catalogue's actual definition
+(`02d-phase1-feature-catalogue.md` §1). Results publish to `ews.derived.feature` as JSON
+(`JsonFeatureValue`, new alongside `JsonEventEnvelope` in `ews-schemas`'s interim package). A
+separate `FeatureValuePersistenceListener` (`@KafkaListener`, not part of the Streams topology
+itself) consumes that topic and persists each value via `ews-persistence-core`'s
+`FeatureValueRepository` — deliberately kept out of the Streams processing thread and independently
+testable. `KafkaStreamsConfig` wires the topology via Spring Kafka's `@EnableKafkaStreams`.
+
+**Why:** This is the feature-computation link in the payment-return slice's chain: ingestion →
+outbox → Kafka → **feature** → signal → disposition → experience API.
+
+**A known simplification:** the topology uses Kafka's default record timestamp (producer send time)
+rather than a custom `TimestampExtractor` reading the JSON envelope's own `eventTime` field. True
+bitemporal point-in-time correctness (`02-canonical-risk-model.md` §6) would need the latter; for
+this slice, where ingestion publishes close to real time, the difference is negligible. Not tracked
+as a separate roadmap item since it's a narrow implementation detail of one topology, not a platform
+capability gap — noted here so it isn't silently forgotten.
+
+**Files:** `platform/ews-schemas/src/main/java/org/ewsfi/contracts/interim/JsonFeatureValue.java`
+(new), `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/**`.
+
+**Verification:** Two new test classes. `FeatureProcessorTopologyTest` uses Kafka Streams'
+`TopologyTestDriver` (fully in-process, no broker at all — not even embedded) to prove the
+sliding-window count and the reason-category filter both work: 3 `FINANCIAL` returns plus 1
+`TECHNICAL` and 1 `BENEFICIARY_DETAIL` return for the same account produce a window count of
+exactly 3, and an unrelated event type produces no output. `FeatureValuePersistenceListenerTest`
+uses `@EmbeddedKafka` plus the real local Postgres database to prove a `feature.value.updated`
+message published to `ews.derived.feature` is actually persisted as a `feature_value` row,
+queryable back out via the repository. Both passed on first real run. `mvn -B -ntp verify` green
+across all 14 modules — 9 tests total (outbox 1, ingestion 1, feature-processor 3 (1 persistence + 2
+topology), persistence-core 2, contract tests 2).
+
+---
+
 ## 2026-09-24 — Payment-return ingestion adapter
 
 **Roadmap items:** 1.6
