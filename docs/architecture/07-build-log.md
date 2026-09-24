@@ -22,6 +22,47 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — Kafka listener retry-with-backoff extended to ews-signal-policy-engine (roadmap 3.6)
+
+**Roadmap items:** 3.6 (continues the same partial item; closes the follow-up from the previous entry)
+
+**What:** Applied the identical retry-with-backoff fix from the previous entry to
+`ews-signal-policy-engine`'s `SignalInstancePersistenceListener`, which had the same gap
+(`catch (Exception e) { log.warn(...); }` swallowing every failure, including transient ones, with
+Kafka's offset still committing as if processing had succeeded).
+- `KafkaListenerErrorHandlingConfig` (new, mirrors `ews-feature-processor`'s of the same name): a
+  `CommonErrorHandler` bean, 3 retries at 500ms, then a clear permanent-failure log record.
+- `SignalInstancePersistenceListener.onSignalDetected` no longer catches exceptions internally,
+  letting them reach the container's error handler. Its idempotent-re-delivery `existsById` check
+  is unchanged — that's legitimate business logic (don't overwrite an analyst's disposition), not
+  error handling.
+
+**Why:** Closes the follow-up explicitly named in the previous entry. Both persistence listeners in
+the platform now have the same resilience guarantee: a transient failure retries before being
+recorded as a real, visible permanent failure, instead of silently vanishing on the first attempt.
+
+**Files:**
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/config/KafkaListenerErrorHandlingConfig.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/persistence/SignalInstancePersistenceListener.java`
+- `services/ews-signal-policy-engine/src/test/java/org/ewsfi/signalpolicy/persistence/SignalInstancePersistenceListenerRetryTest.java` (new)
+
+**Verification:**
+- `SignalInstancePersistenceListenerRetryTest`: same fault-injection technique as the
+  feature-processor version — a `@Primary` `@TestConfiguration` bean fails `save()` exactly twice
+  (delegating `existsById` to the real repository so the idempotency check still works) before
+  delegating to the real, Postgres-backed repository. Proves the signal is eventually persisted via
+  genuine container-level redelivery.
+- Pre-existing `SignalInstancePersistenceListenerTest` (both the successful-publish and the
+  re-delivery-doesn't-overwrite-a-disposition tests) still green, confirming no regression to
+  either the happy path or the idempotency guarantee.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules.
+
+**Follow-ups:** Same as the previous entry, now applying platform-wide: a real dead-letter topic
+instead of log-only permanent-failure recording, and distinguishing retryable from non-retryable
+exception types.
+
+---
+
 ## 2026-09-24 — Kafka listener retry-with-backoff, second production-hardening finding (roadmap 3.6)
 
 **Roadmap items:** 3.6 (continues the same partial item as the previous entry)
