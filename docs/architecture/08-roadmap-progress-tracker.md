@@ -60,7 +60,7 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 
 | # | Item | Status | Build log entry |
 |---|---|---|---|
-| 2.1 | US SEC/EDGAR source adapter | NOT_STARTED | |
+| 2.1 | US SEC/EDGAR source adapter | DONE (partial — most-recent 10-K/10-Q detection only; 8-K item classification, XBRL extraction, CIK watch-list, and entity resolution not yet implemented) | 2026-09-24 — SEC EDGAR connector: the platform's first genuine external-source integration |
 | 2.2 | India regulatory source adapter(s) | NOT_STARTED | |
 | 2.3 | Statistical/anomaly detection engine (method `S`/`A` signals) | NOT_STARTED | |
 | 2.4 | First real ML model (method `ML` signals) + model registry integration | NOT_STARTED | |

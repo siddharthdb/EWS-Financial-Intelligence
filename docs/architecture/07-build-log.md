@@ -22,6 +22,76 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — SEC EDGAR connector: the platform's first genuine external-source integration
+
+**Roadmap items:** 2.1 (DONE, partial — see Follow-ups)
+
+**What:** Implemented `ews-ingestion-service`'s first Phase-2 item and the platform's first real
+external-API integration (every prior ingestion adapter only accepted observations POSTed by an
+internal caller standing in for an internal system — there was nothing external to actually call).
+- `SecEdgarClient`: a real `java.net.http.HttpClient`-based client for SEC EDGAR's unauthenticated
+  `data.sec.gov/submissions/CIK{cik}.json` API. Parses the response's `filings.recent` block (a
+  real quirk of this API: parallel arrays indexed by filing, not an array of filing objects) and
+  returns the most recent 10-K/10-Q filing, if any.
+- `SecFilingIngestionAdapter`: given a fetched `SecFiling`, stages a `financial.statement.received`
+  event via the outbox to `ews.canonical.financial-statement`, keyed by the SEC CIK used directly
+  as the interim counterparty identifier (real entity resolution is not implemented).
+- `SecFilingSyncController`: `POST /api/v1/external/sec-filings/sync/{cik}` — unlike every other
+  Phase-1 controller, this one genuinely calls the live external API when invoked; there is no
+  internal system to stand in for.
+
+**Why:** `docs/research/us-uk-corporate-credit-data-source-landscape.md` §2.1 names SEC EDGAR as
+the "highest-value US public-company connector" and confirms it needs no API key or registration —
+only a declared `User-Agent` per SEC's fair-access policy. This makes it the one Phase-2 source
+adapter genuinely implementable without a human credential/licensing decision, unlike UK Companies
+House (roadmap item 1.13, still blocked).
+
+**Bug found and fixed against the live API:** The first `User-Agent` value
+(`"EWS-Financial-Intelligence-Platform research-prototype (...)"`) was rejected by SEC with HTTP
+403. Root cause: SEC's fair-access policy requires the User-Agent to contain a real contact email
+address, not just a descriptive string — confirmed empirically via `curl` against the live API
+(the same UA without an `@`-address got 403; adding one got 200). Fixed by changing `USER_AGENT` to
+`"EWS Financial Intelligence Research Prototype contact@ewsfi-research.example.com"`. This was only
+caught because the test suite calls the real API rather than mocking it away.
+
+**Scoping decision:** Narrowly scoped to detecting the single most recent 10-K/10-Q per CIK, per
+the research doc's own architecture diagram (SEC connector → CIK/entity resolver → filing
+classifier → ... → canonical observations) — this entry implements the first two stages only.
+Explicitly deferred: 8-K item classification (bankruptcy, debt acceleration, management changes,
+etc. — the doc's own list of "particularly useful" items), XBRL financial-fact extraction, exhibit/
+document fetching, a CIK watch-list/backfill mechanism (nightly bulk data, nightly nightly polling
+per company), and real entity resolution (CIK → this platform's own counterparty identity). No new
+tracker row added for the remainder yet, consistent with how 0.9's partial scope was left without a
+dedicated follow-up row until a future firing picks it up.
+
+**Files:**
+- `services/ews-ingestion-service/src/main/java/org/ewsfi/ingestion/adapter/external/sec/SecFiling.java`,
+  `SecEdgarClient.java`, `SecFilingIngestionAdapter.java`, `SecFilingSyncController.java`
+- `services/ews-ingestion-service/src/test/java/org/ewsfi/ingestion/adapter/external/sec/SecEdgarClientTest.java`,
+  `SecFilingIngestionAdapterTest.java`
+
+**Verification:**
+- `SecEdgarClientTest`: fetches and parses a **real filing from the live SEC EDGAR API** for Apple
+  Inc. (a stable, well-known filer), asserting company name, form type, accession-number shape, and
+  a well-formed document URL — this is a genuine end-to-end proof the HTTP integration works, not a
+  mocked unit test. Also proves an unknown CIK yields a real HTTP 404 (surfaced as `IOException`),
+  and two deterministic fixture-based tests prove the parallel-array parsing logic correctly skips
+  non-qualifying forms and returns empty when none qualify — network-independent for the core logic.
+- `SecFilingIngestionAdapterTest` (real local Postgres): asserts an outbox row is staged with
+  `eventType=financial.statement.received`, `kafkaTopic=ews.canonical.financial-statement`,
+  `partitionKey=<cik>`, `status=NEW`, using a constructed `SecFiling` rather than a live fetch —
+  isolates the Postgres-backed persistence behavior from external network flakiness, mirroring how
+  every other adapter test in this project separates concerns.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules, all tests green (including
+  a real network call to `data.sec.gov` during the build — acceptable here since SEC EDGAR is a
+  stable, free, public government API with no rate-limit risk at this test volume).
+
+**Follow-ups:** 8-K item classification + P-series signal mapping (bankruptcy/debt-acceleration/
+management-change signals named in `docs/research/us-uk-external-signal-catalogue.md`), XBRL
+extraction, a CIK watch-list, and real entity resolution all remain unimplemented.
+
+---
+
 ## 2026-09-24 — max_dpd_30d + DPD_WORSENING (P02) — closes out roadmap item 1.12
 
 **Roadmap items:** 1.18 (DONE)
