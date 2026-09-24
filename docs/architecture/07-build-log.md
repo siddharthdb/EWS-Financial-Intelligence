@@ -22,6 +22,71 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — Minimal investigation-case model (open/assign/escalate/close)
+
+**Roadmap items:** 1.15 (DONE)
+
+**What:** Implemented the case/decision model beyond a single signal disposition:
+`ews-case-workflow-service` gains a real `investigation_case` lifecycle
+(`OPEN -> ASSIGNED -> ESCALATED -> CLOSED`), per `docs/architecture/03-event-architecture.md`
+Section 3's `case.opened`/`case.assigned`/`case.escalated`/`case.closed` events.
+- New `db/migration/V2__add_investigation_case.sql`: `investigation_case` table, no FK to
+  `signal_instance` (consistent with V1's cross-bounded-context decoupling convention;
+  `signal_instance.case_id` already existed as a plain, unenforced column for the same reason).
+- `InvestigationCase` JPA entity + `InvestigationCaseRepository`, kept local to
+  `ews-case-workflow-service` (not the shared `ews-persistence-core`) since no other service reads
+  case state directly yet.
+- `CaseController`: `POST /api/v1/cases` (open), `POST /api/v1/cases/{id}/assign`,
+  `POST /api/v1/cases/{id}/escalate`, `POST /api/v1/cases/{id}/close`, plus `GET` list/single.
+  Every transition validates the case's current status against an explicit allowed-from set
+  (e.g. only `OPEN`/`ASSIGNED` can be escalated) and, in the same local transaction, both updates
+  `investigation_case.status` and stages the corresponding `case.*` event via the outbox to
+  `ews.derived.case`, keyed by `caseId` (ADR-003) — mirroring
+  `SignalDispositionController`'s established pattern for `SignalInstance`.
+
+**Why:** Closes roadmap item 1.15. Unlike `SignalDispositionController` (the mandatory, single-step
+human-validation gate every signal passes through per ADR-002), opening an investigation case is
+optional follow-up work an analyst does after accepting a signal — a case is not required for a
+disposition to be recorded. This is the first genuinely stateful, multi-step workflow entity in the
+platform (every prior entity had at most one meaningful status transition).
+
+**Bug fixed along the way:** Adding `InvestigationCaseRepository` initially failed to be picked up
+by Spring (`NoSuchBeanDefinitionException`) despite compiling fine. Root cause: both
+`ews-persistence-core` and `ews-platform-outbox-starter` each declare their own explicit
+`@EnableJpaRepositories(basePackageClasses = ...)` in their auto-configurations; the presence of
+*any* explicit `@EnableJpaRepositories` in the context disables Spring Boot's default
+classpath-scan-based repository discovery for the whole application, so a service's own local JPA
+repositories are never found unless it declares its own explicit scan too. Fixed by adding
+`@EntityScan(basePackageClasses = InvestigationCase.class)` +
+`@EnableJpaRepositories(basePackageClasses = InvestigationCaseRepository.class)` directly on
+`EwsCaseWorkflowServiceApplication` — the three explicit declarations coexist without conflict,
+each handling its own designated repositories. Verified by re-running the full test suite (both
+`CaseControllerTest` and the pre-existing `SignalDispositionControllerTest`) after the fix.
+
+**Files:**
+- `db/migration/V2__add_investigation_case.sql`
+- `services/ews-case-workflow-service/src/main/java/org/ewsfi/caseworkflow/casemgmt/InvestigationCase.java`,
+  `InvestigationCaseRepository.java`, `CaseOpenRequest.java`, `CaseAssignRequest.java`,
+  `CaseEscalateRequest.java`, `CaseCloseRequest.java`, `CaseController.java` (replaces the empty shell)
+- `services/ews-case-workflow-service/src/main/java/org/ewsfi/caseworkflow/EwsCaseWorkflowServiceApplication.java`
+  (explicit `@EntityScan`/`@EnableJpaRepositories`)
+- `services/ews-case-workflow-service/src/test/java/org/ewsfi/caseworkflow/casemgmt/CaseControllerTest.java`
+
+**Verification:**
+- `CaseControllerTest` (real local Postgres, `MockMvc`): full lifecycle test (open -> assign ->
+  escalate -> close) asserts each status transition and that all four `case.*` outbox events are
+  staged with `kafkaTopic=ews.derived.case`; plus a double-close returns 409 Conflict, assigning an
+  unknown case returns 404, and status-filtered listing works.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules, all tests green —
+  4 new tests plus the pre-existing 3 `SignalDispositionControllerTest` tests, confirming the JPA
+  repository-scanning fix didn't regress the existing disposition gate.
+
+**Follow-ups:** None outstanding for this item — case open/assign/escalate/close is complete as
+scoped. Real authentication for `openedBy`/`assignedTo` remains roadmap item 1.16 (human-decision
+gated, not started).
+
+---
+
 ## 2026-09-24 — Working-capital utilization: wc_utilization_ratio + UTILIZATION_HIGH (P05)
 
 **Roadmap items:** 1.14 (DONE, partial — see Follow-ups for what remains)
