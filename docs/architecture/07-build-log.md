@@ -22,6 +22,56 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-24 — ADR-006: AI Gateway and Model Access (roadmap 2.5)
+
+**Roadmap items:** 2.5 (moves NOT_STARTED -> DONE (partial); named this ADR as its own explicit
+prerequisite in the tracker)
+
+**What:** Wrote `docs/architecture/adr/ADR-006-ai-gateway-and-model-access.md`, the sixth ADR
+written for this platform (following the canonical 8-section format from `docs/adr/README.md`,
+matching ADR-001/002/005/011's structure exactly). Records the AI Gateway's architecture decision:
+no service may call a foundation-model API directly; every call is a governed control-plane
+operation (authn/authz, data classification/redaction, source-rights/cross-border policy, a prompt
+registry, model routing, token/rate/cost controls, guardrails, audit/tracing, per
+`01-architecture-blueprint.md` §20); the prompt registry only accepts requests parameterized by a
+real, already-governed `signal_instance`/`feature_value`/`canonical_event_envelope` ID (making
+ADR-005's evidence-addressability requirement enforceable at the gateway boundary, not only at the
+`signal_instance` write path); and gateway output is always a new, clearly-labeled advisory AI-output
+artefact per `02-canonical-risk-model.md` §16 -- never a direct write to `signal_instance`,
+`classification_state`, or any other authoritative table. Updated `docs/adr/README.md` to move
+ADR-006 from "Planned" to "Written."
+
+**Why:** ADR-005 explicitly deferred this decision to ADR-006, reasoning that the Phase-1 skeleton
+had no evidence/feature/signal spine yet for GenAI to explain. That spine now exists for real (five
+signal families with real evidence chains: `REPEATED_PAYMENT_RETURN`, `DPD_EMERGED`,
+`DPD_WORSENING`, `UTILIZATION_HIGH`, `UTILIZATION_SPIKE`,
+`REQUIRED_MONITORING_INFORMATION_DELAY`), and the tracker names this ADR as item 2.5's own explicit
+prerequisite. Deliberately **does not** select a foundation-model provider: unlike ADR-011's schema
+registry choice (which had explicit "preferred baseline" textual support in the docs to build on),
+no document in this repository names a preferred or default GenAI provider, and choosing one would
+fabricate a procurement/data-residency/security-review decision with real cost and operational
+consequences -- the same class of decision item 2.4 (first real ML model) is already blocked on for
+the same reason. A gateway service with a stubbed/no-op model backend was considered and rejected as
+exactly the skeleton/stub pattern this project has consistently avoided.
+
+**Files:**
+- `docs/architecture/adr/ADR-006-ai-gateway-and-model-access.md` (new)
+- `docs/adr/README.md`
+
+**Verification:**
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules (no code changed this
+  entry, confirming the doc-only change didn't regress anything).
+- Cross-checked every normative claim in the ADR against its cited source (`01-architecture-blueprint.md`
+  §20-22, `02-canonical-risk-model.md` §16, ADR-005's own text, `06-gap-analysis-and-implementation-roadmap.md`
+  §7) rather than inventing gateway behavior not already specified somewhere in the platform's docs.
+
+**Follow-ups:** Added the foundation-model provider selection to
+`08-roadmap-progress-tracker.md`'s human-decision list (alongside 2.4) as the concrete blocker on
+2.5's actual code and 2.6. ADR-007 (hybrid AI deployment) remains unwritten and is a natural
+follow-up once ADR-006's gateway shape is settled, per its own Review Trigger.
+
+---
+
 ## 2026-09-24 — Systemic audit: same poison-pill crash vector across the remaining topologies (roadmap 3.6)
 
 **Roadmap items:** 3.6 (continues the same partial item; closes the explicit follow-up from the
