@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  # Satisfies docs/architecture/05-coherence-review-parts-i-iii.md Section 5, backlog item 1:
+  # "Add CI that parses every JSON/Avro schema and enforces contract lifecycle/compatibility."
+  # Runs first and fast (no Java/Maven build required) so a malformed contract fails quickly.
+  validate-schemas:
+    name: Validate Avro and JSON Schema contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install schema validation libraries
+        run: pip install fastavro jsonschema
+
+      - name: Parse every Avro contract under schemas/events
+        run: |
+          python - <<'PY'
+          import glob
+          import sys
+          from fastavro.schema import load_schema
+
+          files = sorted(glob.glob("schemas/events/**/*.avsc", recursive=True))
+          if not files:
+              print("No .avsc files found under schemas/events", file=sys.stderr)
+              sys.exit(1)
+
+          failed = False
+          for f in files:
+              try:
+                  load_schema(f)
+                  print(f"OK   {f}")
+              except Exception as e:
+                  print(f"FAIL {f}: {e}", file=sys.stderr)
+                  failed = True
+
+          sys.exit(1 if failed else 0)
+          PY
+
+      - name: Parse every JSON Schema contract under schemas/
+        run: |
+          python - <<'PY'
+          import glob
+          import json
+          import sys
+          from jsonschema import Draft202012Validator
+
+          files = sorted(glob.glob("schemas/**/*.schema.json", recursive=True))
+          if not files:
+              print("No .schema.json files found under schemas/", file=sys.stderr)
+              sys.exit(1)
+
+          failed = False
+          for f in files:
+              try:
+                  with open(f) as fh:
+                      doc = json.load(fh)
+                  Draft202012Validator.check_schema(doc)
+                  print(f"OK   {f}")
+              except Exception as e:
+                  print(f"FAIL {f}: {e}", file=sys.stderr)
+                  failed = True
+
+          sys.exit(1 if failed else 0)
+          PY
+
+  # Placeholder Maven build: proves Avro code-gen (ews-schemas), JSON Schema POJO-gen, and every
+  # service-shell module actually compile. Also runs ews-event-contracts-test, a second, JVM-native
+  # schema check via the Avro Maven plugin's own parser.
+  build:
+    name: Maven build
+    runs-on: ubuntu-latest
+    needs: validate-schemas
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn -B -ntp verify
+
+      - name: Upload built jars
+        uses: actions/upload-artifact@v4
+        with:
+          name: ews-financial-intelligence-jars
+          path: "**/target/*.jar"
+          if-no-files-found: warn

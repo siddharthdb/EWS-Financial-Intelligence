@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: ews-feature-processor
+  kafka:
+    bootstrap-servers: localhost:9092
+    streams:
+      application-id: ews-feature-processor
+
+server:
+  port: 8083

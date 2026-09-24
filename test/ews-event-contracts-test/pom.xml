@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.ewsfi</groupId>
+    <artifactId>test</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>ews-event-contracts-test</artifactId>
+  <packaging>jar</packaging>
+  <name>EWS Event Contracts Test</name>
+  <description>
+    JVM-native schema validation, complementing the Python-based validate-schemas CI job
+    (.github/workflows/ci.yml). Parses every Avro contract under schemas/events/** via the Avro Java
+    library (exercising the same avro-maven-plugin parser used by ews-schemas) and every JSON Schema
+    contract under schemas/** via the networknt json-schema-validator library. Satisfies the
+    coherence-review backlog item "Add CI that parses every JSON/Avro schema"
+    (docs/architecture/05-coherence-review-parts-i-iii.md Section 5, item 1).
+  </description>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.avro</groupId>
+      <artifactId>avro</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.networknt</groupId>
+      <artifactId>json-schema-validator</artifactId>
+      <version>1.5.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
+      </plugin>
+    </plugins>
+  </build>
+</project>

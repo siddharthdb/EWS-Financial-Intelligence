@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: ews-signal-policy-engine
+  kafka:
+    bootstrap-servers: localhost:9092
+    streams:
+      application-id: ews-signal-policy-engine
+
+server:
+  port: 8084

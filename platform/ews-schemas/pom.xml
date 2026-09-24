@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.ewsfi</groupId>
+    <artifactId>platform</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>ews-schemas</artifactId>
+  <packaging>jar</packaging>
+  <name>EWS Schemas (Generated Contracts)</name>
+  <description>
+    Generates Java classes from the governed contracts under /schemas at the repository root:
+    Avro event envelope + payload schemas (schemas/events/**) via avro-maven-plugin, and JSON Schema
+    records (schemas/**/*.schema.json) via jsonschema2pojo. This module intentionally has no hand-written
+    business code -- it is a pure codegen boundary so every service depends on one authoritative,
+    schema-derived contract library. Contracts remain DRAFT / PRE-PUBLICATION per README.md.
+  </description>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.avro</groupId>
+      <artifactId>avro</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        Reads Avro contracts directly from the repository-root schemas/events tree so this module
+        never forks/copies the governed contracts. sourceDirectory points three levels up from
+        platform/ews-schemas to the repository root.
+      -->
+      <plugin>
+        <groupId>org.apache.avro</groupId>
+        <artifactId>avro-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>schemas</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>schema</goal>
+            </goals>
+            <configuration>
+              <sourceDirectory>${project.basedir}/../../schemas/events</sourceDirectory>
+              <includes>
+                <include>**/*.avsc</include>
+              </includes>
+              <outputDirectory>${project.build.directory}/generated-sources/avro</outputDirectory>
+              <stringType>String</stringType>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!--
+        Reads JSON Schema contracts directly from the repository-root schemas tree (excluding
+        schemas/events, which is Avro-only) and generates one POJO package per schema domain.
+      -->
+      <plugin>
+        <groupId>org.jsonschema2pojo</groupId>
+        <artifactId>jsonschema2pojo-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <sourceDirectory>${project.basedir}/../../schemas</sourceDirectory>
+          <excludes>
+            <exclude>events/**</exclude>
+          </excludes>
+          <targetPackage>org.ewsfi.contracts</targetPackage>
+          <outputDirectory>${project.build.directory}/generated-sources/jsonschema2pojo</outputDirectory>
+          <includeAdditionalProperties>false</includeAdditionalProperties>
+          <includeConstructors>false</includeConstructors>
+          <includeGetters>true</includeGetters>
+          <includeSetters>true</includeSetters>
+          <dateTimeType>java.time.OffsetDateTime</dateTimeType>
+          <useJakartaValidation>true</useJakartaValidation>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
