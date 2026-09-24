@@ -68,7 +68,7 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 | 2.6 | Governed GenAI explanation capability | NOT_STARTED | depends on 2.5 |
 | 2.7 | Model governance platform (ADR-010, not yet written) | NOT_STARTED | needs ADR-010 first |
 | 2.8 | Expand priority signal contracts P10–P34 implementations | DONE (partial — P18 REQUIRED_MONITORING_INFORMATION_DELAY only; every other P10–P34 contract needs financial-statement XBRL contents this platform doesn't parse yet) | 2026-09-24 — financial_statement_filing_delay_days + REQUIRED_MONITORING_INFORMATION_DELAY (P18) |
-| 2.9 | Jurisdiction classification adapters (US CECL/supervisory, UK IFRS9/SICR, IN SMA/NPA) | NOT_STARTED | |
+| 2.9 | Jurisdiction classification adapters (US CECL/supervisory, UK IFRS9/SICR, IN SMA/NPA) | NOT_STARTED | blocked — regulatory/compliance sign-off required; see human-decision list |
 
 ## Phase 3 — Platform maturity
 
@@ -105,6 +105,18 @@ build next, and the reference a periodic user check-in is measured against. Mirr
   to build first, and what to train it on (synthetic vs. deferred until real data exists), is a
   product/model-governance decision, not one to resolve autonomously by fabricating training data
   or a training-data proxy for a real business outcome
+- 2.9 — Jurisdiction classification adapters (US CECL/supervisory, UK IFRS9/SICR, IN SMA/NPA): the
+  platform's own architecture docs explicitly flag these as out of scope for autonomous engineering
+  judgment — `06-gap-analysis-and-implementation-roadmap.md` §9 calls them "regulatory-grade work
+  with compliance/legal review needs beyond engineering effort alone," and
+  `02-canonical-risk-model.md`/`02e-source-feature-signal-lineage.md` state there is deliberately
+  "no direct mapping such as `EWS HIGH => IFRS9 Stage 2`... in the canonical model" and that
+  approval for EWS prioritization is not approval for CECL/IFRS9/regulatory classification. Even
+  IN_SMA_NPA (the most mechanical of the three — RBI's SMA-0/1/2/NPA bands are published DPD
+  thresholds) would still write into the governed `classification_state` schema whose entire design
+  intent is authoritative regulatory output requiring dedicated sign-off, not an EWS-derived
+  approximation. Building any of the three needs an explicit decision from someone who can take on
+  that compliance responsibility, not an autonomous scoping call
 - Any item where the "right" answer depends on real analyst throughput data, regulatory sign-off,
   or a source's actual licensing terms (per `docs/architecture/06-gap-analysis-and-implementation-roadmap.md`
   §8 "Risks & Open Questions")
