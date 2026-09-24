@@ -28,7 +28,7 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 | 0.7 | Fix pre-existing malformed JSON in `source-registry-v1.schema.json` | DONE | 2026-09-24 (session: ADRs + skeleton) |
 | 0.8 | Machine-readable topic registry (event type → schema → topic → key → owner → retention) | DONE | 2026-09-24 — machine-readable topic registry |
 | 0.9 | Shared schema artifacts/references for repeated envelope types | DONE (partial) | 2026-09-24 — shared semantic-scope schema artifact. Only the `semanticScope` enum extracted so far (4 identical occurrences); other candidate fields (quality-state, source-authority-tier) identified but deferred — see build log for why. |
-| 0.10 | Automated terminology checks for deprecated signal aliases | NOT_STARTED | |
+| 0.10 | Automated terminology checks for deprecated signal aliases | DONE | 2026-09-24 — automated deprecated-terminology check |
 | 0.11 | Decide permanent owned schema namespace (replace draft `org.ewsfi`) | NOT_STARTED | needs a human decision — do not resolve autonomously |
 | 0.12 | Architecture diagrams generated from the normalized model | NOT_STARTED | |
 | 0.13 | Legacy Spring Boot EWS discovery/capability assessment | NOT_STARTED | needs access to a system not in this repo — flag to user, do not fabricate |

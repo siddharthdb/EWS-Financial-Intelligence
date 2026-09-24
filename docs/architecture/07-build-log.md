@@ -60,6 +60,41 @@ duplicate `eventType` entries. `mvn -B -ntp verify` green across all 14 modules,
 
 ---
 
+## 2026-09-24 — Automated deprecated-terminology check
+
+**Roadmap items:** 0.10
+
+**What:** Added `docs/architecture/deprecated-signal-aliases.json`, a machine-readable extraction of
+the 17-row "Alias/deprecation mapping" table in `04-signal-taxonomy.md` §17 (e.g. `BG_INVOCATION` →
+rename `GUARANTEE_INVOCATION`, `INSOLVENCY_PROCEEDING_FILED` → normalize
+`FORMAL_INSOLVENCY_PROCEEDING`), cross-checked line-by-line against the source table before writing
+the test. New `DeprecatedTerminologyTest` (JVM-native, no broker/DB) scans every `.java` file under
+`services/`/`platform/`, every `.avsc`/`.schema.json` under `schemas/`, and the topic registry for
+any deprecated alias appearing as a live quoted string literal, and fails the build if one is found
+— excluding `04-signal-taxonomy.md` itself and the new registry file, both of which legitimately
+name the aliases as historical/mapping context rather than live usage.
+
+**Why:** Coherence-review backlog item 5 (`05-coherence-review-parts-i-iii.md` §5: "Add automated
+terminology checks for deprecated canonical aliases"). Nothing previously prevented a future
+increment — autonomous or manual — from accidentally reintroducing a deprecated alias (e.g. writing
+`"BG_INVOCATION"` instead of `"GUARANTEE_INVOCATION"` in a new signal policy) as a live identifier.
+This closes that gap with an enforced, automated check rather than relying on someone remembering
+to consult the taxonomy doc's alias table by hand.
+
+**Files:** `docs/architecture/deprecated-signal-aliases.json` (new),
+`test/ews-event-contracts-test/src/test/java/org/ewsfi/contracts/DeprecatedTerminologyTest.java`
+(new).
+
+**Verification:** Confirmed the check passes today (no deprecated alias is live-used anywhere in
+the codebase — the only implemented signal type is `REPEATED_PAYMENT_RETURN`, not an alias). Then,
+per this project's established "prove the test actually tests something" bar, temporarily appended
+a `"BG_INVOCATION"` string literal to a scratch line in `IngestionServiceConfig.java`, reran the
+test, and confirmed it failed with a precise, correct violation message naming the file and alias;
+reverted the scratch change (`git checkout --`) and confirmed the working tree was clean again
+before committing. `mvn -B -ntp verify` green across all 14 modules, 23 tests total.
+
+---
+
 ## 2026-09-24 — Shared schema artifact for repeated `semanticScope` enum
 
 **Roadmap items:** 0.9 (partial)

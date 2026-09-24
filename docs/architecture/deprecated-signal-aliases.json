@@ -1,0 +1,23 @@
+{
+  "$comment": "Machine-readable deprecated-signal-alias registry, extracted from docs/architecture/04-signal-taxonomy.md Section 17 ('Alias/deprecation mapping'). Satisfies docs/architecture/05-coherence-review-parts-i-iii.md Section 5, backlog item 5 ('Add automated terminology checks for deprecated canonical aliases'). Validated by test/ews-event-contracts-test's DeprecatedTerminologyTest, which fails if any deprecatedAlias below appears as a live quoted string literal in application code, schemas, or the topic registry -- outside of this file and 04-signal-taxonomy.md itself, where the aliases are legitimately named as historical/mapping context, not live usage. Existing event/history data can retain old semantic version aliases per 04-signal-taxonomy.md Section 17's closing note ('Do not silently reinterpret historical signal instances.') -- this check guards new code, not historical data.",
+  "registryVersion": "1.0",
+  "deprecatedAliases": [
+    {"deprecatedAlias": "TOL_ATNW_DERIORATION", "canonicalTreatment": "specialization under LEVERAGE_DERIORATION"},
+    {"deprecatedAlias": "EMI_OR_INSTALLMENT_MISSED", "canonicalTreatment": "subtype of SCHEDULED_OBLIGATION_MISSED"},
+    {"deprecatedAlias": "BG_INVOCATION", "canonicalTreatment": "rename GUARANTEE_INVOCATION"},
+    {"deprecatedAlias": "ADHOC_LIMIT_DEPENDENCY", "canonicalTreatment": "rename TEMPORARY_LIMIT_DEPENDENCY"},
+    {"deprecatedAlias": "GROUP_ENTITY_TRANSFER_SPIKE", "canonicalTreatment": "rename RELATED_ENTITY_TRANSFER_SPIKE"},
+    {"deprecatedAlias": "OUTSIDE_BANK_ROUTING_ANOMALY", "canonicalTreatment": "rename OUTSIDE_AGREED_ROUTING_ANOMALY"},
+    {"deprecatedAlias": "STOCK_STATEMENT_DELAY", "canonicalTreatment": "policy subtype of REQUIRED_MONITORING_INFORMATION_DELAY"},
+    {"deprecatedAlias": "STOCK_AUDIT_NON_COOPERATION", "canonicalTreatment": "subtype of BORROWER_MONITORING_NON_COOPERATION"},
+    {"deprecatedAlias": "SITE_VISIT_NON_COOPERATION", "canonicalTreatment": "subtype of BORROWER_MONITORING_NON_COOPERATION"},
+    {"deprecatedAlias": "DEBTOR_LIST_ANOMALY", "canonicalTreatment": "rename RECEIVABLE_OR_DEBTOR_DATA_ANOMALY"},
+    {"deprecatedAlias": "STOCK_STATEMENT_INCONSISTENCY", "canonicalTreatment": "normalize to INVENTORY_OR_BORROWING_BASE_INCONSISTENCY"},
+    {"deprecatedAlias": "SANCTION_TERM_MISUSE_SUSPECTED", "canonicalTreatment": "rename FINANCING_TERM_MISUSE_SUSPECTED"},
+    {"deprecatedAlias": "PROMOTER_EXIT_OR_STAKE_REDUCTION", "canonicalTreatment": "map to MATERIAL_OWNER_STAKE_REDUCTION / control change"},
+    {"deprecatedAlias": "PROMOTER_PLEDGE_INCREASE", "canonicalTreatment": "map to CONTROLLING_OWNER_PLEDGE_INCREASE"},
+    {"deprecatedAlias": "PROMOTER_LINKED_DISTRESS", "canonicalTreatment": "map to CONTROLLING_OWNER_LINKED_DISTRESS"},
+    {"deprecatedAlias": "DIRECTOR_DEFAULT_ASSOCIATION", "canonicalTreatment": "normalize MANAGEMENT_DEFAULT_ASSOCIATION"},
+    {"deprecatedAlias": "INSOLVENCY_PROCEEDING_FILED", "canonicalTreatment": "normalize FORMAL_INSOLVENCY_PROCEEDING"}
+  ]
+}
