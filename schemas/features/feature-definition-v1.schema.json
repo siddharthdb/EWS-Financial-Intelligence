@@ -9,7 +9,7 @@
     "definitionId": {"type": "string", "minLength": 1},
     "featureName": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"},
     "version": {"type": "string", "minLength": 1},
-    "semanticScope": {"type": "string", "enum": ["GLOBAL_CORE", "GLOBAL_PRODUCT_SPECIFIC", "JURISDICTION_EXTENSION", "INSTITUTION_POLICY_SPECIFIC"]},
+    "semanticScope": {"$ref": "../common/semantic-scope-v1.schema.json"},
     "description": {"type": "string"},
     "entityGrain": {"type": "string", "enum": ["COUNTERPARTY", "FACILITY", "ACCOUNT", "COLLATERAL", "RELATIONSHIP", "GROUP", "SECURITY", "PORTFOLIO_SEGMENT", "FINANCIAL_PERIOD"]},
     "valueType": {"type": "string", "enum": ["DECIMAL", "INTEGER", "BOOLEAN", "STRING", "DATE", "TIMESTAMP"]},

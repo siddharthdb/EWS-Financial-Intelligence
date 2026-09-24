@@ -6,7 +6,7 @@
   "required": ["featureValueId", "definition", "entity", "state", "knowledgeTime", "calculatedAt", "quality", "lineage"],
   "properties": {
     "featureValueId": {"type": "string", "minLength": 1},
-    "definition": {"type": "object", "additionalProperties": false, "required": ["featureName", "definitionId", "version"], "properties": {"featureName": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"}, "definitionId": {"type": "string", "minLength": 1}, "version": {"type": "string", "minLength": 1}, "semanticScope": {"type": "string", "enum": ["GLOBAL_CORE", "GLOBAL_PRODUCT_SPECIFIC", "JURISDICTION_EXTENSION", "INSTITUTION_POLICY_SPECIFIC"]}}},
+    "definition": {"type": "object", "additionalProperties": false, "required": ["featureName", "definitionId", "version"], "properties": {"featureName": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"}, "definitionId": {"type": "string", "minLength": 1}, "version": {"type": "string", "minLength": 1}, "semanticScope": {"$ref": "../common/semantic-scope-v1.schema.json"}}},
     "entity": {"type": "object", "additionalProperties": false, "required": ["type", "id"], "properties": {"type": {"type": "string", "enum": ["COUNTERPARTY", "FACILITY", "ACCOUNT", "COLLATERAL", "FINANCIAL_PERIOD", "RELATIONSHIP", "GROUP", "PORTFOLIO_SEGMENT", "SECURITY", "LEGAL_ENTITY", "PERSON"]}, "id": {"type": "string", "minLength": 1}}},
     "jurisdictionContext": {"type": "object", "additionalProperties": false, "properties": {"primaryJurisdiction": {"type": ["string", "null"], "pattern": "^[A-Z]{2}$"}, "market": {"type": ["string", "null"]}, "accountingBasis": {"type": ["string", "null"]}}},
     "state": {"type": "string", "enum": ["VALUE", "ZERO", "NULL_UNKNOWN", "NOT_APPLICABLE", "NOT_AVAILABLE", "STALE", "INVALID"]},

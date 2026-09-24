@@ -20,17 +20,36 @@ import org.junit.jupiter.api.Test;
  * {@code schemas/events}, which is Avro-only) against JSON Schema draft 2020-12, matching the
  * {@code "$schema"} declaration in every contract file. Satisfies
  * docs/architecture/05-coherence-review-parts-i-iii.md Section 5, backlog item 1.
+ *
+ * <p>Every contract declares a fictional {@code https://ews-financial-intelligence/...} {@code $id}
+ * (the project's convention, not a real host). Per the JSON Schema spec, a relative {@code $ref}
+ * inside a schema resolves against that schema's own {@code $id}, not against however the schema
+ * was loaded -- so a contract like {@code feature-value-v1.schema.json} that {@code $ref}s
+ * {@code ../common/semantic-scope-v1.schema.json} (docs/architecture/07-build-log.md, 2026-09-24
+ * "Shared schema artifacts" entry) produces an absolute reference back under
+ * {@code https://ews-financial-intelligence/...}, which networknt will otherwise try to fetch over
+ * the network. The schema mapper below rewrites that fictional host prefix back to the real local
+ * {@code schemas/} directory so {@code $ref} resolution stays fully offline, matching how every
+ * other contract-validation step in this project works (no network access required).
  */
 class JsonSchemaParseTest {
 
     private static final Path SCHEMAS_ROOT = ContractPaths.repoRoot().resolve("schemas");
+    private static final String FICTIONAL_ID_PREFIX = "https://ews-financial-intelligence/schemas";
 
     @Test
     void everyJsonSchemaContractParses() throws IOException {
         List<Path> schemaFiles = findJsonSchemaFiles();
         assertFalse(schemaFiles.isEmpty(), "Expected at least one .schema.json file under " + SCHEMAS_ROOT);
 
-        JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
+        JsonSchemaFactory factory =
+                JsonSchemaFactory.getInstance(
+                        SpecVersion.VersionFlag.V202012,
+                        builder ->
+                                builder.schemaMappers(
+                                        mappers ->
+                                                mappers.mapPrefix(
+                                                        FICTIONAL_ID_PREFIX, SCHEMAS_ROOT.toUri().toString())));
         for (Path file : schemaFiles) {
             assertDoesNotThrow(
                     () -> {

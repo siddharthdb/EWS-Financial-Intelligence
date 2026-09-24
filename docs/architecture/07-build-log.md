@@ -60,6 +60,69 @@ duplicate `eventType` entries. `mvn -B -ntp verify` green across all 14 modules,
 
 ---
 
+## 2026-09-24 — Shared schema artifact for repeated `semanticScope` enum
+
+**Roadmap items:** 0.9 (partial)
+
+**What:** Added `schemas/common/semantic-scope-v1.schema.json`, a single shared JSON Schema
+definition for the `GLOBAL_CORE`/`GLOBAL_PRODUCT_SPECIFIC`/`JURISDICTION_EXTENSION`/
+`INSTITUTION_POLICY_SPECIFIC` portability-class enum, and updated its 4 identical occurrences
+(`signal-instance-v1.schema.json`, `signal-policy-v1.schema.json`, `feature-definition-v1.schema.json`,
+and the nested `definition.semanticScope` in `feature-value-v1.schema.json`) to `$ref` it instead of
+each independently redefining the same 4-symbol enum inline.
+
+**Why:** Coherence-review backlog item 4 (`05-coherence-review-parts-i-iii.md` §5: "Add shared
+schema artifacts/references for repeated envelope types once implementation begins"). `semanticScope`
+was chosen as the first (and, this session, only) extraction because it is byte-for-byte identical
+in all 4 occurrences with no nullability or symbol-set variance — a safe, unambiguous case. Verified
+this wasn't just a cosmetic change: `ews-schemas`'s `jsonschema2pojo` codegen now generates one real
+shared `org.ewsfi.contracts.common.SemanticScopeV1Schema` type, and all 4 consumer classes
+(`SignalInstanceV1Schema`, `SignalPolicyV1Schema`, `FeatureDefinitionV1Schema`, the nested
+`Definition` class) reference that same generated type rather than each getting their own duplicate
+generated enum.
+
+**A real bug found and fixed by testing this before rolling it out further:** every schema in this
+repo declares a fictional `https://ews-financial-intelligence/...` `$id` (the project's own
+convention, not a real host). Per the JSON Schema spec, a relative `$ref` resolves against the
+containing schema's own `$id`, not against how the schema happened to be loaded — so the new
+`$ref: "../common/semantic-scope-v1.schema.json"` resolved to an absolute
+`https://ews-financial-intelligence/schemas/common/semantic-scope-v1.schema.json`, which the
+existing `JsonSchemaParseTest` (networknt validator) then tried to fetch over the network and
+failed. Fixed by configuring a `SchemaMapper` in the test that rewrites that fictional host prefix
+back to the real local `schemas/` directory (`file://` URI), keeping resolution fully offline —
+consistent with every other contract-validation step in this project. Confirmed the Python CI
+step (`Draft202012Validator.check_schema`) was unaffected, since schema-validity checking doesn't
+resolve `$ref` targets at all (only instance validation would).
+
+**Why this session did *not* extract more fields:** `qualityState`/`dataQuality.state`
+(`COMPLETE|PARTIAL|STALE|CONFLICTED|UNVERIFIED|INSUFFICIENT`) and `sourceAuthorityTier`
+(`T1|T2|T3|T4`) are also repeated across multiple files, but with nullability variance between
+occurrences (some are `["string","null"]` with a `null` enum member, others are plain `"string"`).
+Naively sharing those would need either two ref variants per field or an `anyOf`-with-null wrapper
+at each use site — a real design decision, not a mechanical extraction, and rushing it risked
+either a broken contract or a silently weakened one. Left for a future, dedicated increment rather
+than attempted under time pressure in the same pass as the first (already-verified-safe) extraction.
+Also confirmed during this work that several *entity type* enums that looked superficially similar
+across files (`signal-instance`, `feature-value`, `classification-state`, `entity-resolution`) are
+**not** true duplicates — each deliberately scopes a different subset of valid entity kinds for its
+context, and DRY-ing them into one shared enum would silently widen validation in at least 3 of the
+4 files. Left alone; documented here so a future pass doesn't "fix" this into a regression.
+
+**Files:** `schemas/common/semantic-scope-v1.schema.json` (new),
+`schemas/signals/signal-instance-v1.schema.json`, `schemas/signals/signal-policy-v1.schema.json`,
+`schemas/features/feature-definition-v1.schema.json`, `schemas/features/feature-value-v1.schema.json`
+(all: one field each changed from inline enum to `$ref`),
+`test/ews-event-contracts-test/src/test/java/org/ewsfi/contracts/JsonSchemaParseTest.java` (schema
+mapper fix).
+
+**Verification:** `mvn -B -ntp verify` green across all 14 modules, 22 tests total — including the
+existing `JsonSchemaParseTest`/`TopicRegistryTest`/`AvroSchemaParseTest` contract tests and every
+payment-return-slice integration test (proving the `$ref` change didn't silently alter runtime
+(de)serialization anywhere it's actually used). Manually confirmed via `javap`/generated-source
+inspection that a single shared Java type is produced and referenced, not 4 duplicates.
+
+---
+
 ## 2026-09-24 — Autonomous continuation Routine established
 
 **Roadmap items:** none (process/infrastructure, not a build item)

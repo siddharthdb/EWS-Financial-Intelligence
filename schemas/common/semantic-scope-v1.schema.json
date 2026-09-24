@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ews-financial-intelligence/schemas/common/semantic-scope-v1.schema.json",
+  "title": "EWS Semantic Scope v1",
+  "description": "Shared portability-class enum, per docs/architecture/04-signal-taxonomy.md Section 2. Referenced by every governed record whose scope must be classified as global-core, product-specific, a genuine jurisdiction extension, or institution policy -- repeated identically across schemas/signals/signal-instance-v1.schema.json, schemas/signals/signal-policy-v1.schema.json, schemas/features/feature-definition-v1.schema.json and schemas/features/feature-value-v1.schema.json before this extraction. Satisfies docs/architecture/05-coherence-review-parts-i-iii.md Section 5, backlog item 4 ('Add shared schema artifacts/references for repeated envelope types once implementation begins').",
+  "type": "string",
+  "enum": ["GLOBAL_CORE", "GLOBAL_PRODUCT_SPECIFIC", "JURISDICTION_EXTENSION", "INSTITUTION_POLICY_SPECIFIC"]
+}

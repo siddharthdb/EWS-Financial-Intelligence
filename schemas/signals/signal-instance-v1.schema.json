@@ -8,7 +8,7 @@
   "properties": {
     "signalId": {"type": "string", "minLength": 1},
     "signalType": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]+$"},
-    "semanticScope": {"type": "string", "enum": ["GLOBAL_CORE", "GLOBAL_PRODUCT_SPECIFIC", "JURISDICTION_EXTENSION", "INSTITUTION_POLICY_SPECIFIC"]},
+    "semanticScope": {"$ref": "../common/semantic-scope-v1.schema.json"},
     "jurisdictionContext": {"type": "object", "additionalProperties": false, "properties": {"primaryJurisdiction": {"type": ["string", "null"], "pattern": "^[A-Z]{2}$"}, "applicableJurisdictions": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Z]{2}$"}}, "market": {"type": ["string", "null"]}}},
     "entity": {"type": "object", "additionalProperties": false, "required": ["type", "id"], "properties": {"type": {"type": "string", "enum": ["COUNTERPARTY", "FACILITY", "ACCOUNT", "GROUP", "PERSON", "LEGAL_ENTITY", "SECURITY", "RELATIONSHIP", "COLLATERAL"]}, "id": {"type": "string", "minLength": 1}}},
     "riskIntents": {"type": "array", "uniqueItems": true, "items": {"type": "string", "enum": ["CREDIT_DETERIORATION", "FRAUD_INTEGRITY", "OPERATIONAL_CONDUCT", "EXTERNAL_CONTAGION"]}},
