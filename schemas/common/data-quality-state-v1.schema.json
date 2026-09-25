@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ews-financial-intelligence/schemas/common/data-quality-state-v1.schema.json",
+  "title": "EWS Data Quality State v1",
+  "description": "Shared closed data-quality-state enum, per docs/architecture/02-canonical-risk-model.md's governed quality model. Repeated identically (same 6 symbols, both required/non-nullable) as schemas/features/feature-value-v1.schema.json 'quality.state' and schemas/signals/signal-instance-v1.schema.json 'dataQuality.state' before this extraction. Extracted per docs/architecture/05-coherence-review-parts-i-iii.md Section 5 backlog item 4, alongside the T1-T4 tier extraction (schemas/common/tier-t1-t4-v1.schema.json) that this session's build log flagged as deferred from the original semanticScope extraction.",
+  "type": "string",
+  "enum": ["COMPLETE", "PARTIAL", "STALE", "CONFLICTED", "UNVERIFIED", "INSUFFICIENT"]
+}

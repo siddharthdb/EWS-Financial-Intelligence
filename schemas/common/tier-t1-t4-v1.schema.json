@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ews-financial-intelligence/schemas/common/tier-t1-t4-v1.schema.json",
+  "title": "EWS Source/Evidence Tier v1",
+  "description": "Shared closed T1-T4 tier enum (non-nullable) -- used for a source's own authority tier (schemas/sources/source-registry-v1.schema.json 'authorityTier') and a policy's minimum required evidence tier (schemas/signals/signal-policy-v1.schema.json 'minimumEvidenceTier'). A signal/feature value's own observed source-authority tier is genuinely optional, so it uses the nullable sibling artifact instead (schemas/common/tier-t1-t4-nullable-v1.schema.json), keeping this one strictly non-nullable at every use site. Extracted per docs/architecture/05-coherence-review-parts-i-iii.md Section 5 backlog item 4, deferred from the semanticScope extraction (see 07-build-log.md 'Shared schema artifact for repeated semanticScope enum') because the T1-T4 enum appears both nullable and non-nullable depending on use site.",
+  "type": "string",
+  "enum": ["T1", "T2", "T3", "T4"]
+}

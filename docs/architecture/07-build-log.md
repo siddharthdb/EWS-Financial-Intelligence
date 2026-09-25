@@ -22,6 +22,84 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-25 — Shared data-quality-state + T1-T4 tier schema artifacts (roadmap 0.9)
+
+**Roadmap items:** 0.9 (closes out the row -- was "DONE (partial)" since 2026-09-24)
+
+**What:** Extracts the two fields the 2026-09-24 `semanticScope` entry explicitly deferred:
+- `schemas/common/data-quality-state-v1.schema.json` (new): the closed 6-symbol
+  `COMPLETE/PARTIAL/STALE/CONFLICTED/UNVERIFIED/INSUFFICIENT` enum, identical (same symbols, both
+  required/non-nullable) in `feature-value-v1.schema.json`'s `quality.state` and
+  `signal-instance-v1.schema.json`'s `dataQuality.state` -- a safe, mechanical extraction exactly
+  like `semanticScope`'s, once actually checked (the previous entry's stated reason for deferring
+  covered `sourceAuthorityTier`'s nullability variance, not this field, which turned out to have
+  none).
+- `schemas/common/tier-t1-t4-v1.schema.json` (new, non-nullable) and
+  `schemas/common/tier-t1-t4-nullable-v1.schema.json` (new, nullable sibling): the T1-T4 enum, which
+  genuinely does vary by use site -- non-nullable and required at
+  `source-registry-v1.schema.json`'s `authorityTier` and `signal-policy-v1.schema.json`'s
+  `minimumEvidenceTier`, but optional at `feature-value-v1.schema.json`'s
+  `quality.sourceAuthorityTier` and `signal-instance-v1.schema.json`'s
+  `dataQuality.sourceAuthorityTier`. Two separate artifacts (not one shared file plus an `anyOf`
+  wrapper) so the two strict use sites are never weakened by a null member creeping in through a
+  shared reference, and so both use-site families still get a real generated Java enum type.
+
+**Why:** Roadmap item 0.9 (coherence-review backlog item 4) was left "DONE (partial)" specifically
+because these two fields needed real design work, not a mechanical `$ref` swap, per the previous
+entry's own conclusion ("a real design decision, not a mechanical extraction, and rushing it risked
+either a broken contract or a silently weakened one"). Revisiting it now with the same care: checked
+`data-quality-state`'s actual occurrences first and found no variance at all (safe to extract
+directly, unlike what a surface read of the previous entry's phrasing might suggest); checked
+`sourceAuthorityTier`/`minimumEvidenceTier`/`authorityTier` and confirmed the real variance is
+nullability, not the symbol set, confirming the previous entry's assessment was correct for that
+field specifically.
+
+**A real codegen regression caught before landing:** the first implementation attempt used a single
+non-nullable `tier-t1-t4-v1.schema.json` plus `"anyOf": [{"$ref": ...}, {"type": "null"}]` at the two
+nullable use sites (the "anyOf-with-null wrapper" option the previous entry itself named). Building
+and inspecting the generated classes via `javap` (the same verification discipline used for every
+prior schema change) showed `jsonschema2pojo` generates a real typed enum class from a direct `$ref`
+to a closed-enum schema, but only `java.lang.Object` for an `anyOf` composition -- silently trading
+away static typing at both nullable use sites. Caught and fixed by switching to the two-artifact
+design (a real nullable sibling schema, itself a closed enum, rather than a composition) before
+committing; re-verified via `javap` that both `Quality`/`DataQuality`'s `sourceAuthorityTier` fields
+now generate as the real `TierT1T4NullableV1Schema` type, not `Object`.
+
+**Files:**
+- `schemas/common/data-quality-state-v1.schema.json` (new)
+- `schemas/common/tier-t1-t4-v1.schema.json` (new)
+- `schemas/common/tier-t1-t4-nullable-v1.schema.json` (new)
+- `schemas/features/feature-value-v1.schema.json` (`quality.state` and `quality.sourceAuthorityTier`)
+- `schemas/signals/signal-instance-v1.schema.json` (`dataQuality.state` and
+  `dataQuality.sourceAuthorityTier`)
+- `schemas/signals/signal-policy-v1.schema.json` (`inputs.minimumEvidenceTier`)
+- `schemas/sources/source-registry-v1.schema.json` (`authorityTier`)
+
+**Verification:**
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules, both before and after the
+  anyOf-to-two-artifacts fix (the first version also built green -- the codegen regression was a
+  type-fidelity issue `javap` inspection caught, not a build or test failure, underscoring why this
+  project verifies generated output directly rather than trusting "tests pass" alone for schema
+  changes).
+- `JsonSchemaParseTest` (networknt draft 2020-12 validator, offline `$ref` resolution via the
+  existing fictional-host `SchemaMapper`) parses all `.schema.json` contracts including the three new
+  shared artifacts and every updated `$ref`, with no test changes needed (the mapper is prefix-based
+  and already covers any path under `schemas/common/`).
+- `javap` inspection of the generated classes confirms: `SourceRegistryV1Schema.authorityTier` and
+  `Inputs.minimumEvidenceTier` (nested under `SignalPolicyV1Schema`) both generate as the shared,
+  non-nullable `TierT1T4V1Schema` type; `Quality.state`/`DataQuality.state` both generate as the
+  shared `DataQualityStateV1Schema` type; `Quality.sourceAuthorityTier`/
+  `DataQuality.sourceAuthorityTier` both generate as the shared, nullable
+  `TierT1T4NullableV1Schema` type -- four real shared types, eight consumer sites, no duplication and
+  no accidental weakening or type loss anywhere.
+
+**Follow-ups:** None identified for 0.9 -- the previous entry's other candidate (entity-type enums
+that looked similar across `signal-instance`/`feature-value`/`classification-state`/
+`entity-resolution`) was already checked and confirmed to be legitimately different per-context
+subsets, not duplication, so no further extraction work is outstanding for this item.
+
+---
+
 ## 2026-09-25 — `inventory_days` + INVENTORY_DAYS_DERIORATION (P16) (roadmap 2.1, 2.8)
 
 **Roadmap items:** 2.1 (extends `SecEdgarClient` with `InventoryNet`/`CostOfGoodsAndServicesSold`),

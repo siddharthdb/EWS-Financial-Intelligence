@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ews-financial-intelligence/schemas/common/tier-t1-t4-nullable-v1.schema.json",
+  "title": "EWS Source/Evidence Tier v1 (nullable)",
+  "description": "The nullable sibling of schemas/common/tier-t1-t4-v1.schema.json's T1-T4 enum -- same closed symbol set, but permitting null for use sites where the tier is genuinely optional (schemas/signals/signal-instance-v1.schema.json 'dataQuality.sourceAuthorityTier', schemas/features/feature-value-v1.schema.json 'quality.sourceAuthorityTier'). A separate artifact rather than an anyOf-with-null wrapper around the non-nullable one: jsonschema2pojo generates a real typed enum class from a direct $ref to a closed-enum schema, but only 'java.lang.Object' for an anyOf composition, so anyOf would have silently traded away static typing at the two nullable use sites for the sake of avoiding one extra file. Kept as a distinct artifact (not sharing a file with tier-t1-t4-v1.schema.json) specifically so the non-nullable use sites (schemas/sources/source-registry-v1.schema.json 'authorityTier', schemas/signals/signal-policy-v1.schema.json 'minimumEvidenceTier') are never weakened by a null member creeping in through a shared reference.",
+  "type": ["string", "null"],
+  "enum": ["T1", "T2", "T3", "T4", null]
+}

@@ -29,7 +29,7 @@
       "properties": {
         "features": {"type": "array", "items": {"type": "string"}},
         "eventTypes": {"type": "array", "items": {"type": "string"}},
-        "minimumEvidenceTier": {"type": "string", "enum": ["T1", "T2", "T3", "T4"]},
+        "minimumEvidenceTier": {"$ref": "../common/tier-t1-t4-v1.schema.json"},
         "minimumCorroborationCount": {"type": "integer", "minimum": 0},
         "requiresEntityResolution": {"type": "boolean"},
         "minimumEntityMatchConfidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
