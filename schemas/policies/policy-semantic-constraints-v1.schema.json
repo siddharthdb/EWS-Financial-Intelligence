@@ -1,0 +1,15 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://ews-financial-intelligence/schemas/policies/policy-semantic-constraints-v1.schema.json",
+  "title":"EWS Policy Semantic Constraints v1",
+  "description":"Explicit cross-parameter and governance constraints attached to a policy template. Semantic relationships must not be inferred from parameter names.",
+  "type":"object","additionalProperties":false,
+  "required":["policyKey","constraints"],
+  "properties":{
+    "policyKey":{"type":"string"},
+    "constraints":{"type":"array","items":{"oneOf":[
+      {"type":"object","additionalProperties":false,"required":["constraintId","type","leftParameter","operator","rightParameter","severity"],"properties":{"constraintId":{"type":"string"},"type":{"const":"PARAMETER_RELATION"},"leftParameter":{"type":"string"},"operator":{"type":"string","enum":["LT","LTE","GT","GTE","EQ","NE"]},"rightParameter":{"type":"string"},"severity":{"type":"string","enum":["ERROR","WARNING"]},"message":{"type":"string"}}},
+      {"type":"object","additionalProperties":false,"required":["constraintId","type","ruleIds","severity"],"properties":{"constraintId":{"type":"string"},"type":{"const":"UNIQUE_PRIORITY"},"ruleIds":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string"}},"severity":{"type":"string","enum":["ERROR","WARNING"]},"message":{"type":"string"}}}
+    ]}}
+  }
+}

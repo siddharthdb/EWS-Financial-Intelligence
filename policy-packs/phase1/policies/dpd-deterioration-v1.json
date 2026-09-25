@@ -1,0 +1,14 @@
+{
+  "policyId":"POL-CORP-DPD-DETERIORATION-001","policyKey":"DPD_DERIORATION","version":1,"name":"DPD Deterioration","description":"Analytical EWS detection of delinquency deterioration. This policy does not assign accounting, prudential or supervisory classification.",
+  "scope":{"semanticScope":"INSTITUTION_POLICY_SPECIFIC","institutionId":"REFERENCE_INSTITUTION","entityTypes":["COUNTERPARTY"]},"lifecycle":"VALIDATION","effectivePeriod":{"effectiveFrom":"2026-09-17T00:00:00Z","effectiveTo":null},
+  "evaluation":{"engine":"NATIVE","mode":"PRIORITY","missingValuePolicy":"INSUFFICIENT_EVIDENCE","externalArtifactRef":null,"externalArtifactVersion":null},
+  "parameters":[
+    {"name":"DPD_WARNING_THRESHOLD","type":"INTEGER","value":15,"unit":"days","institutionConfigurable":true,"allowedRange":{"minimum":1,"maximum":365},"allowedValues":null,"rationale":"Reference analytical warning threshold; institution controlled."},
+    {"name":"DPD_HIGH_THRESHOLD","type":"INTEGER","value":30,"unit":"days","institutionConfigurable":true,"allowedRange":{"minimum":1,"maximum":365},"allowedValues":null,"rationale":"Reference analytical high threshold; institution controlled."}
+  ],
+  "rules":[
+    {"ruleId":"R-DPD-001","name":"High DPD deterioration","enabled":true,"priority":100,"condition":{"left":{"feature":"current_dpd"},"operator":"GTE","right":{"parameter":"DPD_HIGH_THRESHOLD"}},"outcome":{"type":"SIGNAL_CANDIDATE","code":"DPD_DERIORATION","severity":"HIGH","riskDimensions":["REPAYMENT_CONDUCT","CASH_FLOW_DEBT_SERVICE"],"attributes":{}}},
+    {"ruleId":"R-DPD-002","name":"Warning DPD deterioration","enabled":true,"priority":200,"condition":{"left":{"feature":"current_dpd"},"operator":"GTE","right":{"parameter":"DPD_WARNING_THRESHOLD"}},"outcome":{"type":"SIGNAL_CANDIDATE","code":"DPD_DERIORATION","severity":"MEDIUM","riskDimensions":["REPAYMENT_CONDUCT","CASH_FLOW_DEBT_SERVICE"],"attributes":{}}}
+  ],
+  "governance":{"createdBy":"architecture","createdAt":"2026-09-17T00:00:00Z","makerCheckerRequired":true,"approvedBy":null,"approvedAt":null,"changeReason":"Phase-1 executable reference policy","supersedesPolicyId":null,"simulationRunId":null}
+}

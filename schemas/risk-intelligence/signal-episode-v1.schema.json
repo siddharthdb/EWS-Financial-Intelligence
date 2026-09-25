@@ -1,0 +1,311 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ews-financial-intelligence/schemas/risk-intelligence/signal-episode-v1.schema.json",
+  "title": "EWS Signal Episode v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "episodeId",
+    "episodeKey",
+    "signalType",
+    "entity",
+    "status",
+    "openedAt",
+    "lastActivityAt",
+    "reopenCount",
+    "policy",
+    "executionMode",
+    "memberSignals",
+    "evidenceIds",
+    "featureSnapshotIds",
+    "knowledgeTime",
+    "revision"
+  ],
+  "properties": {
+    "episodeId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "episodeKey": {
+      "type": "string",
+      "minLength": 1
+    },
+    "signalType": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]+$"
+    },
+    "entity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "COUNTERPARTY",
+            "FACILITY",
+            "ACCOUNT",
+            "GROUP",
+            "PERSON",
+            "LEGAL_ENTITY",
+            "SECURITY",
+            "RELATIONSHIP",
+            "COLLATERAL"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "conditionDiscriminator": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "OPEN",
+        "MONITORING",
+        "RESOLVED",
+        "SUPERSEDED"
+      ]
+    },
+    "openedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "lastActivityAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resolvedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "reopenCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "executionMode": {
+      "type": "string",
+      "enum": [
+        "LIVE",
+        "RECOVERY_REPLAY",
+        "PROJECTION_REBUILD",
+        "FEATURE_REBUILD",
+        "COUNTERFACTUAL_BACKTEST",
+        "SOURCE_BACKFILL"
+      ]
+    },
+    "runId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "memberSignals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "signalId",
+          "signalType",
+          "snapshotRef",
+          "firstContributedAt",
+          "lastContributedAt",
+          "role"
+        ],
+        "properties": {
+          "signalId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "signalType": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]+$"
+          },
+          "snapshotRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "firstContributedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastContributedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "PRIMARY",
+              "SUPPORTING"
+            ]
+          }
+        }
+      }
+    },
+    "evidenceIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "featureSnapshotIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "knowledgeTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "previousRevisionRef": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "resolution": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "reasonCode"
+      ],
+      "properties": {
+        "reasonCode": {
+          "type": "string",
+          "enum": [
+            "CONDITION_CLEARED",
+            "HUMAN_RESOLUTION",
+            "POLICY_EXPIRY",
+            "SUPERSEDED"
+          ]
+        },
+        "reasonText": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "triggeringSignalId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "supersededByEpisodeId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "correlationId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "traceId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "RESOLVED"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "resolvedAt",
+          "resolution"
+        ],
+        "properties": {
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolution": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "SUPERSEDED"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "supersededByEpisodeId"
+        ],
+        "properties": {
+          "supersededByEpisodeId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}

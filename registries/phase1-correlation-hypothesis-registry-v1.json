@@ -1,0 +1,16 @@
+{
+  "registryId": "PHASE1_CORRELATION_HYPOTHESIS_REGISTRY_V1",
+  "version": "1",
+  "hypotheses": [
+    {
+      "hypothesisType": "EMERGING_LIQUIDITY_STRESS",
+      "status": "ACTIVE",
+      "riskDimensions": [
+        "LIQUIDITY",
+        "REPAYMENT_CONDUCT",
+        "CASH_FLOW_DEBT_SERVICE",
+        "REFINANCING_FUNDING"
+      ]
+    }
+  ]
+}

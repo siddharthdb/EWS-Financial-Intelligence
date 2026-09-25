@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ews-financial-intelligence/schemas/policies/policy-evaluation-request-v1.schema.json",
+  "title": "EWS Policy Evaluation Request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["evaluationId", "policy", "entity", "knowledgeTime", "executionMode", "features", "requestedAt"],
+  "properties": {
+    "evaluationId": {"type": "string", "minLength": 1},
+    "policy": {"type": "object", "additionalProperties": false, "required": ["policyId", "version"], "properties": {"policyId": {"type": "string", "minLength": 1}, "version": {"type": "integer", "minimum": 1}}},
+    "entity": {"type": "object", "additionalProperties": false, "required": ["type", "id"], "properties": {"type": {"type": "string", "enum": ["COUNTERPARTY", "FACILITY", "ACCOUNT", "COLLATERAL", "GROUP", "SECURITY", "LEGAL_ENTITY", "PERSON"]}, "id": {"type": "string", "minLength": 1}}},
+    "institutionId": {"type": ["string", "null"]},
+    "jurisdiction": {"type": ["string", "null"], "pattern": "^[A-Z]{2}$"},
+    "knowledgeTime": {"type": "string", "format": "date-time"},
+    "executionMode": {"type": "string", "enum": ["LIVE", "RECOVERY_REPLAY", "PROJECTION_REBUILD", "FEATURE_REBUILD", "COUNTERFACTUAL_BACKTEST", "SOURCE_BACKFILL"]},
+    "runId": {"type": ["string", "null"]},
+    "features": {
+      "type": "array", "minItems": 1,
+      "items": {"type": "object", "additionalProperties": false, "required": ["featureName", "featureValueId", "state", "knowledgeTime"], "properties": {
+        "featureName": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"},
+        "featureValueId": {"type": "string", "minLength": 1},
+        "state": {"type": "string", "enum": ["VALUE", "ZERO", "NULL_UNKNOWN", "NOT_APPLICABLE", "NOT_AVAILABLE", "STALE", "INVALID"]},
+        "value": {"type": ["string", "number", "integer", "boolean", "null"]},
+        "knowledgeTime": {"type": "string", "format": "date-time"},
+        "qualityState": {"type": ["string", "null"], "enum": ["COMPLETE", "PARTIAL", "STALE", "CONFLICTED", "UNVERIFIED", "INSUFFICIENT", null]}
+      }}
+    },
+    "observationIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "evidenceIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "requestedAt": {"type": "string", "format": "date-time"},
+    "correlationId": {"type": ["string", "null"]},
+    "traceId": {"type": ["string", "null"]}
+  }
+}

@@ -1,0 +1,153 @@
+package org.ewsfi.policy.validation;
+
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.node.*;
+import java.nio.file.*;
+import java.time.Instant;
+import java.util.*;
+
+/** Repository/CI entry point. Validates actual Phase-1 policy artifacts and emits validation evidence. */
+public final class PolicyValidatorCli {
+  public static void main(String[] args) throws Exception {
+    Path root=Path.of(args.length==0?".":args[0]);
+    ObjectMapper m=new ObjectMapper();
+    JsonNode schema=read(m,root,"schemas/policies/risk-policy-v1.schema.json");
+    JsonNode constraints=read(m,root,"policy-packs/phase1/constraints/phase1-semantic-constraints-v1.json");
+    GovernedRegistry registry=GovernedRegistry.from(
+      read(m,root,"registries/phase1-feature-registry-v1.json"),
+      read(m,root,"registries/phase1-signal-registry-v1.json"),
+      read(m,root,"registries/risk-dimensions-v1.json"));
+    PolicyPublicationValidator validator=new PolicyPublicationValidator(schema);
+    validateContractDirectory(m,root,"schemas/policies/policy-evaluation-request-v1.schema.json","tests/fixtures/policies/requests");
+    validateContractDirectory(m,root,"schemas/policies/policy-evaluation-result-v1.schema.json","tests/fixtures/policies/results");
+    JsonSchemaGate constraintGate=new JsonSchemaGate(read(m,root,"schemas/policies/policy-semantic-constraints-v1.schema.json"));
+    for(JsonNode set:constraints.path("constraintSets")) constraintGate.requireValid(set,"semantic constraint set "+set.path("policyKey").asText());
+    JsonSchemaGate evidenceGate=new JsonSchemaGate(read(m,root,"schemas/policies/policy-validation-result-v1.schema.json"));
+
+    Path dir=root.resolve("policy-packs/phase1/policies");
+    Path outDir=root.resolve("tools/policy-validator/target/policy-validation-results");
+    Files.createDirectories(outDir);
+    boolean failed=false;
+
+    try(var paths=Files.list(dir)){
+      for(Path p:paths.filter(x->x.toString().endsWith(".json")).sorted().toList()){
+        byte[] policyBytes=Files.readAllBytes(p);
+        JsonNode policy=m.readTree(policyBytes);
+        var result=validator.validate(policy,policyBytes,constraints,registry,List.of());
+        ObjectNode evidence=toEvidence(m,policy,result);
+        evidenceGate.requireValid(evidence,"validation evidence for "+p.getFileName());
+
+        Path out=outDir.resolve(p.getFileName().toString().replace(".json","-validation.json"));
+        Files.writeString(out,m.writerWithDefaultPrettyPrinter().writeValueAsString(evidence));
+        System.out.printf("%s schema=%s semantic=%s publishable=%s sha256=%s%n",
+          root.relativize(p),result.schemaValid(),result.semanticValid(),result.publishable(),result.policyArtifactHash());
+        for(var x:result.findings())
+          System.out.printf("  %s %s %s %s%n",x.severity(),x.ruleId(),x.code(),x.message());
+        if(!result.publishable()) failed=true;
+      }
+    }
+    // Part IV-B correlation-policy publication gate.
+    JsonNode correlationSchema=read(m,root,"schemas/risk-intelligence/correlation-policy-v1.schema.json");
+    JsonNode hypothesisRegistry=read(m,root,"registries/phase1-correlation-hypothesis-registry-v1.json");
+    CorrelationPolicyPublicationValidator correlationValidator=new CorrelationPolicyPublicationValidator(correlationSchema);
+    JsonSchemaGate correlationEvidenceGate=new JsonSchemaGate(read(m,root,"schemas/risk-intelligence/correlation-policy-validation-result-v1.schema.json"));
+    Path correlationDir=root.resolve("policy-packs/phase1/correlations");
+    Path correlationOut=root.resolve("tools/policy-validator/target/correlation-policy-validation-results");
+    Files.createDirectories(correlationOut);
+    try(var paths=Files.list(correlationDir)){
+      for(Path p:paths.filter(x->x.toString().endsWith(".json")).sorted().toList()){
+        byte[] bytes=Files.readAllBytes(p); JsonNode policy=m.readTree(bytes);
+        var result=correlationValidator.validate(policy,bytes,registry,hypothesisRegistry,List.of());
+        ObjectNode evidence=toCorrelationEvidence(m,policy,result);
+        correlationEvidenceGate.requireValid(evidence,"correlation validation evidence for "+p.getFileName());
+        Files.writeString(correlationOut.resolve(p.getFileName().toString().replace(".json","-validation.json")),m.writerWithDefaultPrettyPrinter().writeValueAsString(evidence));
+        System.out.printf("%s schema=%s semantic=%s publishable=%s sha256=%s%n",root.relativize(p),result.schemaValid(),result.semanticValid(),result.publishable(),result.policyArtifactHash());
+        if(!result.publishable())failed=true;
+      }
+    }
+    // Part IV-C aggregation-policy publication gate and reference assessment contract.
+    JsonNode aggregationSchema=read(m,root,"schemas/risk-intelligence/risk-assessment-aggregation-policy-v1.schema.json");
+    RiskAggregationPolicyPublicationValidator aggregationValidator=new RiskAggregationPolicyPublicationValidator(aggregationSchema);
+    JsonSchemaGate aggregationEvidenceGate=new JsonSchemaGate(read(m,root,"schemas/risk-intelligence/risk-aggregation-policy-validation-result-v1.schema.json"));
+    Path aggregationDir=root.resolve("policy-packs/phase1/assessments");
+    Path aggregationOut=root.resolve("tools/policy-validator/target/risk-aggregation-policy-validation-results");
+    Files.createDirectories(aggregationOut);
+    try(var paths=Files.list(aggregationDir)){
+      for(Path p:paths.filter(x->x.toString().endsWith(".json")).sorted().toList()){
+        byte[] bytes=Files.readAllBytes(p);JsonNode policy=m.readTree(bytes);
+        var result=aggregationValidator.validate(policy,bytes,registry,hypothesisRegistry,List.of());
+        ObjectNode evidence=toAggregationEvidence(m,policy,result);
+        aggregationEvidenceGate.requireValid(evidence,"aggregation validation evidence for "+p.getFileName());
+        Files.writeString(aggregationOut.resolve(p.getFileName().toString().replace(".json","-validation.json")),m.writerWithDefaultPrettyPrinter().writeValueAsString(evidence));
+        System.out.printf("%s schema=%s semantic=%s publishable=%s sha256=%s%n",root.relativize(p),result.schemaValid(),result.semanticValid(),result.publishable(),result.policyArtifactHash());
+        if(!result.publishable())failed=true;
+      }
+    }
+    if(failed) throw new IllegalStateException("One or more Phase-1 governed policies failed the publication gate");
+  }
+
+  private static ObjectNode toEvidence(ObjectMapper m,JsonNode p,PolicyPublicationValidator.Result r){
+    ObjectNode o=m.createObjectNode();
+    o.put("validationId",UUID.randomUUID().toString());
+    ObjectNode policy=o.putObject("policy");
+    policy.put("policyId",p.path("policyId").asText());
+    policy.put("version",p.path("version").asInt());
+    o.put("policyArtifactHash",r.policyArtifactHash());
+
+    ObjectNode sv=o.putObject("schemaValidation");
+    sv.put("valid",r.schemaValid());
+    sv.put("schemaRef","schemas/policies/risk-policy-v1.schema.json");
+    ArrayNode schemaErrors=sv.putArray("errors");
+
+    ObjectNode sm=o.putObject("semanticValidation");
+    sm.put("valid",r.semanticValid());
+    ObjectNode snap=sm.putObject("registrySnapshot");
+    r.registrySnapshot().forEach(snap::put);
+    ArrayNode semanticFindings=sm.putArray("findings");
+
+    for(var f:r.findings()){
+      ObjectNode n=m.createObjectNode();
+      n.put("ruleId",f.ruleId()); n.put("severity",f.severity().name());
+      n.put("code",f.code()); n.put("message",f.message());
+      if(f.jsonPointer()==null)n.putNull("jsonPointer"); else n.put("jsonPointer",f.jsonPointer());
+      n.putNull("reference");
+      if("SCHEMA".equals(f.ruleId()))schemaErrors.add(n); else semanticFindings.add(n);
+    }
+
+    o.put("publishable",r.publishable());
+    o.put("validatedAt",Instant.now().toString());
+    o.put("validatorVersion","0.1.0");
+    o.putNull("traceId");
+    return o;
+  }
+
+  private static ObjectNode toCorrelationEvidence(ObjectMapper m,JsonNode p,CorrelationPolicyPublicationValidator.Result r){
+    ObjectNode o=m.createObjectNode(); o.put("validationId",UUID.randomUUID().toString());
+    ObjectNode policy=o.putObject("policy"); policy.put("policyId",p.path("policyId").asText()); policy.put("policyKey",p.path("policyKey").asText()); policy.put("version",p.path("version").asText());
+    o.put("policyArtifactHash",r.policyArtifactHash()); o.put("schemaValid",r.schemaValid()); o.put("semanticValid",r.semanticValid()); o.put("publishable",r.publishable());
+    ArrayNode findings=o.putArray("findings"); for(var f:r.findings()){ObjectNode n=findings.addObject();n.put("ruleId",f.ruleId());n.put("code",f.code());n.put("message",f.message());if(f.jsonPointer()==null)n.putNull("jsonPointer");else n.put("jsonPointer",f.jsonPointer());}
+    o.put("validatedAt",Instant.now().toString()); o.put("validatorVersion","0.1.0"); return o;
+  }
+
+  private static ObjectNode toAggregationEvidence(ObjectMapper m,JsonNode p,RiskAggregationPolicyPublicationValidator.Result r){
+    ObjectNode o=m.createObjectNode();o.put("validationId",UUID.randomUUID().toString());
+    ObjectNode policy=o.putObject("policy");policy.put("policyId",p.path("policyId").asText());policy.put("policyKey",p.path("policyKey").asText());policy.put("version",p.path("version").asText());
+    o.put("policyArtifactHash",r.policyArtifactHash());o.put("schemaValid",r.schemaValid());o.put("semanticValid",r.semanticValid());o.put("publishable",r.publishable());
+    ArrayNode findings=o.putArray("findings");for(var f:r.findings()){ObjectNode n=findings.addObject();n.put("ruleId",f.ruleId());n.put("code",f.code());n.put("message",f.message());if(f.jsonPointer()==null)n.putNull("jsonPointer");else n.put("jsonPointer",f.jsonPointer());}
+    o.put("validatedAt",Instant.now().toString());o.put("validatorVersion","0.1.0");return o;
+  }
+
+  private static void validateContractDirectory(ObjectMapper m,Path root,String schemaPath,String directory)throws Exception{
+    JsonSchemaGate gate=new JsonSchemaGate(read(m,root,schemaPath));
+    Path dir=root.resolve(directory);
+    if(!Files.exists(dir))return;
+    try(var paths=Files.list(dir)){
+      for(Path p:paths.filter(x->x.toString().endsWith(".json")).sorted().toList())
+        gate.requireValid(m.readTree(Files.readString(p)),root.relativize(p).toString());
+    }
+  }
+
+  private static JsonNode read(ObjectMapper m,Path root,String path)throws Exception{
+    return m.readTree(Files.readString(root.resolve(path)));
+  }
+}

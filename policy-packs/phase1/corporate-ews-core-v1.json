@@ -1,0 +1,49 @@
+{
+  "packId": "CORPORATE_EWS_PHASE1",
+  "version": 1,
+  "status": "DRAFT",
+  "description": "Phase-1 institution-configurable corporate EWS deterministic policy pack. Values are reference defaults for simulation and must be approved by each institution before activation.",
+  "institutionConfiguration": {
+    "principle": "Institutions own approved threshold and policy configuration within platform governance constraints.",
+    "makerCheckerRequired": true,
+    "simulationRequiredBeforeActivation": true
+  },
+  "policies": [
+    {
+      "policyKey": "REPEATED_PAYMENT_RETURN",
+      "parameters": {
+        "PAYMENT_RETURN_COUNT_THRESHOLD": 3,
+        "PAYMENT_RETURN_LOOKBACK_DAYS": 30
+      },
+      "requiredFeatures": ["returned_payment_count_30d"],
+      "condition": "returned_payment_count_30d >= PAYMENT_RETURN_COUNT_THRESHOLD",
+      "outcome": {"type": "SIGNAL_CANDIDATE", "code": "REPEATED_PAYMENT_RETURN", "severity": "HIGH", "riskDimensions": ["REPAYMENT_CONDUCT", "LIQUIDITY"]}
+    },
+    {
+      "policyKey": "DPD_DERIORATION",
+      "parameters": {
+        "DPD_WARNING_THRESHOLD": 15,
+        "DPD_HIGH_THRESHOLD": 30
+      },
+      "requiredFeatures": ["current_dpd"],
+      "rules": [
+        {"priority": 100, "condition": "current_dpd >= DPD_HIGH_THRESHOLD", "severity": "HIGH"},
+        {"priority": 200, "condition": "current_dpd >= DPD_WARNING_THRESHOLD", "severity": "MEDIUM"}
+      ],
+      "outcome": {"type": "SIGNAL_CANDIDATE", "code": "DPD_DERIORATION", "riskDimensions": ["REPAYMENT_CONDUCT", "CASH_FLOW_DEBT_SERVICE"]}
+    },
+    {
+      "policyKey": "UTILIZATION_HIGH",
+      "parameters": {
+        "UTILIZATION_HIGH_THRESHOLD": 0.85,
+        "CRITICAL_UTILIZATION_THRESHOLD": 0.95
+      },
+      "requiredFeatures": ["utilization_ratio"],
+      "rules": [
+        {"priority": 100, "condition": "utilization_ratio >= CRITICAL_UTILIZATION_THRESHOLD", "severity": "HIGH"},
+        {"priority": 200, "condition": "utilization_ratio >= UTILIZATION_HIGH_THRESHOLD", "severity": "MEDIUM"}
+      ],
+      "outcome": {"type": "SIGNAL_CANDIDATE", "code": "UTILIZATION_HIGH", "riskDimensions": ["LIQUIDITY", "REFINANCING_FUNDING"]}
+    }
+  ]
+}

@@ -1,0 +1,167 @@
+{
+  "assessmentId": "RA-CP-001-INVALID-DOUBLE-COUNT",
+  "entity": {
+    "type": "COUNTERPARTY",
+    "id": "CP-001"
+  },
+  "assessmentType": "PROPOSED",
+  "asOf": "2026-09-18T06:15:00Z",
+  "knowledgeTime": "2026-09-18T06:15:00Z",
+  "executionMode": "LIVE",
+  "runId": null,
+  "aggregationPolicy": {
+    "id": "RISK-AGG-CORPORATE-001",
+    "version": "1",
+    "artifactHash": "c4935eefdea8d086ad0e6b7dc6ae6ee929418d00975bc22b4c846ddcad29fa71"
+  },
+  "dimensionAssessments": [
+    {
+      "riskDimension": "LIQUIDITY",
+      "rawScore": 80,
+      "scoreScaleId": "REFERENCE_0_100",
+      "proposedBand": "CRITICAL",
+      "confidence": 0.76,
+      "materiality": "HIGH",
+      "contributors": [
+        {
+          "type": "CORRELATION_HYPOTHESIS",
+          "id": "HYP-LIQ-CP-001-001",
+          "analyticalType": "EMERGING_LIQUIDITY_STRESS",
+          "contributionFamily": "LIQUIDITY_STRESS",
+          "role": "SCORING",
+          "lineageGroupIds": [
+            "LIN-FAC-1001-UTILIZATION",
+            "LIN-ACC-2001-PAYMENT-RETURNS"
+          ],
+          "scoreContribution": 80,
+          "bandContribution": "CRITICAL",
+          "confidence": 0.76,
+          "materiality": "HIGH"
+        },
+        {
+          "type": "EPISODE",
+          "id": "EP-UTL-FAC-1001-001",
+          "analyticalType": "UTILIZATION_HIGH",
+          "contributionFamily": "UTILIZATION_PRESSURE",
+          "role": "SCORING",
+          "lineageGroupIds": [
+            "LIN-FAC-1001-UTILIZATION"
+          ],
+          "scoreContribution": 70,
+          "bandContribution": "HIGH",
+          "confidence": 0.78,
+          "materiality": "HIGH"
+        },
+        {
+          "type": "EPISODE",
+          "id": "EP-PAYRET-ACC-2001-001",
+          "analyticalType": "REPEATED_PAYMENT_RETURN",
+          "contributionFamily": "PAYMENT_RETURN",
+          "role": "LINEAGE_ONLY",
+          "lineageGroupIds": [
+            "LIN-ACC-2001-PAYMENT-RETURNS"
+          ],
+          "scoreContribution": null,
+          "bandContribution": null,
+          "confidence": 0.72,
+          "materiality": "HIGH"
+        }
+      ],
+      "capApplied": false,
+      "rationaleRef": "correlation://HYP-LIQ-CP-001-001/rev/1"
+    },
+    {
+      "riskDimension": "REPAYMENT_CONDUCT",
+      "rawScore": 70,
+      "scoreScaleId": "REFERENCE_0_100",
+      "proposedBand": "HIGH",
+      "confidence": 0.72,
+      "materiality": "HIGH",
+      "contributors": [
+        {
+          "type": "EPISODE",
+          "id": "EP-PAYRET-ACC-2001-001",
+          "analyticalType": "REPEATED_PAYMENT_RETURN",
+          "contributionFamily": "PAYMENT_RETURN",
+          "role": "SCORING",
+          "lineageGroupIds": [
+            "LIN-ACC-2001-PAYMENT-RETURNS"
+          ],
+          "scoreContribution": 70,
+          "bandContribution": "HIGH",
+          "confidence": 0.72,
+          "materiality": "HIGH"
+        }
+      ],
+      "capApplied": false,
+      "rationaleRef": null
+    },
+    {
+      "riskDimension": "REFINANCING_FUNDING",
+      "rawScore": 70,
+      "scoreScaleId": "REFERENCE_0_100",
+      "proposedBand": "HIGH",
+      "confidence": 0.78,
+      "materiality": "HIGH",
+      "contributors": [
+        {
+          "type": "EPISODE",
+          "id": "EP-UTL-FAC-1001-001",
+          "analyticalType": "UTILIZATION_HIGH",
+          "contributionFamily": "UTILIZATION_PRESSURE",
+          "role": "SCORING",
+          "lineageGroupIds": [
+            "LIN-FAC-1001-UTILIZATION"
+          ],
+          "scoreContribution": 70,
+          "bandContribution": "HIGH",
+          "confidence": 0.78,
+          "materiality": "HIGH"
+        }
+      ],
+      "capApplied": false,
+      "rationaleRef": null
+    }
+  ],
+  "overallAssessment": {
+    "method": "MAX_DIMENSION",
+    "rawScore": 80,
+    "scoreScaleId": "REFERENCE_0_100",
+    "proposedBand": "CRITICAL",
+    "confidence": 0.76,
+    "materiality": "HIGH",
+    "requiresHumanReview": true
+  },
+  "signalIds": [
+    "SIG-UTL-1001-001",
+    "SIG-UTL-1001-002"
+  ],
+  "episodeIds": [
+    "EP-UTL-FAC-1001-001",
+    "EP-PAYRET-ACC-2001-001"
+  ],
+  "correlationHypothesisIds": [
+    "HYP-LIQ-CP-001-001"
+  ],
+  "evidenceIds": [
+    "EVD-FAC-1001-LIMIT",
+    "EVD-FAC-1001-OUTSTANDING",
+    "EVD-PAYRET-2001-01",
+    "EVD-PAYRET-2001-02",
+    "EVD-PAYRET-2001-03"
+  ],
+  "featureSnapshotIds": [
+    "FV-utilization_ratio-FAC-1001-20260918T0605Z",
+    "FV-returned_payment_count_30d-CP-001-20260917"
+  ],
+  "contradictions": [],
+  "qualitySummary": {
+    "state": "COMPLETE",
+    "excludedContributorIds": []
+  },
+  "revision": 1,
+  "previousRevisionRef": null,
+  "createdAt": "2026-09-18T06:15:01Z",
+  "correlationId": "CORR-RA-CP-001",
+  "traceId": "TRACE-RA-CP-001"
+}
