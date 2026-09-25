@@ -22,6 +22,90 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-25 — XBRL duration-concept extraction + `operating_income`/`operating_cash_flow` + P13/P14 (roadmap 2.1, 2.8)
+
+**Roadmap items:** 2.1 (extends `SecEdgarClient` with period-disambiguated duration-concept
+extraction), 2.8 (extends the existing "DONE (partial)" row with two more contracts: P13
+OPERATING_PROFIT_MATERIAL_DECLINE, P14 OPERATING_CASH_FLOW_NEGATIVE)
+
+**What:** Solves the period-disambiguation problem flagged as a follow-up in the previous
+`wc_available_headroom` entry, then builds on it:
+- `SecEdgarClient.parseXbrlFactsForAccession` now takes a `reportDate` alongside
+  `accessionNumber`, and `selectFactForFiling` disambiguates among a single accession's multiple
+  XBRL entries for a duration concept (confirmed empirically: a 10-Q's `OperatingIncomeLoss` reports
+  four entries under one accession -- the current quarter, the current year-to-date, and both
+  prior-year comparatives) by (1) keeping only entries whose `end` matches the filing's own
+  `reportDate` (ruling out prior-year comparatives), then (2) among any remaining ties, keeping the
+  entry with the shortest `end - start` duration (the discrete period this filing newly reports, not
+  a cumulative year-to-date figure). Adds `DURATION_CONCEPTS` (`OperatingIncomeLoss`,
+  `NetCashProvidedByUsedInOperatingActivities`) alongside the existing `BALANCE_SHEET_CONCEPTS`.
+- `OperatingIncomeFeatureTopology`/`OperatingCashFlowFeatureTopology` (`ews-feature-processor`):
+  stateless pass-through features extracting the two new concepts from `financial.statement.validated`,
+  named to match the feature catalogue exactly where it names one (`operating_cash_flow`) and
+  reasonably where it doesn't (`operating_income`, since the catalogue's `operating_profit_projection_variance`
+  needs a sanctioned/approved projection this platform has no source for).
+- `OperatingProfitDeclineSignalPolicyLoader`/`OperatingProfitDeclineSignalTopology` (P13): stateful
+  transition topology (mirrors `CurrentRatioDeteriorationSignalTopology`) firing on a >=20% relative
+  decrease in `operating_income` between consecutive observations, implementing only the "against
+  history" case of P13's contract text ("against history, plan or peers") -- "plan" and "peers" have
+  no data source in this platform.
+- `OperatingCashFlowNegativeSignalPolicyLoader`/`OperatingCashFlowNegativeSignalTopology` (P14):
+  stateless threshold topology (mirrors `SignalPolicyTopology`) firing on any single negative
+  `operating_cash_flow` observation -- the simplest P10-P34 contract implemented so far, needing no
+  transition state.
+
+**Why:** The previous entry explicitly deferred this exact work, having discovered the
+period-disambiguation problem while scoping it and choosing not to rush a fix. Solving it properly
+now unblocks two more P10-P34 contracts using the same XBRL source already integrated, with no new
+external dependency. P13/P14 were the natural next contracts (mirroring P11/P12's earlier selection
+logic): both were named in the taxonomy with concepts directly available from SEC's `us-gaap`
+taxonomy once duration-concept extraction worked, needing no further new XBRL categories.
+
+**Files:**
+- `services/ews-ingestion-service/src/main/java/org/ewsfi/ingestion/adapter/external/sec/SecEdgarClient.java`
+- `services/ews-ingestion-service/src/main/java/org/ewsfi/ingestion/adapter/external/sec/SecFilingIngestionAdapter.java`
+- `services/ews-ingestion-service/src/test/java/org/ewsfi/ingestion/adapter/external/sec/SecEdgarClientTest.java`
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/topology/OperatingIncomeFeatureTopology.java` (new)
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/topology/OperatingCashFlowFeatureTopology.java` (new)
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/config/KafkaStreamsConfig.java`
+- `services/ews-feature-processor/src/test/java/org/ewsfi/featureprocessor/topology/OperatingIncomeFeatureTopologyTest.java` (new)
+- `services/ews-feature-processor/src/test/java/org/ewsfi/featureprocessor/topology/OperatingCashFlowFeatureTopologyTest.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/policy/OperatingProfitDeclineSignalPolicyLoader.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/OperatingProfitDeclineSignalTopology.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/policy/OperatingCashFlowNegativeSignalPolicyLoader.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/OperatingCashFlowNegativeSignalTopology.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/config/KafkaStreamsConfig.java`
+- `services/ews-signal-policy-engine/src/test/java/org/ewsfi/signalpolicy/topology/OperatingProfitDeclineSignalTopologyTest.java` (new)
+- `services/ews-signal-policy-engine/src/test/java/org/ewsfi/signalpolicy/topology/OperatingCashFlowNegativeSignalTopologyTest.java` (new)
+
+**Verification:**
+- `SecEdgarClientTest`: a new deterministic test (`selectsTheDiscreteQuarterNotTheYearToDateFigureForADurationConcept`)
+  uses the exact four real entries recorded from Apple's live data to prove the disambiguation logic
+  picks the discrete quarter (35695000000), not the year-to-date figure (122432000000) that shares
+  the same end date, and not either prior-year comparative. The existing live-API test now also
+  asserts against the combined `BALANCE_SHEET_CONCEPTS`/`DURATION_CONCEPTS` set. All 8 tests in this
+  class pass, including against the real live SEC API.
+- `OperatingIncomeFeatureTopologyTest`/`OperatingCashFlowFeatureTopologyTest`: 4 tests each, proving
+  extraction, negative-value handling (a genuine loss/cash-outflow, not an error), missing-facts
+  handling, and unrelated-event-type filtering.
+- `OperatingProfitDeclineSignalTopologyTest`: 4 tests, proving the signal fires exactly on a >=20%
+  relative decline, not on a smaller decline, an increase, or when the previous observation was
+  already a loss (no meaningful positive baseline).
+- `OperatingCashFlowNegativeSignalTopologyTest`: 3 tests, proving the signal fires on any negative
+  observation and not on a positive one or an unrelated feature name.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules.
+
+**Follow-ups:** The period-disambiguation logic (end-date match + shortest-duration tiebreak) is a
+documented heuristic, not verified against every possible filing shape (e.g. a 10-K that also tags a
+discrete Q4 figure, which this platform hasn't observed but SEC's XBRL taxonomy permits) -- flagged
+for revisit if a future filing type is found to break the heuristic. P15-P17 (receivable/inventory
+days) would need `Revenues`/`CostOfGoodsSold`/`AccountsReceivableNetCurrent`/`InventoryNet` concepts,
+extractable via the same pattern now established, and are reasonable next candidates. P10 (DSCR) and
+P19-P34 remain out of reach of this platform's current data sources entirely (debt-service schedules,
+legal/rating/ownership/market events respectively).
+
+---
+
 ## 2026-09-25 — `wc_available_headroom` + LIMIT_EXCESS_RECURRING (P07) (roadmap 1.14)
 
 **Roadmap items:** 1.14 (closes out the row's last remaining gap; the row can now be marked fully

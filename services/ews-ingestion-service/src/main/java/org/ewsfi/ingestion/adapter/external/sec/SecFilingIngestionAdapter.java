@@ -81,7 +81,8 @@ public class SecFilingIngestionAdapter {
         eventIds.add(recordReceived(filing.get()));
 
         Map<String, Long> xbrlFacts =
-                secEdgarClient.fetchXbrlFactsForFiling(cik, filing.get().accessionNumber());
+                secEdgarClient.fetchXbrlFactsForFiling(
+                        cik, filing.get().accessionNumber(), filing.get().reportDate());
         if (!xbrlFacts.isEmpty()) {
             eventIds.add(recordValidated(filing.get(), xbrlFacts));
         }
