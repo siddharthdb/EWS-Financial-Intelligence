@@ -10,6 +10,7 @@ import org.ewsfi.signalpolicy.topology.DpdSignalTopology;
 import org.ewsfi.signalpolicy.topology.CurrentRatioDeteriorationSignalTopology;
 import org.ewsfi.signalpolicy.topology.DpdWorseningSignalTopology;
 import org.ewsfi.signalpolicy.topology.LeverageDeteriorationSignalTopology;
+import org.ewsfi.signalpolicy.topology.LimitExcessRecurringSignalTopology;
 import org.ewsfi.signalpolicy.topology.RequiredMonitoringDelaySignalTopology;
 import org.ewsfi.signalpolicy.topology.SignalPolicyTopology;
 import org.ewsfi.signalpolicy.topology.UtilizationSignalTopology;
@@ -100,6 +101,12 @@ public class KafkaStreamsConfig {
     @Bean
     public KStream<String, String> currentRatioDeteriorationSignalStream(
             StreamsBuilder streamsBuilder, CurrentRatioDeteriorationSignalTopology topology) {
+        return topology.build(streamsBuilder);
+    }
+
+    @Bean
+    public KStream<String, String> limitExcessRecurringSignalStream(
+            StreamsBuilder streamsBuilder, LimitExcessRecurringSignalTopology topology) {
         return topology.build(streamsBuilder);
     }
 }

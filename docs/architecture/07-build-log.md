@@ -22,6 +22,76 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-25 — `wc_available_headroom` + LIMIT_EXCESS_RECURRING (P07) (roadmap 1.14)
+
+**Roadmap items:** 1.14 (closes out the row's last remaining gap; the row can now be marked fully
+`DONE`, with `wc_utilization_delta_30d`/`UTILIZATION_SPIKE` credited to item 2.3's earlier entry)
+
+**What:** Adds the last unimplemented feature/signal pair from item 1.14's original scope:
+- `WcAvailableHeadroomFeatureTopology` (`ews-feature-processor`): computes `wc_available_headroom =
+  applicable_capacity - eligible_outstanding` per facility from the same
+  `facility.limit.changed`/`facility.outstanding.changed` join `UtilizationFeatureTopology` already
+  performs, matching the catalogue's own definition exactly (docs/architecture/02d-phase1-feature-catalogue.md
+  Section 1: "Baseline: applicable_capacity - eligible_outstanding... Negative values represent
+  excess"). Deliberately a separate topology rather than a second output from
+  `UtilizationFeatureTopology`'s existing join (a `ValueJoiner` produces one value per join event;
+  splitting it would mean restructuring an already-tested topology) -- instead independently
+  re-joins the same two event types with its own state stores, the same duplicated-join tradeoff
+  already accepted by `DpdFeatureTopology`/`MaxDpdFeatureTopology` both independently reading
+  `ews.canonical.repayment`. Unlike the ratio feature, no guardrail is needed: a negative result is
+  itself the meaningful signal input, not an error state.
+- `LimitExcessRecurringSignalPolicyLoader` + `LimitExcessRecurringSignalTopology`
+  (`ews-signal-policy-engine`): fires P07 LIMIT_EXCESS_RECURRING when the two most recent consecutive
+  `wc_available_headroom` observations for a facility are both negative. A single negative
+  observation is a one-off excess, not yet "repeatedly/continuously" per the contract's own wording
+  (docs/architecture/02a-priority-signal-contracts.md P07); requiring two consecutive negative
+  observations is a documented interim proxy for recurrence. Unlike the DPD/leverage/current-ratio
+  transition signals (which fire once per qualifying crossing), this topology re-evaluates on every
+  new observation while headroom stays negative, so it fires on every qualifying consecutive pair --
+  matching `SignalPolicyTopology`'s own precedent of emitting on every window the threshold is met,
+  not only the first.
+
+**Why:** The catalogue's more precise companion feature for P07, `limit_excess_days_30d` ("number of
+days in rolling 30 days where eligible outstanding exceeded applicable capacity"), needs deriving
+distinct calendar days from an irregular, event-driven observation stream -- genuinely harder than a
+windowed count/max (a single accession/filing can report multiple periods, as discovered while
+scoping a would-be extension of the XBRL work to duration concepts like `OperatingIncomeLoss`, which
+surfaced the same class of "which period does this observation actually represent" ambiguity and was
+deliberately not implemented this firing for that reason). `wc_available_headroom` needed no such
+disambiguation (a single point-in-time subtraction) and was already flagged as the last unimplemented
+piece of item 1.14's original scope, making it the safer, well-grounded choice over rushing a
+XBRL-duration-concept feature whose correctness could not be verified with confidence in the time
+available.
+
+**Files:**
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/topology/WcAvailableHeadroomFeatureTopology.java` (new)
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/config/KafkaStreamsConfig.java`
+- `services/ews-feature-processor/src/test/java/org/ewsfi/featureprocessor/topology/WcAvailableHeadroomFeatureTopologyTest.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/policy/LimitExcessRecurringSignalPolicyLoader.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/LimitExcessRecurringSignalTopology.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/config/KafkaStreamsConfig.java`
+- `services/ews-signal-policy-engine/src/test/java/org/ewsfi/signalpolicy/topology/LimitExcessRecurringSignalTopologyTest.java` (new)
+
+**Verification:**
+- `WcAvailableHeadroomFeatureTopologyTest`: 4 tests, proving the subtraction, a correctly-signed
+  negative result when outstanding exceeds the limit, independence per facility, and the malformed-
+  input guardrail (join tombstone, not a crash).
+- `LimitExcessRecurringSignalTopologyTest`: 4 tests, proving no signal on a single one-off excess,
+  a signal on two consecutive negative observations, no signal after recovering to positive
+  headroom, and re-firing on a third consecutive negative observation (an ongoing episode).
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules.
+
+**Follow-ups:** `limit_excess_days_30d` (the catalogue's actual named feature for this contract)
+remains unimplemented; a future increment could derive calendar-day buckets from
+`wc_available_headroom` observations (or a dedicated `SlidingWindows` aggregate tracking distinct
+days), replacing this entry's coarser two-consecutive-observations proxy. The XBRL duration-concept
+work considered but deferred this firing (P13 OPERATING_PROFIT_MATERIAL_DECLINE, P14
+OPERATING_CASH_FLOW_NEGATIVE) needs correct period-disambiguation logic (matching accession-scoped
+entries by their reporting period, not just by accession number, since a single accession reports
+multiple overlapping/comparative periods for duration concepts) before it can be safely implemented.
+
+---
+
 ## 2026-09-25 — `current_ratio` + CURRENT_RATIO_DERIORATION (P11) (roadmap 2.1, 2.8)
 
 **Roadmap items:** 2.1 (extends `SecEdgarClient.BALANCE_SHEET_CONCEPTS` with two more concepts),

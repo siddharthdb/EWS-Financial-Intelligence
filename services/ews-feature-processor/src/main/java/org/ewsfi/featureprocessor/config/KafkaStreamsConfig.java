@@ -14,6 +14,7 @@ import org.ewsfi.featureprocessor.topology.LeverageRatioFeatureTopology;
 import org.ewsfi.featureprocessor.topology.MaxDpdFeatureTopology;
 import org.ewsfi.featureprocessor.topology.UtilizationDeltaFeatureTopology;
 import org.ewsfi.featureprocessor.topology.UtilizationFeatureTopology;
+import org.ewsfi.featureprocessor.topology.WcAvailableHeadroomFeatureTopology;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -107,6 +108,12 @@ public class KafkaStreamsConfig {
     @Bean
     public KStream<String, String> currentRatioFeatureStream(
             StreamsBuilder streamsBuilder, CurrentRatioFeatureTopology topology) {
+        return topology.build(streamsBuilder);
+    }
+
+    @Bean
+    public KStream<String, String> wcAvailableHeadroomFeatureStream(
+            StreamsBuilder streamsBuilder, WcAvailableHeadroomFeatureTopology topology) {
         return topology.build(streamsBuilder);
     }
 }
