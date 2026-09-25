@@ -22,6 +22,66 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-25 — `inventory_days` + INVENTORY_DAYS_DERIORATION (P16) (roadmap 2.1, 2.8)
+
+**Roadmap items:** 2.1 (extends `SecEdgarClient` with `InventoryNet`/`CostOfGoodsAndServicesSold`),
+2.8 (extends the existing "DONE (partial)" row with a seventh contract: P16
+INVENTORY_DAYS_DERIORATION -- completing all of P11-P16's XBRL-derivable working-capital contracts)
+
+**What:** Extends `SecEdgarClient.BALANCE_SHEET_CONCEPTS` with `InventoryNet` and
+`DURATION_CONCEPTS` with `CostOfGoodsAndServicesSold` (confirmed present in real Apple XBRL data
+before writing any code, the same discipline used for every prior concept added this session; noted
+that Apple does not tag the alternative `CostOfRevenue` concept at all, so no fallback logic was
+added speculatively, unlike revenue's genuine two-concept taxonomy migration). Adds
+`InventoryDaysFeatureTopology` (`ews-feature-processor`), computing `inventory_days = InventoryNet /
+CostOfGoodsAndServicesSold * periodDays` -- structurally identical to the previous entry's
+`ReceivableDaysFeatureTopology` (same `periodDays` normalization, same closing-balance-not-average
+simplification, same non-positive-denominator guardrail) since the feature catalogue defines
+`inventory_days` with the same shape ("policy-defined average/trailing inventory relative to COGS,
+normalized to period days"). Adds `InventoryDaysDeteriorationSignalPolicyLoader`/
+`InventoryDaysDeteriorationSignalTopology` (P16), firing on a >=20% relative increase between
+consecutive observations, mirroring `ReceivableDaysDeteriorationSignalTopology`'s shape exactly
+(higher inventory_days is the deterioration direction, like receivable_days).
+
+**Why:** P16 was explicitly named as the next candidate in the previous entry's follow-ups, reusing
+the `periodDays` machinery just built rather than needing new infrastructure. With this entry, every
+P10-P34 contract directly derivable from the balance-sheet/income-statement XBRL concepts this
+platform can reliably extract (P11 current ratio, P12 leverage, P13 operating profit decline, P14
+operating cash flow, P15 receivable days, P16 inventory days) is now implemented -- a natural
+stopping point for this particular vein of work before moving to contracts needing genuinely
+different data (P10's debt-service schedule, P17's covenant terms, P19-P34's legal/rating/ownership/
+market events).
+
+**Files:**
+- `services/ews-ingestion-service/src/main/java/org/ewsfi/ingestion/adapter/external/sec/SecEdgarClient.java`
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/topology/InventoryDaysFeatureTopology.java` (new)
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/config/KafkaStreamsConfig.java`
+- `services/ews-feature-processor/src/test/java/org/ewsfi/featureprocessor/topology/InventoryDaysFeatureTopologyTest.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/policy/InventoryDaysDeteriorationSignalPolicyLoader.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/InventoryDaysDeteriorationSignalTopology.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/config/KafkaStreamsConfig.java`
+- `services/ews-signal-policy-engine/src/test/java/org/ewsfi/signalpolicy/topology/InventoryDaysDeteriorationSignalTopologyTest.java` (new)
+
+**Verification:**
+- `SecEdgarClientTest`'s existing live/deterministic XBRL tests still pass unchanged with the larger
+  concept sets (8/8), including the live-API test that generically asserts the extracted concepts
+  are a subset of the combined `BALANCE_SHEET_CONCEPTS`/`DURATION_CONCEPTS` sets.
+- `InventoryDaysFeatureTopologyTest`: 5 tests, proving the ratio computation (using real Apple-scale
+  figures), the zero-COGS guardrail, missing-`periodDays`/missing-inventory handling, and
+  unrelated-event-type filtering.
+- `InventoryDaysDeteriorationSignalTopologyTest`: 3 tests, proving the signal fires exactly on a
+  >=20% relative increase and not on a smaller increase or a decrease.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules.
+
+**Follow-ups:** P10 DSCR needs a debt-service schedule (principal/interest obligations matched to a
+period) this platform has no source for -- a materially different data shape than a single XBRL
+concept ratio. P17 COVENANT_BREACH needs covenant terms/measurement data with no XBRL equivalent at
+all. P19-P34 need entirely different external sources (legal/court records, rating agency feeds,
+ownership/beneficial-owner registries, market pricing) -- none reachable via the SEC EDGAR connector
+this platform currently has.
+
+---
+
 ## 2026-09-25 — `receivable_days` + RECEIVABLE_DAYS_DERIORATION (P15) (roadmap 2.1, 2.8)
 
 **Roadmap items:** 2.1 (extends `SecEdgarClient` with `periodDays` extraction and a revenue-concept

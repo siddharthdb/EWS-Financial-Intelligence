@@ -9,6 +9,7 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.ewsfi.signalpolicy.topology.DpdSignalTopology;
 import org.ewsfi.signalpolicy.topology.CurrentRatioDeteriorationSignalTopology;
 import org.ewsfi.signalpolicy.topology.DpdWorseningSignalTopology;
+import org.ewsfi.signalpolicy.topology.InventoryDaysDeteriorationSignalTopology;
 import org.ewsfi.signalpolicy.topology.LeverageDeteriorationSignalTopology;
 import org.ewsfi.signalpolicy.topology.LimitExcessRecurringSignalTopology;
 import org.ewsfi.signalpolicy.topology.OperatingCashFlowNegativeSignalTopology;
@@ -128,6 +129,12 @@ public class KafkaStreamsConfig {
     @Bean
     public KStream<String, String> receivableDaysDeteriorationSignalStream(
             StreamsBuilder streamsBuilder, ReceivableDaysDeteriorationSignalTopology topology) {
+        return topology.build(streamsBuilder);
+    }
+
+    @Bean
+    public KStream<String, String> inventoryDaysDeteriorationSignalStream(
+            StreamsBuilder streamsBuilder, InventoryDaysDeteriorationSignalTopology topology) {
         return topology.build(streamsBuilder);
     }
 }

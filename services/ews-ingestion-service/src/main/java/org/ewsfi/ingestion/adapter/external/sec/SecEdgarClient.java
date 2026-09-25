@@ -58,7 +58,8 @@ public class SecEdgarClient {
                     "StockholdersEquity",
                     "AssetsCurrent",
                     "LiabilitiesCurrent",
-                    "AccountsReceivableNetCurrent");
+                    "AccountsReceivableNetCurrent",
+                    "InventoryNet");
 
     /**
      * Duration (income-statement/cash-flow, not instant) us-gaap XBRL concepts, for P13
@@ -77,13 +78,18 @@ public class SecEdgarClient {
      * filer that migrated -- not an error, just a quietly missing feature -- so both are extracted
      * and {@code ReceivableDaysFeatureTopology} prefers the newer concept, falling back to the
      * older one only if the newer one is absent.
+     *
+     * <p>{@code CostOfGoodsAndServicesSold} (not {@code CostOfRevenue}, which Apple does not tag --
+     * another real concept-naming variation, confirmed empirically) is the denominator for P16
+     * INVENTORY_DAYS_DERIORATION's {@code inventory_days} feature.
      */
     static final Set<String> DURATION_CONCEPTS =
             Set.of(
                     "OperatingIncomeLoss",
                     "NetCashProvidedByUsedInOperatingActivities",
                     "RevenueFromContractWithCustomerExcludingAssessedTax",
-                    "Revenues");
+                    "Revenues",
+                    "CostOfGoodsAndServicesSold");
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
