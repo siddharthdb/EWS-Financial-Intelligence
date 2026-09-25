@@ -7,6 +7,7 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
 import org.apache.kafka.streams.kstream.KStream;
 import org.ewsfi.signalpolicy.topology.DpdSignalTopology;
+import org.ewsfi.signalpolicy.topology.CurrentRatioDeteriorationSignalTopology;
 import org.ewsfi.signalpolicy.topology.DpdWorseningSignalTopology;
 import org.ewsfi.signalpolicy.topology.LeverageDeteriorationSignalTopology;
 import org.ewsfi.signalpolicy.topology.RequiredMonitoringDelaySignalTopology;
@@ -93,6 +94,12 @@ public class KafkaStreamsConfig {
     @Bean
     public KStream<String, String> leverageDeteriorationSignalStream(
             StreamsBuilder streamsBuilder, LeverageDeteriorationSignalTopology topology) {
+        return topology.build(streamsBuilder);
+    }
+
+    @Bean
+    public KStream<String, String> currentRatioDeteriorationSignalStream(
+            StreamsBuilder streamsBuilder, CurrentRatioDeteriorationSignalTopology topology) {
         return topology.build(streamsBuilder);
     }
 }

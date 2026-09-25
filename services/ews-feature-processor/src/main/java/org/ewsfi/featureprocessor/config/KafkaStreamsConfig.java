@@ -8,6 +8,7 @@ import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
 import org.apache.kafka.streams.kstream.KStream;
 import org.ewsfi.featureprocessor.topology.DpdFeatureTopology;
 import org.ewsfi.featureprocessor.topology.FeatureProcessorTopology;
+import org.ewsfi.featureprocessor.topology.CurrentRatioFeatureTopology;
 import org.ewsfi.featureprocessor.topology.FilingDelayFeatureTopology;
 import org.ewsfi.featureprocessor.topology.LeverageRatioFeatureTopology;
 import org.ewsfi.featureprocessor.topology.MaxDpdFeatureTopology;
@@ -100,6 +101,12 @@ public class KafkaStreamsConfig {
     @Bean
     public KStream<String, String> leverageRatioFeatureStream(
             StreamsBuilder streamsBuilder, LeverageRatioFeatureTopology topology) {
+        return topology.build(streamsBuilder);
+    }
+
+    @Bean
+    public KStream<String, String> currentRatioFeatureStream(
+            StreamsBuilder streamsBuilder, CurrentRatioFeatureTopology topology) {
         return topology.build(streamsBuilder);
     }
 }

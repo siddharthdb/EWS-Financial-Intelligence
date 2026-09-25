@@ -48,7 +48,13 @@ public class SecEdgarClient {
      * reports, mirroring how item 1.14 deliberately scoped `wc_utilization_ratio` to the baseline
      * sanctioned limit rather than every capacity variant.
      */
-    static final Set<String> BALANCE_SHEET_CONCEPTS = Set.of("Assets", "Liabilities", "StockholdersEquity");
+    static final Set<String> BALANCE_SHEET_CONCEPTS =
+            Set.of(
+                    "Assets",
+                    "Liabilities",
+                    "StockholdersEquity",
+                    "AssetsCurrent",
+                    "LiabilitiesCurrent");
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;

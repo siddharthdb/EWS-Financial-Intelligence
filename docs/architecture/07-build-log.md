@@ -22,6 +22,69 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-25 — `current_ratio` + CURRENT_RATIO_DERIORATION (P11) (roadmap 2.1, 2.8)
+
+**Roadmap items:** 2.1 (extends `SecEdgarClient.BALANCE_SHEET_CONCEPTS` with two more concepts),
+2.8 (extends the existing "DONE (partial)" row with a third P10-P34 contract: P11
+CURRENT_RATIO_DERIORATION)
+
+**What:** Extended `SecEdgarClient.BALANCE_SHEET_CONCEPTS` with `AssetsCurrent` and
+`LiabilitiesCurrent` (confirmed present in real SEC XBRL data via the same live `companyfacts` API
+already proven working for the prior three concepts -- no new extraction logic needed, since these
+are instant/balance-sheet concepts extracted by the same accession-number-filtered code path). Adds:
+- `CurrentRatioFeatureTopology` (`ews-feature-processor`): computes `current_ratio =
+  AssetsCurrent / LiabilitiesCurrent` per counterparty from `financial.statement.validated`, matching
+  the feature catalogue's own definition of this exact feature name
+  (docs/architecture/02d-phase1-feature-catalogue.md Section 3: "Baseline: current_assets /
+  current_liabilities... Missingness: INVALID if denominator is zero/invalid; no synthetic neutral
+  value") -- the guardrail (skip on non-positive denominator) is not an invented simplification here
+  but a direct implementation of the catalogue's own stated missingness rule.
+- `CurrentRatioDeteriorationSignalPolicyLoader` + `CurrentRatioDeteriorationSignalTopology`
+  (`ews-signal-policy-engine`): fires P11 CURRENT_RATIO_DERIORATION on a >=20% relative *decrease* in
+  `current_ratio` between consecutive observations -- the mirror image of the previous entry's
+  LEVERAGE_DERIORATION policy (lower current ratio means weaker liquidity, unlike leverage where
+  higher is worse), same relative-threshold reasoning and same stateful transition-tracking shape.
+
+**Why:** Once `AssetsCurrent`/`LiabilitiesCurrent` were confirmed available from the same XBRL source
+already integrated, P11 was the natural next P10-P34 contract to implement (mirroring P12's
+selection logic the previous entry): its feature (`current_ratio`) is already named with a precise
+definition in the catalogue, computable directly from two concepts extractable by the exact same code
+path as the leverage feature's concepts, needing no new parsing work, no new event type, and no new
+XBRL API surface. Two P10-P34 contracts from real, extractable balance-sheet data now share this
+extraction path (P11, P12); the remaining contracts (P10, P13-P17) genuinely need different XBRL
+categories (income-statement, cash-flow) this platform does not yet extract.
+
+**Files:**
+- `services/ews-ingestion-service/src/main/java/org/ewsfi/ingestion/adapter/external/sec/SecEdgarClient.java`
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/topology/CurrentRatioFeatureTopology.java` (new)
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/config/KafkaStreamsConfig.java`
+- `services/ews-feature-processor/src/test/java/org/ewsfi/featureprocessor/topology/CurrentRatioFeatureTopologyTest.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/policy/CurrentRatioDeteriorationSignalPolicyLoader.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/CurrentRatioDeteriorationSignalTopology.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/config/KafkaStreamsConfig.java`
+- `services/ews-signal-policy-engine/src/test/java/org/ewsfi/signalpolicy/topology/CurrentRatioDeteriorationSignalTopologyTest.java` (new)
+
+**Verification:**
+- Confirmed via a live `curl` against `data.sec.gov/api/xbrl/companyfacts/CIK0000320193.json` that
+  both `AssetsCurrent` and `LiabilitiesCurrent` are real, present concepts for Apple's filings before
+  writing any code, the same discipline used for the original three concepts.
+- `SecEdgarClientTest`'s existing live/deterministic XBRL tests still pass unchanged (they assert
+  the extracted map is a subset of `BALANCE_SHEET_CONCEPTS`, so the larger concept set doesn't break
+  them, and continues to prove the live API call genuinely returns real data).
+- `CurrentRatioFeatureTopologyTest`: 4 tests, proving the ratio computation, the
+  zero-or-negative-denominator guardrail (matching the catalogue's explicit missingness rule),
+  missing-facts handling, and unrelated-event-type filtering.
+- `CurrentRatioDeteriorationSignalTopologyTest`: 3 tests, proving the signal fires exactly on a
+  >=20% relative decrease and not on a smaller decrease or an increase.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules.
+
+**Follow-ups:** Same as the previous entry: the 20% relative-threshold policy constants (now used by
+two signals) are documented interim values, not derived from any cited source. P10 (DSCR), P13-P17
+(operating profit/cash-flow, receivable/inventory days) remain blocked on income-statement/cash-flow
+XBRL concepts not yet extracted.
+
+---
+
 ## 2026-09-25 — `total_liabilities_to_equity` + LEVERAGE_DERIORATION (P12) (roadmap 2.8)
 
 **Roadmap items:** 2.8 (extends the existing "DONE (partial)" row with a second P10-P34 contract:
