@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
@@ -61,18 +60,20 @@ class SecEdgarClientTest {
         Optional<SecFiling> filing = client.fetchMostRecentPeriodicStatement(APPLE_CIK);
         assertThat(filing).isPresent();
 
-        Map<String, Long> facts =
+        SecEdgarClient.XbrlFilingFacts filingFacts =
                 client.fetchXbrlFactsForFiling(
                         APPLE_CIK, filing.get().accessionNumber(), filing.get().reportDate());
 
         // Apple is one of the largest US filers and reliably reports Assets/Liabilities/
-        // StockholdersEquity/OperatingIncomeLoss/NetCashProvidedByUsedInOperatingActivities on
-        // every periodic filing, so at least one concept should resolve for any recent 10-K/10-Q.
-        assertThat(facts).isNotEmpty();
+        // StockholdersEquity/OperatingIncomeLoss/NetCashProvidedByUsedInOperatingActivities/revenue
+        // on every periodic filing, so at least one concept should resolve for any recent 10-K/10-Q.
+        assertThat(filingFacts.values()).isNotEmpty();
         Set<String> allConcepts = new java.util.HashSet<>(SecEdgarClient.BALANCE_SHEET_CONCEPTS);
         allConcepts.addAll(SecEdgarClient.DURATION_CONCEPTS);
-        assertThat(facts.keySet()).isSubsetOf(allConcepts);
-        facts.values().forEach(value -> assertThat(value).isPositive());
+        assertThat(filingFacts.values().keySet()).isSubsetOf(allConcepts);
+        filingFacts.values().values().forEach(value -> assertThat(value).isPositive());
+        // A duration concept resolved (revenue/operating income/cash flow), so periodDays must too.
+        assertThat(filingFacts.periodDays()).isPositive();
     }
 
     @Test
@@ -148,16 +149,18 @@ class SecEdgarClientTest {
                 }
                 """;
 
-        Map<String, Long> facts =
+        SecEdgarClient.XbrlFilingFacts filingFacts =
                 client.parseXbrlFactsForAccession(canned, "0000320193-26-000020", "2026-06-27");
 
         // Only the entry matching this exact accession number and report date is picked (not the
         // earlier Assets filing for a different accession), and only concepts in
         // BALANCE_SHEET_CONCEPTS/DURATION_CONCEPTS are kept (SomeOtherConcept is excluded even
         // though it matches the accession number).
-        assertThat(facts).containsOnly(
+        assertThat(filingFacts.values()).containsOnly(
                 org.assertj.core.api.Assertions.entry("Assets", 383266000000L),
                 org.assertj.core.api.Assertions.entry("Liabilities", 275746000000L));
+        // Neither Assets nor Liabilities is a duration concept, so no period was resolved.
+        assertThat(filingFacts.periodDays()).isNull();
     }
 
     @Test
@@ -179,10 +182,11 @@ class SecEdgarClientTest {
                 }
                 """;
 
-        Map<String, Long> facts =
+        SecEdgarClient.XbrlFilingFacts filingFacts =
                 client.parseXbrlFactsForAccession(canned, "0000320193-26-999999", "2025-09-27");
 
-        assertThat(facts).isEmpty();
+        assertThat(filingFacts.values()).isEmpty();
+        assertThat(filingFacts.periodDays()).isNull();
     }
 
     @Test
@@ -213,14 +217,17 @@ class SecEdgarClientTest {
                 }
                 """;
 
-        Map<String, Long> facts =
+        SecEdgarClient.XbrlFilingFacts filingFacts =
                 client.parseXbrlFactsForAccession(canned, "0000320193-26-000020", "2026-06-27");
 
         // Must pick the discrete ~3-month quarter (35695000000), not the ~9-month year-to-date
         // figure (122432000000) that shares the same end date, and not either prior-year
         // comparative (which end on 2025-06-28, not the reportDate).
-        assertThat(facts).containsOnly(
+        assertThat(filingFacts.values()).containsOnly(
                 org.assertj.core.api.Assertions.entry("OperatingIncomeLoss", 35695000000L));
+        // 2026-03-29 -> 2026-06-27 is 90 days -- the discrete quarter's own length, not the
+        // ~9-month year-to-date entry's length.
+        assertThat(filingFacts.periodDays()).isEqualTo(90L);
     }
 
     @Test

@@ -57,19 +57,33 @@ public class SecEdgarClient {
                     "Liabilities",
                     "StockholdersEquity",
                     "AssetsCurrent",
-                    "LiabilitiesCurrent");
+                    "LiabilitiesCurrent",
+                    "AccountsReceivableNetCurrent");
 
     /**
      * Duration (income-statement/cash-flow, not instant) us-gaap XBRL concepts, for P13
-     * OPERATING_PROFIT_MATERIAL_DECLINE / P14 OPERATING_CASH_FLOW_NEGATIVE. Duration concepts need
-     * the extra period-disambiguation {@link #parseXbrlFactsForAccession} applies (see its javadoc)
-     * that {@link #BALANCE_SHEET_CONCEPTS}' instant concepts don't -- a single accession number
-     * reports multiple overlapping/comparative periods for these (e.g. a 10-Q's current quarter,
-     * current year-to-date, and prior-year comparatives for the same concept), unlike a balance
-     * sheet's single "as of" date.
+     * OPERATING_PROFIT_MATERIAL_DECLINE / P14 OPERATING_CASH_FLOW_NEGATIVE / P15
+     * RECEIVABLE_DAYS_DERIORATION. Duration concepts need the extra period-disambiguation
+     * {@link #parseXbrlFactsForAccession} applies (see its javadoc) that
+     * {@link #BALANCE_SHEET_CONCEPTS}' instant concepts don't -- a single accession number reports
+     * multiple overlapping/comparative periods for these (e.g. a 10-Q's current quarter, current
+     * year-to-date, and prior-year comparatives for the same concept), unlike a balance sheet's
+     * single "as of" date.
+     *
+     * <p>Revenue is two concepts, not one -- a real XBRL taxonomy migration, confirmed empirically:
+     * large filers (including Apple) stopped tagging {@code Revenues} around fiscal 2018 in favor of
+     * the more specific ASC 606 concept {@code RevenueFromContractWithCustomerExcludingAssessedTax}.
+     * Relying on {@code Revenues} alone would silently return no revenue figure at all for any
+     * filer that migrated -- not an error, just a quietly missing feature -- so both are extracted
+     * and {@code ReceivableDaysFeatureTopology} prefers the newer concept, falling back to the
+     * older one only if the newer one is absent.
      */
     static final Set<String> DURATION_CONCEPTS =
-            Set.of("OperatingIncomeLoss", "NetCashProvidedByUsedInOperatingActivities");
+            Set.of(
+                    "OperatingIncomeLoss",
+                    "NetCashProvidedByUsedInOperatingActivities",
+                    "RevenueFromContractWithCustomerExcludingAssessedTax",
+                    "Revenues");
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
@@ -107,6 +121,18 @@ public class SecEdgarClient {
     }
 
     /**
+     * A filing's extracted XBRL facts, plus the discrete reporting period's length in days
+     * ({@code periodDays}, {@code null} if no duration concept resolved) -- needed to normalize a
+     * duration-concept-derived ratio like {@code receivable_days} to a period-independent figure
+     * (docs/architecture/02d-phase1-feature-catalogue.md Section 7: "normalized to period days").
+     * Every duration concept that resolves for one filing shares the same discrete period by
+     * construction ({@link #selectFactForFiling}'s end-date-match + shortest-duration selection), so
+     * one {@code periodDays} value is valid for all of them.
+     */
+    record XbrlFilingFacts(Map<String, Long> values, Long periodDays) {
+    }
+
+    /**
      * Fetches CIK {@code cik}'s full XBRL company facts and returns the {@link #BALANCE_SHEET_CONCEPTS}
      * and {@link #DURATION_CONCEPTS} values reported specifically for the filing identified by
      * {@code accessionNumber} and {@code reportDate} -- both already returned by
@@ -115,7 +141,7 @@ public class SecEdgarClient {
      * filing has no matching XBRL facts (e.g. a filer whose facts predate SEC's XBRL company-facts
      * coverage, or a concept genuinely not reported that period).
      */
-    public Map<String, Long> fetchXbrlFactsForFiling(String cik, String accessionNumber, String reportDate)
+    public XbrlFilingFacts fetchXbrlFactsForFiling(String cik, String accessionNumber, String reportDate)
             throws IOException, InterruptedException {
         String paddedCik = String.format("%010d", Long.parseLong(cik));
         URI uri = URI.create("https://data.sec.gov/api/xbrl/companyfacts/CIK" + paddedCik + ".json");
@@ -158,7 +184,7 @@ public class SecEdgarClient {
      * concepts have no {@code start} field (duration is treated as zero), so this reduces to their
      * original single-match behavior; they are not affected by this disambiguation in practice.
      */
-    Map<String, Long> parseXbrlFactsForAccession(String responseBody, String accessionNumber, String reportDate)
+    XbrlFilingFacts parseXbrlFactsForAccession(String responseBody, String accessionNumber, String reportDate)
             throws IOException {
         JsonNode root = objectMapper.readTree(responseBody);
         JsonNode usGaap = root.path("facts").path("us-gaap");
@@ -168,12 +194,22 @@ public class SecEdgarClient {
         allConcepts.addAll(DURATION_CONCEPTS);
 
         Map<String, Long> facts = new LinkedHashMap<>();
+        Long periodDays = null;
         for (String concept : allConcepts) {
             JsonNode entries = usGaap.path(concept).path("units").path("USD");
-            selectFactForFiling(entries, accessionNumber, reportDate)
-                    .ifPresent(entry -> facts.put(concept, entry.path("val").asLong()));
+            Optional<JsonNode> selected = selectFactForFiling(entries, accessionNumber, reportDate);
+            if (selected.isPresent()) {
+                JsonNode entry = selected.get();
+                facts.put(concept, entry.path("val").asLong());
+                if (periodDays == null && DURATION_CONCEPTS.contains(concept)) {
+                    long days = durationDays(entry);
+                    if (days > 0) {
+                        periodDays = days;
+                    }
+                }
+            }
         }
-        return facts;
+        return new XbrlFilingFacts(facts, periodDays);
     }
 
     private Optional<JsonNode> selectFactForFiling(JsonNode entries, String accessionNumber, String reportDate) {

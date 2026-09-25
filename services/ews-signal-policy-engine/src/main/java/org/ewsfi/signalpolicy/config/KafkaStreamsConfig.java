@@ -13,6 +13,7 @@ import org.ewsfi.signalpolicy.topology.LeverageDeteriorationSignalTopology;
 import org.ewsfi.signalpolicy.topology.LimitExcessRecurringSignalTopology;
 import org.ewsfi.signalpolicy.topology.OperatingCashFlowNegativeSignalTopology;
 import org.ewsfi.signalpolicy.topology.OperatingProfitDeclineSignalTopology;
+import org.ewsfi.signalpolicy.topology.ReceivableDaysDeteriorationSignalTopology;
 import org.ewsfi.signalpolicy.topology.RequiredMonitoringDelaySignalTopology;
 import org.ewsfi.signalpolicy.topology.SignalPolicyTopology;
 import org.ewsfi.signalpolicy.topology.UtilizationSignalTopology;
@@ -121,6 +122,12 @@ public class KafkaStreamsConfig {
     @Bean
     public KStream<String, String> operatingCashFlowNegativeSignalStream(
             StreamsBuilder streamsBuilder, OperatingCashFlowNegativeSignalTopology topology) {
+        return topology.build(streamsBuilder);
+    }
+
+    @Bean
+    public KStream<String, String> receivableDaysDeteriorationSignalStream(
+            StreamsBuilder streamsBuilder, ReceivableDaysDeteriorationSignalTopology topology) {
         return topology.build(streamsBuilder);
     }
 }

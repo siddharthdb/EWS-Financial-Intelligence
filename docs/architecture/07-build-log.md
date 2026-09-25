@@ -22,6 +22,85 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-25 — `receivable_days` + RECEIVABLE_DAYS_DERIORATION (P15) (roadmap 2.1, 2.8)
+
+**Roadmap items:** 2.1 (extends `SecEdgarClient` with `periodDays` extraction and a revenue-concept
+fallback), 2.8 (extends the existing "DONE (partial)" row with a sixth contract: P15
+RECEIVABLE_DAYS_DERIORATION)
+
+**What:** Extends the XBRL extraction machinery once more, then builds the first P10-P34 feature
+that needs a normalized-by-period ratio rather than a raw or simple-ratio figure:
+- `SecEdgarClient.XbrlFilingFacts` (new record) replaces the plain `Map<String, Long>` return type
+  of `fetchXbrlFactsForFiling`/`parseXbrlFactsForAccession`, adding `periodDays` -- the discrete
+  reporting period's length in days (a 10-Q's ~90, a 10-K's ~365), derived from whichever duration
+  concept resolved first (all duration concepts in one filing share the same period by construction,
+  per the existing end-date-match + shortest-duration selection). `SecFilingIngestionAdapter` now
+  includes `periodDays` in the `financial.statement.validated` event payload alongside `facts`.
+- `AccountsReceivableNetCurrent` added to `BALANCE_SHEET_CONCEPTS`;
+  `RevenueFromContractWithCustomerExcludingAssessedTax` and `Revenues` both added to
+  `DURATION_CONCEPTS` -- a second real XBRL taxonomy quirk discovered while scoping this entry
+  (confirmed empirically against Apple's own data): large filers, including Apple, stopped tagging
+  the older `Revenues` concept around fiscal 2018 in favor of the ASC 606-specific
+  `RevenueFromContractWithCustomerExcludingAssessedTax`. Relying on `Revenues` alone would silently
+  return no revenue at all for any migrated filer -- not an error, a quietly missing feature -- so
+  both concepts are extracted.
+- `ReceivableDaysFeatureTopology` (`ews-feature-processor`): computes `receivable_days =
+  AccountsReceivableNetCurrent / revenue * periodDays` (days sales outstanding), matching the
+  feature catalogue's own `receivable_days` definition ("average/trailing receivables relative to
+  credit sales/revenue, normalized to period days"). Uses the filing's closing receivables balance,
+  not a trailing average -- a documented simplification per the catalogue's own requirement to state
+  which is used. Prefers the newer revenue concept, falling back to the older one only if the newer
+  one is absent, so the feature resolves correctly regardless of which XBRL era a filer's data is
+  from.
+- `ReceivableDaysDeteriorationSignalPolicyLoader`/`ReceivableDaysDeteriorationSignalTopology` (P15):
+  stateful transition topology (mirrors `LeverageDeteriorationSignalTopology`) firing on a >=20%
+  relative increase in `receivable_days` between consecutive observations -- lengthening receivable
+  days is the deterioration direction here, like leverage, unlike `current_ratio` where a decrease
+  is the deterioration.
+
+**Why:** `receivable_days` was the natural next P10-P34 contract (P15, mirroring P11-P14's earlier
+selection logic): AR and revenue are both already-proven-available XBRL concepts, and the ratio
+itself is precisely named and defined in the feature catalogue, unlike inventory/payable days'
+COGS-based denominators which weren't yet verified against real data at the time this entry was
+scoped. Discovering the revenue-concept taxonomy migration before writing the feature (rather than
+after, when it would have silently produced empty output for any post-2018 filer) is the same
+"verify against real data before coding" discipline this project has followed since the first SEC
+EDGAR entry.
+
+**Files:**
+- `services/ews-ingestion-service/src/main/java/org/ewsfi/ingestion/adapter/external/sec/SecEdgarClient.java`
+- `services/ews-ingestion-service/src/main/java/org/ewsfi/ingestion/adapter/external/sec/SecFilingIngestionAdapter.java`
+- `services/ews-ingestion-service/src/test/java/org/ewsfi/ingestion/adapter/external/sec/SecEdgarClientTest.java`
+- `services/ews-ingestion-service/src/test/java/org/ewsfi/ingestion/adapter/external/sec/SecFilingIngestionAdapterTest.java`
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/topology/ReceivableDaysFeatureTopology.java` (new)
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/config/KafkaStreamsConfig.java`
+- `services/ews-feature-processor/src/test/java/org/ewsfi/featureprocessor/topology/ReceivableDaysFeatureTopologyTest.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/policy/ReceivableDaysDeteriorationSignalPolicyLoader.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/ReceivableDaysDeteriorationSignalTopology.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/config/KafkaStreamsConfig.java`
+- `services/ews-signal-policy-engine/src/test/java/org/ewsfi/signalpolicy/topology/ReceivableDaysDeteriorationSignalTopologyTest.java` (new)
+
+**Verification:**
+- `SecEdgarClientTest`: updated for the new `XbrlFilingFacts` return type; the live-API test now
+  also asserts `periodDays` resolves positively against real data. `selectsTheDiscreteQuarterNotTheYearToDateFigureForADurationConcept`
+  now additionally asserts `periodDays == 90` (the discrete quarter's own length), proving the value
+  is derived from the correctly-disambiguated entry, not the year-to-date one. All 8 tests pass.
+- `ReceivableDaysFeatureTopologyTest`: 6 tests, proving the ratio computation with the preferred
+  revenue concept, the same computation via the fallback concept, the zero-revenue guardrail,
+  missing-`periodDays`/missing-receivables handling, and unrelated-event-type filtering.
+- `ReceivableDaysDeteriorationSignalTopologyTest`: 3 tests, proving the signal fires exactly on a
+  >=20% relative increase and not on a smaller increase or a decrease.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules.
+
+**Follow-ups:** P16 INVENTORY_DAYS_DERIORATION is a natural next candidate, reusing the same
+`periodDays` machinery with `InventoryNet` (already confirmed present in real data) and
+`CostOfGoodsAndServicesSold` as the denominator (confirmed present; `CostOfRevenue` is not tagged by
+Apple, another concept-naming variation to be aware of if extending further). P17 COVENANT_BREACH
+needs covenant terms/measurement data this platform has no source for at all, unlike P10/P13's
+"needs more XBRL concepts" gap.
+
+---
+
 ## 2026-09-25 — XBRL duration-concept extraction + `operating_income`/`operating_cash_flow` + P13/P14 (roadmap 2.1, 2.8)
 
 **Roadmap items:** 2.1 (extends `SecEdgarClient` with period-disambiguated duration-concept

@@ -13,6 +13,7 @@ import org.ewsfi.featureprocessor.topology.FilingDelayFeatureTopology;
 import org.ewsfi.featureprocessor.topology.LeverageRatioFeatureTopology;
 import org.ewsfi.featureprocessor.topology.OperatingCashFlowFeatureTopology;
 import org.ewsfi.featureprocessor.topology.OperatingIncomeFeatureTopology;
+import org.ewsfi.featureprocessor.topology.ReceivableDaysFeatureTopology;
 import org.ewsfi.featureprocessor.topology.MaxDpdFeatureTopology;
 import org.ewsfi.featureprocessor.topology.UtilizationDeltaFeatureTopology;
 import org.ewsfi.featureprocessor.topology.UtilizationFeatureTopology;
@@ -128,6 +129,12 @@ public class KafkaStreamsConfig {
     @Bean
     public KStream<String, String> operatingCashFlowFeatureStream(
             StreamsBuilder streamsBuilder, OperatingCashFlowFeatureTopology topology) {
+        return topology.build(streamsBuilder);
+    }
+
+    @Bean
+    public KStream<String, String> receivableDaysFeatureStream(
+            StreamsBuilder streamsBuilder, ReceivableDaysFeatureTopology topology) {
         return topology.build(streamsBuilder);
     }
 }

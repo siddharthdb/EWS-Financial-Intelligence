@@ -80,10 +80,10 @@ public class SecFilingIngestionAdapter {
         List<String> eventIds = new java.util.ArrayList<>();
         eventIds.add(recordReceived(filing.get()));
 
-        Map<String, Long> xbrlFacts =
+        SecEdgarClient.XbrlFilingFacts xbrlFacts =
                 secEdgarClient.fetchXbrlFactsForFiling(
                         cik, filing.get().accessionNumber(), filing.get().reportDate());
-        if (!xbrlFacts.isEmpty()) {
+        if (!xbrlFacts.values().isEmpty()) {
             eventIds.add(recordValidated(filing.get(), xbrlFacts));
         }
         return List.copyOf(eventIds);
@@ -102,14 +102,15 @@ public class SecFilingIngestionAdapter {
         return stage(filing.cik(), RECEIVED_EVENT_TYPE, data);
     }
 
-    String recordValidated(SecFiling filing, Map<String, Long> xbrlFacts) {
+    String recordValidated(SecFiling filing, SecEdgarClient.XbrlFilingFacts xbrlFacts) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("cik", filing.cik());
         data.put("companyName", filing.companyName());
         data.put("form", filing.form());
         data.put("reportDate", filing.reportDate());
         data.put("accessionNumber", filing.accessionNumber());
-        data.put("facts", xbrlFacts);
+        data.put("facts", xbrlFacts.values());
+        data.put("periodDays", xbrlFacts.periodDays());
 
         return stage(filing.cik(), VALIDATED_EVENT_TYPE, data);
     }

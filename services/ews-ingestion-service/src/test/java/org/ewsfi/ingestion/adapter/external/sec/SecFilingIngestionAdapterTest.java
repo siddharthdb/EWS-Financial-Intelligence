@@ -87,7 +87,7 @@ class SecFilingIngestionAdapterTest {
         facts.put("Liabilities", 275746000000L);
         facts.put("StockholdersEquity", 107520000000L);
 
-        adapter.recordValidated(filing, facts);
+        adapter.recordValidated(filing, new SecEdgarClient.XbrlFilingFacts(facts, 91L));
 
         var events = outboxEventRepository.findAll();
         assertThat(events)
