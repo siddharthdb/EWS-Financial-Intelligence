@@ -22,6 +22,72 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-25 — net_income feature + NET_LOSS_EMERGENCE signal (roadmap 2.3)
+
+**Roadmap items:** 2.3 (extends the row's "DONE (partial)" note; the taxonomy §4 financial-statement
+gap is now partially closed)
+
+**What:** A second financial-statement-based signal, alongside the existing leverage/current-ratio/
+receivable-days/inventory-days/operating-income/operating-cash-flow family, all sharing the same
+XBRL-extraction infrastructure:
+- `SecEdgarClient.DURATION_CONCEPTS` gains `NetIncomeLoss`. Verified first (via direct inspection of
+  an already-fetched Apple `companyfacts` payload) that it shares the same multi-entry-per-accession
+  shape as `OperatingIncomeLoss` (prior-year and current-year, quarter and YTD, all under one
+  accession number), so the existing `selectFactForFiling` end-date-match-then-shortest-duration
+  disambiguation handles it with no new logic.
+- `NetIncomeFeatureTopology` (feature-processor): a stateless pass-through feature (`net_income`,
+  `FD-NET-INCOME-001`) extracting `NetIncomeLoss` from `financial.statement.validated` events on
+  `ews.canonical.financial-statement`, structured identically to `OperatingIncomeFeatureTopology`
+  (defensive extraction per roadmap 3.6 -- returns `null` rather than throwing on any malformed/
+  unrelated input).
+- `NetLossEmergenceSignalPolicyLoader` + `NetLossEmergenceSignalTopology` (signal-policy-engine): a
+  stateful `groupByKey().aggregate()` transition-tracking topology (mirrors
+  `LeverageDeteriorationSignalTopology`'s shape) evaluating NET_LOSS_EMERGENCE
+  (`04-signal-taxonomy.md` §4: "income statement", method R) -- fires on a genuine
+  profit(`>=0`)-to-loss(`<0`) transition between two *known* consecutive `net_income` observations
+  for a counterparty.
+
+**Why:** `04-signal-taxonomy.md` §4 lists NET_LOSS_EMERGENCE as a taxonomy-defined signal outside the
+curated P01-P34 priority contract list, and it was directly reachable with the XBRL infrastructure
+already built for the other financial-statement signals -- no new external integration needed.
+`NetLossEmergenceSignalPolicyLoader` is deliberately more conservative than `DpdSignalPolicyLoader`'s
+DPD_EMERGED: DPD_EMERGED treats an unknown previous DPD as an implicit zero baseline, but "emergence"
+specifically implies a witnessed transition, so a counterparty's very first tracked `net_income`
+observation being negative must not fire the signal -- there is no known prior state for it to have
+transitioned from.
+
+**Files:**
+- `services/ews-ingestion-service/src/main/java/org/ewsfi/ingestion/external/sec/SecEdgarClient.java`
+  (added `NetIncomeLoss` to `DURATION_CONCEPTS`)
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/topology/NetIncomeFeatureTopology.java`
+  (new)
+- `services/ews-feature-processor/src/test/java/org/ewsfi/featureprocessor/topology/NetIncomeFeatureTopologyTest.java`
+  (new, 4 tests)
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/config/KafkaStreamsConfig.java`
+  (registered `netIncomeFeatureStream`)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/policy/NetLossEmergenceSignalPolicyLoader.java`
+  (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/NetLossEmergenceSignalTopology.java`
+  (new)
+- `services/ews-signal-policy-engine/src/test/java/org/ewsfi/signalpolicy/topology/NetLossEmergenceSignalTopologyTest.java`
+  (new, 5 tests: fires on profit-to-loss, fires on breakeven-to-loss, does not fire on a deepening
+  loss, does not fire while staying profitable, does not fire on a first-ever observation that's
+  already a loss)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/config/KafkaStreamsConfig.java`
+  (registered `netLossEmergenceSignalStream`)
+
+**Verification:** `mvn -B -ntp verify` from repo root, fully green across all 14 modules (BUILD
+SUCCESS). `NetIncomeFeatureTopologyTest`: 4/4 passing. `NetLossEmergenceSignalTopologyTest`: 5/5
+passing, including the conservative-design-specific case proving a first-ever loss observation does
+not fire.
+
+**Follow-ups:** Taxonomy §4's remaining financial-statement-based signals (`EBITDA_MARGIN_DERIORATION`,
+`NET_WORTH_EROSION`, `CASH_FLOW_PROFIT_DIVERGENCE`, `CASH_CONVERSION_CYCLE_DIVERGENCE`, and the
+NLP-method ones requiring document/audit-report text this platform doesn't ingest) remain
+unimplemented, as does true anomaly-method (A) statistical detection. Deferred to future firings.
+
+---
+
 ## 2026-09-25 — Shared data-quality-state + T1-T4 tier schema artifacts (roadmap 0.9)
 
 **Roadmap items:** 0.9 (closes out the row -- was "DONE (partial)" since 2026-09-24)

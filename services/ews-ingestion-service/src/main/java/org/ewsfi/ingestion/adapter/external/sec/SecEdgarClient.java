@@ -82,6 +82,12 @@ public class SecEdgarClient {
      * <p>{@code CostOfGoodsAndServicesSold} (not {@code CostOfRevenue}, which Apple does not tag --
      * another real concept-naming variation, confirmed empirically) is the denominator for P16
      * INVENTORY_DAYS_DERIORATION's {@code inventory_days} feature.
+     *
+     * <p>{@code NetIncomeLoss} feeds {@code net_income} / NET_LOSS_EMERGENCE
+     * (docs/architecture/04-signal-taxonomy.md Section 4: "income statement", method R) -- a
+     * taxonomy-defined signal outside the curated P01-P34 priority contract list, part of roadmap
+     * item 2.3's remaining scope ("financial-statement-based signals in 04-signal-taxonomy.md
+     * Section 4 remain unimplemented").
      */
     static final Set<String> DURATION_CONCEPTS =
             Set.of(
@@ -89,7 +95,8 @@ public class SecEdgarClient {
                     "NetCashProvidedByUsedInOperatingActivities",
                     "RevenueFromContractWithCustomerExcludingAssessedTax",
                     "Revenues",
-                    "CostOfGoodsAndServicesSold");
+                    "CostOfGoodsAndServicesSold",
+                    "NetIncomeLoss");
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
