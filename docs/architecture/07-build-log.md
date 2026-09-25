@@ -22,6 +22,71 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-25 — `total_liabilities_to_equity` + LEVERAGE_DERIORATION (P12) (roadmap 2.8)
+
+**Roadmap items:** 2.8 (extends the existing "DONE (partial)" row with a second P10-P34 contract:
+P12 LEVERAGE_DERIORATION)
+
+**What:** Adds the feature/signal pair this platform's newly-extracted XBRL balance-sheet facts
+(previous entry) directly enable:
+- `LeverageRatioFeatureTopology` (`ews-feature-processor`): consumes `ews.canonical.financial-statement`
+  filtered to `financial.statement.validated`, computes `total_liabilities_to_equity =
+  Liabilities / StockholdersEquity` per counterparty, and publishes it to `ews.derived.feature`.
+  Deliberately not the feature catalogue's `tol_atnw` (total outside liabilities / adjusted tangible
+  net worth) -- this platform has no quasi-equity/intangibles adjustment data, only raw
+  `Liabilities`/`StockholdersEquity`; P12's own contract text explicitly permits "debt/equity... or
+  other approved measures," so a documented simpler measure is used instead of claiming equivalence
+  to `tol_atnw`. Guardrail (mirroring the catalogue's own `debt_ebitda` guardrail: "negative or
+  near-zero EBITDA produces a governed special state rather than misleading numeric ratio"): a
+  filing with zero or negative `StockholdersEquity` is skipped entirely rather than emitting a
+  negative or unboundedly large ratio.
+- `LeverageDeteriorationSignalPolicyLoader` + `LeverageDeteriorationSignalTopology`
+  (`ews-signal-policy-engine`): a stateful transition topology (mirrors `DpdWorseningSignalTopology`'s
+  shape exactly) firing P12 LEVERAGE_DERIORATION when `total_liabilities_to_equity` increases by
+  >=20% relative to the counterparty's own previous observation. A *relative*, not absolute,
+  threshold is used (unlike DPD's absolute day-count threshold) because leverage ratios vary by
+  orders of magnitude across filers -- an absolute delta that's material for a lowly-levered filer
+  would be meaningless for a highly-levered one.
+
+Both topologies apply the defensive extract-and-validate-before-aggregate/filter pattern from the
+poison-pill audit two entries ago from the start (skip a malformed/missing value rather than throw),
+rather than needing a later follow-up fix.
+
+**Why:** Item 2.8's remaining scope was explicitly blocked on real financial-statement figures, which
+the previous entry's XBRL extraction now provides. P12 LEVERAGE_DERIORATION was the natural next
+signal to implement (not one of the harder-to-reach P10/P11/P13-P17 contracts, which need
+income-statement/cash-flow concepts not yet extracted) because its own contract text explicitly
+permits a debt/equity measure computable directly from the two balance-sheet concepts already
+extracted (`Liabilities`, `StockholdersEquity`), needing no new XBRL parsing work. Mirrors the
+established two-step pattern (`wc_utilization_ratio` -> `UTILIZATION_HIGH`, `current_dpd` ->
+`DPD_EMERGED`) of a latest/derived feature followed by a policy evaluating it.
+
+**Files:**
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/topology/LeverageRatioFeatureTopology.java` (new)
+- `services/ews-feature-processor/src/main/java/org/ewsfi/featureprocessor/config/KafkaStreamsConfig.java`
+- `services/ews-feature-processor/src/test/java/org/ewsfi/featureprocessor/topology/LeverageRatioFeatureTopologyTest.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/policy/LeverageDeteriorationSignalPolicyLoader.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/topology/LeverageDeteriorationSignalTopology.java` (new)
+- `services/ews-signal-policy-engine/src/main/java/org/ewsfi/signalpolicy/config/KafkaStreamsConfig.java`
+- `services/ews-signal-policy-engine/src/test/java/org/ewsfi/signalpolicy/topology/LeverageDeteriorationSignalTopologyTest.java` (new)
+
+**Verification:**
+- `LeverageRatioFeatureTopologyTest`: 4 tests, proving the ratio computation, the non-positive-equity
+  guardrail (both zero and negative equity), missing-facts handling, and unrelated-event-type
+  filtering -- all via `TopologyTestDriver`.
+- `LeverageDeteriorationSignalTopologyTest`: 3 tests, proving the signal fires exactly on a >=20%
+  relative increase and not on a smaller increase or a decrease.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules.
+
+**Follow-ups:** `LeverageDeteriorationSignalPolicyLoader`'s 20% relative-increase threshold is a
+documented interim policy constant (mirroring `DpdWorseningSignalPolicyLoader`'s 10-day threshold),
+not a value derived from any cited source -- a real deployment would need this calibrated per
+portfolio/sector. The remaining P10/P11/P13-P17 contracts (DSCR, current ratio, operating
+profit/cash-flow, receivable/inventory days) all need income-statement/cash-flow XBRL concepts not
+yet extracted by `SecEdgarClient.BALANCE_SHEET_CONCEPTS`.
+
+---
+
 ## 2026-09-25 — SEC EDGAR XBRL balance-sheet fact extraction: `financial.statement.validated` (roadmap 2.1, 2.8)
 
 **Roadmap items:** 2.1 (extends the existing "DONE (partial)" row with real XBRL fact extraction),
