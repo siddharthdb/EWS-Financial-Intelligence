@@ -22,6 +22,39 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-25 — Roadmap queue exhausted for autonomous engineering; Phase 3 rows formally added to the human-decision list
+
+**Roadmap items:** none newly `DONE` — a scoping/documentation update, not an implementation increment
+
+**What:** Re-checked `08-roadmap-progress-tracker.md` for the next eligible `NOT_STARTED` row per the
+autonomous Routine's own protocol. Every Phase 0/1/2 `NOT_STARTED` row is already on the "Items
+requiring a human decision" list (0.11, 0.13, 1.13, 1.16, 2.2, 2.4, 2.6, 2.9). The only remaining
+`NOT_STARTED` rows are Phase 3's 3.2-3.5, which were not formally listed as human-decision-gated but,
+on inspection, share the same property: none can be started without either fabricating product/design
+scope this repo's docs don't specify (3.2's UI framework/screens, 3.4's retail canonical-model
+redesign) or a source-access/licensing/regulatory decision of the same class already gating 1.13/2.2/2.9
+(3.3's document ingestion, 3.5's further jurisdictions). Added all four to the explicit human-decision
+list with the specific reasoning per row, so future firings don't re-derive this conclusion from
+scratch every time they reach the end of the eligible queue.
+
+**Why:** The Routine's protocol explicitly forbids resolving human-decision items autonomously; this
+entry makes that boundary machine-checkable (a future firing reads the list, sees 3.2-3.5 already on
+it, and doesn't need to re-litigate). Consistent with how 1.16, 2.5/2.6, and 2.9 were already handled
+— documenting *why* something is blocked, not just that it is.
+
+**Files:** `docs/architecture/08-roadmap-progress-tracker.md` (human-decision list extended)
+
+**Verification:** Documentation-only change; no code touched, `mvn -B -ntp verify` not re-run (no
+production code changed since the prior green run this session).
+
+**Follow-ups:** Every Phase 0-2 engineering-bounded item is now `DONE`/`DONE (partial)` or
+human-decision-blocked. Further autonomous progress requires either a human decision on one of the
+blocked items, or the user directing a design pass on a Phase 3 item. Flagged to the user this firing
+per the Routine's own protocol (condition: "hit a row that genuinely needs a human decision and none
+of the remaining `NOT_STARTED` rows can be worked instead").
+
+---
+
 ## 2026-09-25 — net_income feature + NET_LOSS_EMERGENCE signal (roadmap 2.3)
 
 **Roadmap items:** 2.3 (extends the row's "DONE (partial)" note; the taxonomy §4 financial-statement

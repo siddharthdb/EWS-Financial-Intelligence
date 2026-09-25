@@ -128,3 +128,22 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 - Any item where the "right" answer depends on real analyst throughput data, regulatory sign-off,
   or a source's actual licensing terms (per `docs/architecture/06-gap-analysis-and-implementation-roadmap.md`
   §8 "Risks & Open Questions")
+- 3.2 — Portfolio Cockpit (Layer 9 Experience UI): `01-architecture-blueprint.md` names this once in
+  a diagram with no supporting spec (screens, navigation, framework, auth integration once 1.16 is
+  decided). Layer 9 has the least documented depth of any layer in this repo. Picking a frontend
+  stack/scope autonomously would fabricate product requirements the way ADR-writing deliberately
+  avoided fabricating vendor choices — needs a design pass and product input, not an autonomous
+  engineering call
+- 3.3 — NLP/document intelligence for filings/news/audit reports: every method-NLP signal in
+  `04-signal-taxonomy.md` (e.g. `GOING_CONCERN_WARNING`, `AUDITOR_QUALIFICATION_ADVERSE`) needs
+  actual filing/audit-report/news *text* — this platform currently ingests only structured XBRL
+  facts and event metadata, never document bodies. Adding document ingestion is a new source-adapter
+  + storage decision of the same class as 1.13/2.2 (source access, licensing, retention), not a
+  bounded topology increment
+- 3.4 — Retail domain extension: every feature/signal/schema in this repo is scoped to corporate
+  counterparties; extending to retail needs its own canonical-model and taxonomy design pass (new
+  entity types, features, signals) before any code, not an implementation increment against an
+  existing contract
+- 3.5 — Full multi-jurisdiction richness beyond India/US/UK reference implementations: blocked on
+  the same class of source-access/licensing decisions as 1.13/2.2, plus jurisdiction-specific
+  regulatory modeling of the same class as 2.9
