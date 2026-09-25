@@ -1,8 +1,8 @@
 package org.ewsfi.ingestion.adapter.external.sec;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,11 +29,11 @@ public class SecFilingSyncController {
     }
 
     @PostMapping("/sync/{cik}")
-    public ResponseEntity<Map<String, String>> syncMostRecentPeriodicStatement(
+    public ResponseEntity<Map<String, Object>> syncMostRecentPeriodicStatement(
             @PathVariable("cik") String cik) {
-        Optional<String> eventId;
+        List<String> eventIds;
         try {
-            eventId = adapter.syncMostRecentPeriodicStatement(cik);
+            eventIds = adapter.syncMostRecentPeriodicStatement(cik);
         } catch (IOException e) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY, "Failed to reach SEC EDGAR for CIK " + cik + ": " + e.getMessage());
@@ -42,9 +42,10 @@ public class SecFilingSyncController {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Interrupted");
         }
 
-        return eventId
-                .map(id -> ResponseEntity.status(HttpStatus.ACCEPTED).body(Map.of("eventId", id)))
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                        Map.of("message", "No 10-K/10-Q filing found in SEC's recent filings for CIK " + cik)));
+        if (eventIds.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    Map.of("message", "No 10-K/10-Q filing found in SEC's recent filings for CIK " + cik));
+        }
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(Map.of("eventIds", eventIds));
     }
 }

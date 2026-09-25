@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,25 @@ class SecEdgarClientTest {
     }
 
     @Test
+    void fetchesRealXbrlBalanceSheetFactsForAKnownRecentFiling() throws Exception {
+        // Fetch a real recent filing first, then fetch real XBRL facts tied to that exact
+        // accession number -- proving the two live API calls genuinely compose, not just that each
+        // parses in isolation.
+        Optional<SecFiling> filing = client.fetchMostRecentPeriodicStatement(APPLE_CIK);
+        assertThat(filing).isPresent();
+
+        Map<String, Long> facts =
+                client.fetchXbrlFactsForFiling(APPLE_CIK, filing.get().accessionNumber());
+
+        // Apple is one of the largest US filers and reliably reports Assets/Liabilities/
+        // StockholdersEquity on every periodic filing, so at least one concept should resolve for
+        // any recent 10-K/10-Q accession number.
+        assertThat(facts).isNotEmpty();
+        assertThat(facts.keySet()).isSubsetOf(SecEdgarClient.BALANCE_SHEET_CONCEPTS);
+        facts.values().forEach(value -> assertThat(value).isPositive());
+    }
+
+    @Test
     void anUnknownCikReturnsNoFiling() {
         // SEC returns HTTP 404 for a syntactically valid but non-existent CIK.
         org.junit.jupiter.api.Assertions.assertThrows(
@@ -86,6 +106,76 @@ class SecEdgarClientTest {
         assertThat(f.form()).isEqualTo("10-Q");
         assertThat(f.accessionNumber()).isEqualTo("0000320193-26-000005");
         assertThat(f.reportDate()).isEqualTo("2026-03-31");
+    }
+
+    @Test
+    void parsesOnlyTheFactsMatchingTheGivenAccessionNumber() throws Exception {
+        String canned =
+                """
+                {
+                  "cik": 320193,
+                  "entityName": "Apple Inc.",
+                  "facts": {
+                    "us-gaap": {
+                      "Assets": {
+                        "units": {
+                          "USD": [
+                            {"end": "2025-09-27", "val": 364980000000, "accn": "0000320193-25-000009", "form": "10-K"},
+                            {"end": "2026-06-27", "val": 383266000000, "accn": "0000320193-26-000020", "form": "10-Q"}
+                          ]
+                        }
+                      },
+                      "Liabilities": {
+                        "units": {
+                          "USD": [
+                            {"end": "2026-06-27", "val": 275746000000, "accn": "0000320193-26-000020", "form": "10-Q"}
+                          ]
+                        }
+                      },
+                      "SomeOtherConcept": {
+                        "units": {
+                          "USD": [
+                            {"end": "2026-06-27", "val": 999, "accn": "0000320193-26-000020", "form": "10-Q"}
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+                """;
+
+        Map<String, Long> facts = client.parseXbrlFactsForAccession(canned, "0000320193-26-000020");
+
+        // Only the entry matching this exact accession number is picked (not the earlier Assets
+        // filing for a different accession), and only concepts in BALANCE_SHEET_CONCEPTS are kept
+        // (SomeOtherConcept is excluded even though it matches the accession number).
+        assertThat(facts).containsOnly(
+                org.assertj.core.api.Assertions.entry("Assets", 383266000000L),
+                org.assertj.core.api.Assertions.entry("Liabilities", 275746000000L));
+    }
+
+    @Test
+    void returnsEmptyMapWhenNoConceptMatchesTheAccessionNumber() throws Exception {
+        String canned =
+                """
+                {
+                  "facts": {
+                    "us-gaap": {
+                      "Assets": {
+                        "units": {
+                          "USD": [
+                            {"end": "2025-09-27", "val": 364980000000, "accn": "0000320193-25-000009", "form": "10-K"}
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+                """;
+
+        Map<String, Long> facts = client.parseXbrlFactsForAccession(canned, "0000320193-26-999999");
+
+        assertThat(facts).isEmpty();
     }
 
     @Test

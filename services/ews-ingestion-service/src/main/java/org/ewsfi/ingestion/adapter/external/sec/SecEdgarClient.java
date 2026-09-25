@@ -8,6 +8,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.stereotype.Component;
@@ -38,6 +40,15 @@ public class SecEdgarClient {
     private static final String USER_AGENT =
             "EWS Financial Intelligence Research Prototype contact@ewsfi-research.example.com";
     private static final Set<String> PERIODIC_STATEMENT_FORMS = Set.of("10-K", "10-Q");
+
+    /**
+     * Balance-sheet ("instant", not duration) us-gaap XBRL concepts extracted per filing --
+     * deliberately a small, high-value subset (roadmap item 2.8's remaining P10-P34 contracts need
+     * real financial figures, not full XBRL taxonomy coverage) rather than every concept SEC
+     * reports, mirroring how item 1.14 deliberately scoped `wc_utilization_ratio` to the baseline
+     * sanctioned limit rather than every capacity variant.
+     */
+    static final Set<String> BALANCE_SHEET_CONCEPTS = Set.of("Assets", "Liabilities", "StockholdersEquity");
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
@@ -72,6 +83,62 @@ public class SecEdgarClient {
         }
 
         return parseMostRecentPeriodicStatement(cik, response.body());
+    }
+
+    /**
+     * Fetches CIK {@code cik}'s full XBRL company facts and returns the {@link #BALANCE_SHEET_CONCEPTS}
+     * values reported specifically for the filing identified by {@code accessionNumber} -- the same
+     * accession number {@link #fetchMostRecentPeriodicStatement} already returned, so the caller
+     * ties facts back to a filing it already knows about rather than guessing which period applies.
+     * Returns an empty map if the filing has no matching XBRL facts (e.g. a filer whose facts
+     * predate SEC's XBRL company-facts coverage, or a concept genuinely not reported that period).
+     */
+    public Map<String, Long> fetchXbrlFactsForFiling(String cik, String accessionNumber)
+            throws IOException, InterruptedException {
+        String paddedCik = String.format("%010d", Long.parseLong(cik));
+        URI uri = URI.create("https://data.sec.gov/api/xbrl/companyfacts/CIK" + paddedCik + ".json");
+
+        HttpRequest request =
+                HttpRequest.newBuilder(uri)
+                        .header("User-Agent", USER_AGENT)
+                        .header("Accept", "application/json")
+                        .timeout(Duration.ofSeconds(15))
+                        .GET()
+                        .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new IOException(
+                    "SEC EDGAR returned HTTP " + response.statusCode() + " for CIK " + cik + " company facts");
+        }
+
+        return parseXbrlFactsForAccession(response.body(), accessionNumber);
+    }
+
+    /**
+     * Parses the {@code companyfacts} response, keeping only {@link #BALANCE_SHEET_CONCEPTS}
+     * values reported under the given accession number. Each concept's {@code units.USD} array
+     * holds one entry per reporting period the filer has ever disclosed that concept in, spanning
+     * many different filings -- {@code accn} is the only field that reliably identifies which
+     * entries belong to one specific filing, so filtering by it (rather than by date, which can
+     * collide across amended/duplicate filings) is what ties a fact back to the exact filing that
+     * reported it.
+     */
+    Map<String, Long> parseXbrlFactsForAccession(String responseBody, String accessionNumber) throws IOException {
+        JsonNode root = objectMapper.readTree(responseBody);
+        JsonNode usGaap = root.path("facts").path("us-gaap");
+
+        Map<String, Long> facts = new LinkedHashMap<>();
+        for (String concept : BALANCE_SHEET_CONCEPTS) {
+            JsonNode entries = usGaap.path(concept).path("units").path("USD");
+            for (JsonNode entry : entries) {
+                if (accessionNumber.equals(entry.path("accn").asText(null))) {
+                    facts.put(concept, entry.path("val").asLong());
+                    break;
+                }
+            }
+        }
+        return facts;
     }
 
     Optional<SecFiling> parseMostRecentPeriodicStatement(String cik, String responseBody) throws IOException {

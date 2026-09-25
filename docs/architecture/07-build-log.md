@@ -22,6 +22,75 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-09-25 — SEC EDGAR XBRL balance-sheet fact extraction: `financial.statement.validated` (roadmap 2.1, 2.8)
+
+**Roadmap items:** 2.1 (extends the existing "DONE (partial)" row with real XBRL fact extraction),
+2.8 (extends the existing "DONE (partial)" row: unblocks, but does not yet implement, a future
+leverage/solvency feature)
+
+**What:** Extended `SecEdgarClient` with `fetchXbrlFactsForFiling(cik, accessionNumber)`, which
+calls the real, unauthenticated SEC EDGAR `data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json` API and
+extracts a small, deliberately-scoped set of balance-sheet ("instant") us-gaap concepts (`Assets`,
+`Liabilities`, `StockholdersEquity`) filtered to the ones reported specifically under the given
+filing's accession number (`accn`) -- the only field that reliably ties a fact entry back to one
+exact filing, since each concept's `units.USD` array spans every period the filer has ever disclosed
+that concept in, across many different filings. `SecFilingIngestionAdapter.syncMostRecentPeriodicStatement`
+now, after staging the existing `financial.statement.received` event, also fetches that exact
+filing's XBRL facts and -- if any resolve -- stages a second `financial.statement.validated` event
+(the event `03d-phase1-event-catalogue.md` §2 already names: "financial facts validated ->
+ratios/trends"), carrying the extracted facts. A filing with no matching XBRL facts (e.g. one
+predating SEC's XBRL company-facts coverage) still yields the `received` event alone -- XBRL
+availability is best-effort, not a precondition for recording that the filing exists. The method's
+return type changed from `Optional<String>` (one event id) to `List<String>` (one or two event ids),
+and `SecFilingSyncController`'s response body changed from `{"eventId": ...}` to `{"eventIds":
+[...]}` accordingly.
+
+**Why:** Item 2.8's prior "DONE (partial)" note explicitly named this as the platform-wide blocker:
+"every other P10-P34 contract needs financial-statement XBRL contents this platform doesn't parse
+yet." SEC EDGAR's `companyfacts` API is the same real, unauthenticated, credential-free source
+already proven working for item 2.1's filing-metadata fetch (`SecEdgarClient`'s existing
+`USER_AGENT`/fair-access handling), so extending it to real financial figures needed no new source
+decision -- only real parsing work. Scoped to three balance-sheet concepts (not full XBRL taxonomy
+coverage) deliberately, mirroring how item 1.14 scoped `wc_utilization_ratio` to the baseline
+sanctioned limit rather than every capacity variant: Assets/Liabilities/StockholdersEquity are
+sufficient to eventually compute a leverage ratio (a genuinely useful P10-P34-adjacent signal input),
+without committing to parsing income-statement or cash-flow concepts this firing didn't need.
+Deliberately stops short of implementing an actual leverage-ratio feature/signal in this same entry:
+that would be a second, separately-testable increment (mirroring how DPD's `current_dpd` and
+`max_dpd_30d` were split across two firings), and this entry is already a complete, real, tested
+unit of work on its own (real ingestion -> real event, provably composing two live API calls).
+
+**Files:**
+- `services/ews-ingestion-service/src/main/java/org/ewsfi/ingestion/adapter/external/sec/SecEdgarClient.java`
+- `services/ews-ingestion-service/src/main/java/org/ewsfi/ingestion/adapter/external/sec/SecFilingIngestionAdapter.java`
+- `services/ews-ingestion-service/src/main/java/org/ewsfi/ingestion/adapter/external/sec/SecFilingSyncController.java`
+- `services/ews-ingestion-service/src/test/java/org/ewsfi/ingestion/adapter/external/sec/SecEdgarClientTest.java`
+- `services/ews-ingestion-service/src/test/java/org/ewsfi/ingestion/adapter/external/sec/SecFilingIngestionAdapterTest.java`
+
+**Verification:**
+- `SecEdgarClientTest`: a new live-API test (`fetchesRealXbrlBalanceSheetFactsForAKnownRecentFiling`)
+  fetches Apple's real most-recent filing, then fetches real XBRL facts tied to that exact accession
+  number -- proving the two live API calls genuinely compose, not just that each parses correctly in
+  isolation. Two new deterministic canned-response tests
+  (`parsesOnlyTheFactsMatchingTheGivenAccessionNumber`,
+  `returnsEmptyMapWhenNoConceptMatchesTheAccessionNumber`) prove the accession-number filter
+  correctly excludes both a different accession's entry for the same concept and a concept outside
+  `BALANCE_SHEET_CONCEPTS`, and returns an empty map (not an error) when nothing matches.
+- `SecFilingIngestionAdapterTest`: new `recordsAValidatedOutboxEventCarryingXbrlFacts` test, real
+  Postgres, proves `recordValidated` stages a correctly-shaped outbox row.
+- `mvn -B -ntp verify` from repo root: **BUILD SUCCESS**, all 14 modules.
+
+**Follow-ups:** No feature or signal yet consumes `financial.statement.validated` -- a future
+increment should add a `LeverageRatioFeatureTopology` (or similarly named) computing
+`Liabilities / Assets` (or `Liabilities / StockholdersEquity`) from these facts, and a corresponding
+signal per the taxonomy (e.g. a leverage-deterioration or solvency-concern contract from
+`04-signal-taxonomy.md` §4), the same two-step pattern already used for `wc_utilization_ratio` ->
+`UTILIZATION_HIGH`. `BALANCE_SHEET_CONCEPTS` currently covers only three instant concepts; expanding
+to duration concepts (`Revenues`, `NetIncomeLoss`) would unlock profitability-trend features but
+needs its own extraction logic (duration facts have `start`/`end`, not just `end`).
+
+---
+
 ## 2026-09-24 — ADR-008: Graph Intelligence Adoption (roadmap 3.1)
 
 **Roadmap items:** 3.1 (moves NOT_STARTED -> DONE (partial); named this ADR as its own explicit
