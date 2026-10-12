@@ -10,5 +10,10 @@ spring:
       ddl-auto: validate
     open-in-view: false
 
+ews:
+  local-security:
+    analyst-password: analyst
+    supervisor-password: supervisor
+
 server:
   port: 8080

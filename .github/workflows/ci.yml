@@ -89,7 +89,10 @@ jobs:
       - name: Apply database migration
         env:
           PGPASSWORD: ews
-        run: psql -h localhost -U ews -d ews -f db/migration/V1__init_phase1_baseline.sql
+        run: |
+          for migration in db/migration/V*.sql; do
+            psql -h localhost -U ews -d ews -f "$migration"
+          done
 
       - name: Build with Maven
         run: mvn -B -ntp verify

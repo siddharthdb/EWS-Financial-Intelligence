@@ -29,9 +29,9 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 | 0.8 | Machine-readable topic registry (event type → schema → topic → key → owner → retention) | DONE | 2026-10-12 — topic registry, shared envelope types, DPD slice |
 | 0.9 | Shared schema artifacts/references for repeated envelope types | DONE | 2026-10-12 — topic registry, shared envelope types, DPD slice |
 | 0.10 | Automated terminology checks for deprecated signal aliases | DONE | 2026-10-12 — topic registry, shared envelope types, DPD slice |
-| 0.11 | Decide permanent owned schema namespace (replace draft `org.ewsfi`) | NOT_STARTED | needs a human decision — do not resolve autonomously |
+| 0.11 | Decide permanent owned schema namespace (replace draft `org.ewsfi`) | DONE | 2026-10-12 — keep `org.ewsfi` until first production publication |
 | 0.12 | Architecture diagrams generated from the normalized model | DONE | 2026-10-12 — topic registry, shared envelope types, DPD slice |
-| 0.13 | Legacy Spring Boot EWS discovery/capability assessment | NOT_STARTED | needs access to a system not in this repo — flag to user, do not fabricate |
+| 0.13 | Legacy Spring Boot EWS discovery/capability assessment | DONE | 2026-10-12 — legacy system is not available; the spine is built fresh |
 
 ## Phase 1 — The spine
 
@@ -50,10 +50,10 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 | 1.10 | Experience API: real proposed-signal query + evidence drill-down | DONE | 2026-09-24 — experience-api evidence drill-down |
 | 1.11 | Integration tests for the full payment-return slice (embedded Kafka + Postgres) | DONE | covered incrementally by each step's own tests (19 tests total across the slice) rather than one combined end-to-end test — see 2026-09-24 experience-api entry |
 | 1.12 | `current_dpd` / `max_dpd_30d` features + `DPD_EMERGED` (P01) / `DPD_WORSENING` (P02) signals | DONE | 2026-10-12 — topic registry, shared envelope types, DPD slice |
-| 1.13 | UK Companies House source adapter (real HTTP integration) | NOT_STARTED | needs an API key/credential decision — flag to user |
-| 1.14 | `wc_utilization_ratio` / `wc_available_headroom` features + `UTILIZATION_HIGH` (P05) / `UTILIZATION_SPIKE` (P06) signals | NOT_STARTED | |
-| 1.15 | Minimal case/decision model beyond single disposition (case open/assign/escalate/close) | NOT_STARTED | |
-| 1.16 | Basic auth/IAM for the Experience API and disposition endpoints | NOT_STARTED | needs a design decision (auth provider, RBAC model) — flag to user |
+| 1.13 | UK Companies House source adapter (real HTTP integration) | NOT_STARTED | deferred 2026-10-12 until an API key and a source-rights decision exist |
+| 1.14 | `wc_utilization_ratio` / `wc_available_headroom` features + `UTILIZATION_HIGH` (P05) / `UTILIZATION_SPIKE` (P06) signals | DONE | 2026-10-12 — utilization slice and local-dev security |
+| 1.15 | Minimal case/decision model beyond single disposition (case open/assign/escalate/close) | DONE | 2026-10-12 — utilization slice and local-dev security |
+| 1.16 | Basic auth/IAM for the Experience API and disposition endpoints | DONE | 2026-10-12 — local HTTP Basic roles ANALYST and SUPERVISOR |
 
 ## Phase 2 — Breadth
 
@@ -80,12 +80,12 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 | 3.5 | Full multi-jurisdiction richness beyond India/US/UK reference implementations | NOT_STARTED | |
 | 3.6 | Production hardening: performance benchmarks, failure tests, DR rehearsal, security integration | NOT_STARTED | explicitly called out as still-required in `05-coherence-review-parts-i-iii.md` |
 
-## Items requiring a human decision (never resolve autonomously)
+## Decisions recorded 2026-10-12
 
-- 0.11 — permanent schema namespace
-- 0.13 — legacy system discovery (needs access this session doesn't have)
-- 1.13 — external API credentials/licensing for source adapters
-- 1.16 — auth/IAM provider and RBAC model choice
+- 0.11 — keep draft namespace `org.ewsfi` until the first production schema-registry publication.
+- 0.13 — the legacy Spring Boot EWS is not available. Do not invent its capabilities. Build the spine in this repository.
+- 1.13 — do not call Companies House until an API key and a source-rights decision exist.
+- 1.16 — local development uses HTTP Basic with roles `ANALYST` and `SUPERVISOR`. Replace this when a real identity provider is chosen.
 - Any item where the "right" answer depends on real analyst throughput data, regulatory sign-off,
   or a source's actual licensing terms (per `docs/architecture/06-gap-analysis-and-implementation-roadmap.md`
   §8 "Risks & Open Questions")

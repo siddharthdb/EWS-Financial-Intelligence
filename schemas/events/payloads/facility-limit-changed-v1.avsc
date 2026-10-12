@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "FacilityLimitChangedV1",
+  "namespace": "org.ewsfi.events.facility.v1",
+  "doc": "Approved or committed facility capacity changed. Utilization is computed downstream; this event does not assert that utilization is high.",
+  "fields": [
+    {"name": "facilityId", "type": "string"},
+    {"name": "counterpartyId", "type": "string"},
+    {"name": "sanctionedLimit", "type": {"type": "bytes", "logicalType": "decimal", "precision": 20, "scale": 2}},
+    {"name": "currency", "type": "string"},
+    {
+      "name": "capacityRule",
+      "type": {
+        "type": "enum",
+        "name": "ApplicableCapacityRuleV1",
+        "symbols": ["SANCTIONED_LIMIT", "DRAWING_POWER", "POLICY_MINIMUM"]
+      },
+      "default": "SANCTIONED_LIMIT"
+    }
+  ]
+}

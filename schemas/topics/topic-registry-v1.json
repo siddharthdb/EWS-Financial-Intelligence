@@ -260,8 +260,10 @@
       "eventType": "facility.limit.changed",
       "topic": "ews.canonical.facility",
       "keyStrategy": "facilityId",
-      "owner": "ews-core-registry-service",
-      "status": "CATALOGUED"
+      "owner": "ews-ingestion-service",
+      "schemaArtifact": "schemas/events/payloads/facility-limit-changed-v1.avsc",
+      "schemaRecord": "org.ewsfi.events.facility.v1.FacilityLimitChangedV1",
+      "status": "WIRED"
     },
     {
       "eventType": "facility.drawing_power.changed",
@@ -274,8 +276,10 @@
       "eventType": "facility.outstanding.changed",
       "topic": "ews.canonical.facility",
       "keyStrategy": "facilityId",
-      "owner": "ews-core-registry-service",
-      "status": "CATALOGUED"
+      "owner": "ews-ingestion-service",
+      "schemaArtifact": "schemas/events/payloads/facility-outstanding-changed-v1.avsc",
+      "schemaRecord": "org.ewsfi.events.facility.v1.FacilityOutstandingChangedV1",
+      "status": "WIRED"
     },
     {
       "eventType": "covenant.measurement.updated",
@@ -577,28 +581,36 @@
       "topic": "ews.derived.case",
       "keyStrategy": "caseId",
       "owner": "ews-case-workflow-service",
-      "status": "CATALOGUED"
+      "schemaArtifact": "schemas/events/payloads/case-opened-v1.avsc",
+      "schemaRecord": "org.ewsfi.events.workflow.v1.CaseOpenedV1",
+      "status": "WIRED"
     },
     {
       "eventType": "case.assigned",
       "topic": "ews.derived.case",
       "keyStrategy": "caseId",
       "owner": "ews-case-workflow-service",
-      "status": "CATALOGUED"
+      "schemaArtifact": "schemas/events/payloads/case-assigned-v1.avsc",
+      "schemaRecord": "org.ewsfi.events.workflow.v1.CaseAssignedV1",
+      "status": "WIRED"
     },
     {
       "eventType": "case.escalated",
       "topic": "ews.derived.case",
       "keyStrategy": "caseId",
       "owner": "ews-case-workflow-service",
-      "status": "CATALOGUED"
+      "schemaArtifact": "schemas/events/payloads/case-escalated-v1.avsc",
+      "schemaRecord": "org.ewsfi.events.workflow.v1.CaseEscalatedV1",
+      "status": "WIRED"
     },
     {
       "eventType": "case.closed",
       "topic": "ews.derived.case",
       "keyStrategy": "caseId",
       "owner": "ews-case-workflow-service",
-      "status": "CATALOGUED"
+      "schemaArtifact": "schemas/events/payloads/case-closed-v1.avsc",
+      "schemaRecord": "org.ewsfi.events.workflow.v1.CaseClosedV1",
+      "status": "WIRED"
     }
   ]
 }

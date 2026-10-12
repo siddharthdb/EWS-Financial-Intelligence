@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "FacilityOutstandingChangedV1",
+  "namespace": "org.ewsfi.events.facility.v1",
+  "doc": "Eligible facility outstanding changed. Combined with capacity downstream to compute utilization and headroom.",
+  "fields": [
+    {"name": "facilityId", "type": "string"},
+    {"name": "counterpartyId", "type": "string"},
+    {"name": "eligibleOutstanding", "type": {"type": "bytes", "logicalType": "decimal", "precision": 20, "scale": 2}},
+    {"name": "currency", "type": "string"}
+  ]
+}

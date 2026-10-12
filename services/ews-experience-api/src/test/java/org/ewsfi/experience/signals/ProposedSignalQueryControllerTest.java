@@ -1,6 +1,7 @@
 package org.ewsfi.experience.signals;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -99,7 +100,7 @@ class ProposedSignalQueryControllerTest {
         signalInstanceRepository.save(signal);
 
         mockMvc
-                .perform(get("/api/v1/proposed-signals/{id}", signalId))
+                .perform(get("/api/v1/proposed-signals/{id}", signalId).with(httpBasic("analyst", "analyst")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.signalId").value(signalId))
                 .andExpect(jsonPath("$.signalType").value("REPEATED_PAYMENT_RETURN"))
@@ -110,7 +111,7 @@ class ProposedSignalQueryControllerTest {
                 .andExpect(jsonPath("$.evidence[0].valueNumeric").value(3));
 
         mockMvc
-                .perform(get("/api/v1/proposed-signals").param("status", "PROPOSED"))
+                .perform(get("/api/v1/proposed-signals").with(httpBasic("analyst", "analyst")).param("status", "PROPOSED"))
                 .andExpect(status().isOk())
                 .andExpect(
                         jsonPath("$[?(@.signalId == '" + signalId + "')]").exists());
@@ -119,7 +120,7 @@ class ProposedSignalQueryControllerTest {
     @Test
     void unknownSignalIdReturns404() throws Exception {
         mockMvc
-                .perform(get("/api/v1/proposed-signals/{id}", "does-not-exist"))
+                .perform(get("/api/v1/proposed-signals/{id}", "does-not-exist").with(httpBasic("analyst", "analyst")))
                 .andExpect(status().isNotFound());
     }
 }

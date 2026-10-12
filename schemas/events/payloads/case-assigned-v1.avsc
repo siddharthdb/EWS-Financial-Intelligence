@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "CaseAssignedV1",
+  "namespace": "org.ewsfi.events.workflow.v1",
+  "doc": "A case was assigned or reassigned.",
+  "fields": [
+    {"name": "caseId", "type": "string"},
+    {"name": "assigneeId", "type": "string"},
+    {"name": "actorId", "type": "string"},
+    {"name": "actorRole", "type": "string"}
+  ]
+}

@@ -19,5 +19,6 @@
     <module>ews-avro-wire</module>
     <module>ews-platform-outbox-starter</module>
     <module>ews-persistence-core</module>
+    <module>ews-local-security</module>
   </modules>
 </project>

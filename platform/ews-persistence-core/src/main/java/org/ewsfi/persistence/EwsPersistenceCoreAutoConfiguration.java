@@ -1,5 +1,7 @@
 package org.ewsfi.persistence;
 
+import org.ewsfi.persistence.casemgmt.CaseFile;
+import org.ewsfi.persistence.casemgmt.CaseFileRepository;
 import org.ewsfi.persistence.envelope.CanonicalEventEnvelope;
 import org.ewsfi.persistence.envelope.CanonicalEventEnvelopeRepository;
 import org.ewsfi.persistence.feature.FeatureValue;
@@ -20,13 +22,15 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         basePackageClasses = {
             CanonicalEventEnvelope.class,
             FeatureValue.class,
-            SignalInstance.class
+            SignalInstance.class,
+            CaseFile.class
         })
 @EnableJpaRepositories(
         basePackageClasses = {
             CanonicalEventEnvelopeRepository.class,
             FeatureValueRepository.class,
-            SignalInstanceRepository.class
+            SignalInstanceRepository.class,
+            CaseFileRepository.class
         })
 public class EwsPersistenceCoreAutoConfiguration {
 }

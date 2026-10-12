@@ -18,6 +18,7 @@ import org.ewsfi.contracts.interim.JsonFeatureValue;
 import org.ewsfi.contracts.interim.JsonSignalDetected;
 import org.ewsfi.signalpolicy.policy.DpdSignalPolicy;
 import org.ewsfi.signalpolicy.policy.SignalPolicyLoader;
+import org.ewsfi.signalpolicy.policy.UtilizationSignalPolicy;
 import org.springframework.stereotype.Component;
 
 /**
@@ -69,6 +70,16 @@ public class SignalPolicyTopology {
                 .process(DpdSignalProcessor::new, DpdSignalPolicy.LAST_DPD_STORE)
                 .process(AvroStreams.encode(avroPayloadCodec, "signal.detected"))
                 .to(SIGNAL_TOPIC, Produced.with(Serdes.String(), Serdes.ByteArray()));
+
+        builder.addStateStore(
+                Stores.keyValueStoreBuilder(
+                        Stores.persistentKeyValueStore(UtilizationSignalPolicy.LAST_RATIO_STORE),
+                        Serdes.String(),
+                        Serdes.String()));
+        features.filter((key, featureValue) -> isUtilizationRatio(featureValue))
+                .process(UtilizationSignalProcessor::new, UtilizationSignalPolicy.LAST_RATIO_STORE)
+                .process(AvroStreams.encode(avroPayloadCodec, "signal.detected"))
+                .to(SIGNAL_TOPIC, Produced.with(Serdes.String(), Serdes.ByteArray()));
         return paymentSignals;
     }
 
@@ -84,6 +95,13 @@ public class SignalPolicyTopology {
         return featureValue != null
                 && "current_dpd".equals(featureValue.getFeatureName())
                 && ("VALUE".equals(featureValue.getState()) || "ZERO".equals(featureValue.getState()))
+                && featureValue.getValueNumeric() != null;
+    }
+
+    private boolean isUtilizationRatio(JsonFeatureValue featureValue) {
+        return featureValue != null
+                && "wc_utilization_ratio".equals(featureValue.getFeatureName())
+                && "VALUE".equals(featureValue.getState())
                 && featureValue.getValueNumeric() != null;
     }
 

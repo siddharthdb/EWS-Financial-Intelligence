@@ -2,6 +2,7 @@ package org.ewsfi.caseworkflow.disposition;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -62,12 +63,13 @@ class SignalDispositionControllerTest {
 
         mockMvc
                 .perform(
-                        get("/api/v1/signals").param("status", "PROPOSED"))
+                        get("/api/v1/signals").with(httpBasic("analyst", "analyst")).param("status", "PROPOSED"))
                 .andExpect(status().isOk());
 
         mockMvc
                 .perform(
                         post("/api/v1/signals/{id}/disposition", signal.getSignalId())
+                                .with(httpBasic("analyst", "analyst"))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(
                                         """
@@ -84,7 +86,7 @@ class SignalDispositionControllerTest {
                         event -> {
                             assertThat(event.getEventType()).isEqualTo("signal.disposition.recorded");
                             assertThat(event.getPartitionKey()).isEqualTo(signal.getSignalId());
-                            assertThat(event.getPayload()).contains("ACCEPT", signal.getSignalId());
+                            assertThat(event.getPayload()).contains("ACCEPT", signal.getSignalId(), "analyst");
                         });
     }
 
@@ -96,6 +98,7 @@ class SignalDispositionControllerTest {
         mockMvc
                 .perform(
                         post("/api/v1/signals/{id}/disposition", signal.getSignalId())
+                                .with(httpBasic("analyst", "analyst"))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {"disposition": "REJECTED", "reason": "False positive"}
@@ -105,6 +108,7 @@ class SignalDispositionControllerTest {
         mockMvc
                 .perform(
                         post("/api/v1/signals/{id}/disposition", signal.getSignalId())
+                                .with(httpBasic("analyst", "analyst"))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {"disposition": "ACCEPTED", "reason": "changed my mind"}
@@ -120,6 +124,7 @@ class SignalDispositionControllerTest {
         mockMvc
                 .perform(
                         post("/api/v1/signals/{id}/disposition", signal.getSignalId())
+                                .with(httpBasic("analyst", "analyst"))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {"disposition": "MAYBE", "reason": "unsure"}

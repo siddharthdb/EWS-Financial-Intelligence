@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "CaseEscalatedV1",
+  "namespace": "org.ewsfi.events.workflow.v1",
+  "doc": "A case was escalated. Escalation is a workflow transition, not a classification.",
+  "fields": [
+    {"name": "caseId", "type": "string"},
+    {"name": "actorId", "type": "string"},
+    {"name": "actorRole", "type": "string"},
+    {"name": "reason", "type": ["null", "string"], "default": null}
+  ]
+}

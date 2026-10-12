@@ -23,10 +23,16 @@ import org.apache.avro.io.EncoderFactory;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.ewsfi.events.decision.v1.SignalDispositionRecordedV1;
+import org.ewsfi.events.facility.v1.FacilityLimitChangedV1;
+import org.ewsfi.events.facility.v1.FacilityOutstandingChangedV1;
 import org.ewsfi.events.feature.v1.FeatureValueUpdatedV1;
 import org.ewsfi.events.payment.v1.PaymentInstructionReturnedV1;
 import org.ewsfi.events.repayment.v1.ObligationDpdChangedV1;
 import org.ewsfi.events.signal.v1.SignalDetectedV1;
+import org.ewsfi.events.workflow.v1.CaseAssignedV1;
+import org.ewsfi.events.workflow.v1.CaseClosedV1;
+import org.ewsfi.events.workflow.v1.CaseEscalatedV1;
+import org.ewsfi.events.workflow.v1.CaseOpenedV1;
 
 /**
  * Encodes the interim JSON documents the Phase-1 services already build into the governed Avro
@@ -98,6 +104,12 @@ public final class AvroPayloadCodec {
                 case "org.ewsfi.events.feature.v1.FeatureValueUpdatedV1" -> featureJson(record, headers);
                 case "org.ewsfi.events.signal.v1.SignalDetectedV1" -> signalJson(record, headers);
                 case "org.ewsfi.events.decision.v1.SignalDispositionRecordedV1" -> dispositionJson(record, headers);
+                case "org.ewsfi.events.facility.v1.FacilityLimitChangedV1" -> facilityLimitJson(record, headers);
+                case "org.ewsfi.events.facility.v1.FacilityOutstandingChangedV1" -> facilityOutstandingJson(record, headers);
+                case "org.ewsfi.events.workflow.v1.CaseOpenedV1" -> caseOpenedJson(record);
+                case "org.ewsfi.events.workflow.v1.CaseAssignedV1" -> caseAssignedJson(record);
+                case "org.ewsfi.events.workflow.v1.CaseEscalatedV1" -> caseEscalatedJson(record);
+                case "org.ewsfi.events.workflow.v1.CaseClosedV1" -> caseClosedJson(record);
                 default -> throw new IllegalArgumentException("No interim mapping for " + fullName);
             };
         } catch (RuntimeException e) {
@@ -114,6 +126,12 @@ public final class AvroPayloadCodec {
             case "feature.value.updated" -> featureRecord(root, headers);
             case "signal.detected" -> signalRecord(root, headers);
             case "signal.disposition.recorded" -> dispositionRecord(root, headers);
+            case "facility.limit.changed" -> facilityLimitRecord(root, headers);
+            case "facility.outstanding.changed" -> facilityOutstandingRecord(root, headers);
+            case "case.opened" -> caseOpenedRecord(root);
+            case "case.assigned" -> caseAssignedRecord(root);
+            case "case.escalated" -> caseEscalatedRecord(root);
+            case "case.closed" -> caseClosedRecord(root);
             default -> throw new IllegalArgumentException("No Avro payload mapping for event type " + eventType);
         };
     }
@@ -171,7 +189,12 @@ public final class AvroPayloadCodec {
         record.put("valueState", enumSymbol(schema, "valueState", required(root, "state")));
         record.put("valueType", enumSymbol(schema, "valueType", required(root, "valueType")));
         if (root.hasNonNull("valueNumeric")) {
-            record.put("integerValue", Long.parseLong(root.get("valueNumeric").asText()));
+            String numeric = root.get("valueNumeric").asText();
+            if ("DECIMAL".equals(root.get("valueType").asText())) {
+                record.put("decimalValue", new BigDecimal(numeric));
+            } else {
+                record.put("integerValue", Long.parseLong(numeric));
+            }
         }
         record.put("qualityState", enumSymbol(schema, "qualityState", required(root, "qualityState")));
         record.put("revision", 1L);
@@ -231,6 +254,134 @@ public final class AvroPayloadCodec {
         return record;
     }
 
+    private GenericRecord facilityLimitRecord(JsonNode root, RecordHeaders headers) {
+        JsonNode data = data(root);
+        rememberEnvelope(root, headers);
+        Schema schema = FacilityLimitChangedV1.getClassSchema();
+        GenericRecord record = new GenericData.Record(schema);
+        record.put("facilityId", required(data, "facilityId"));
+        record.put("counterpartyId", required(data, "counterpartyId"));
+        record.put("sanctionedLimit", new BigDecimal(required(data, "sanctionedLimit")));
+        record.put("currency", required(data, "currency"));
+        String rule = textOrNull(data, "capacityRule");
+        record.put("capacityRule", enumSymbol(schema, "capacityRule", rule == null ? "SANCTIONED_LIMIT" : rule));
+        return record;
+    }
+
+    private GenericRecord facilityOutstandingRecord(JsonNode root, RecordHeaders headers) {
+        JsonNode data = data(root);
+        rememberEnvelope(root, headers);
+        Schema schema = FacilityOutstandingChangedV1.getClassSchema();
+        GenericRecord record = new GenericData.Record(schema);
+        record.put("facilityId", required(data, "facilityId"));
+        record.put("counterpartyId", required(data, "counterpartyId"));
+        record.put("eligibleOutstanding", new BigDecimal(required(data, "eligibleOutstanding")));
+        record.put("currency", required(data, "currency"));
+        return record;
+    }
+
+    private GenericRecord caseOpenedRecord(JsonNode root) {
+        Schema schema = CaseOpenedV1.getClassSchema();
+        GenericRecord record = new GenericData.Record(schema);
+        record.put("caseId", required(root, "caseId"));
+        record.put("signalId", required(root, "signalId"));
+        record.put("entityType", required(root, "entityType"));
+        record.put("entityId", required(root, "entityId"));
+        record.put("actorId", required(root, "actorId"));
+        record.put("actorRole", required(root, "actorRole"));
+        record.put("reason", textOrNull(root, "reason"));
+        return record;
+    }
+
+    private GenericRecord caseAssignedRecord(JsonNode root) {
+        Schema schema = CaseAssignedV1.getClassSchema();
+        GenericRecord record = new GenericData.Record(schema);
+        record.put("caseId", required(root, "caseId"));
+        record.put("assigneeId", required(root, "assigneeId"));
+        record.put("actorId", required(root, "actorId"));
+        record.put("actorRole", required(root, "actorRole"));
+        return record;
+    }
+
+    private GenericRecord caseEscalatedRecord(JsonNode root) {
+        Schema schema = CaseEscalatedV1.getClassSchema();
+        GenericRecord record = new GenericData.Record(schema);
+        record.put("caseId", required(root, "caseId"));
+        record.put("actorId", required(root, "actorId"));
+        record.put("actorRole", required(root, "actorRole"));
+        record.put("reason", textOrNull(root, "reason"));
+        return record;
+    }
+
+    private GenericRecord caseClosedRecord(JsonNode root) {
+        Schema schema = CaseClosedV1.getClassSchema();
+        GenericRecord record = new GenericData.Record(schema);
+        record.put("caseId", required(root, "caseId"));
+        record.put("actorId", required(root, "actorId"));
+        record.put("actorRole", required(root, "actorRole"));
+        record.put("outcome", required(root, "outcome"));
+        return record;
+    }
+
+    private String facilityLimitJson(GenericRecord record, Headers headers) throws Exception {
+        ObjectNode data = MAPPER.createObjectNode();
+        data.put("facilityId", text(record.get("facilityId")));
+        data.put("counterpartyId", text(record.get("counterpartyId")));
+        data.put("sanctionedLimit", decimalText(record.get("sanctionedLimit"), 20, 2));
+        data.put("currency", text(record.get("currency")));
+        data.put("capacityRule", text(record.get("capacityRule")));
+        return envelopeJson("facility.limit.changed", "FACILITY", text(record.get("facilityId")), data, headers);
+    }
+
+    private String facilityOutstandingJson(GenericRecord record, Headers headers) throws Exception {
+        ObjectNode data = MAPPER.createObjectNode();
+        data.put("facilityId", text(record.get("facilityId")));
+        data.put("counterpartyId", text(record.get("counterpartyId")));
+        data.put("eligibleOutstanding", decimalText(record.get("eligibleOutstanding"), 20, 2));
+        data.put("currency", text(record.get("currency")));
+        return envelopeJson(
+                "facility.outstanding.changed", "FACILITY", text(record.get("facilityId")), data, headers);
+    }
+
+    private String caseOpenedJson(GenericRecord record) throws Exception {
+        ObjectNode node = MAPPER.createObjectNode();
+        node.put("caseId", text(record.get("caseId")));
+        node.put("signalId", text(record.get("signalId")));
+        node.put("entityType", text(record.get("entityType")));
+        node.put("entityId", text(record.get("entityId")));
+        node.put("actorId", text(record.get("actorId")));
+        node.put("actorRole", text(record.get("actorRole")));
+        node.put("reason", text(record.get("reason")));
+        return MAPPER.writeValueAsString(node);
+    }
+
+    private String caseAssignedJson(GenericRecord record) throws Exception {
+        ObjectNode node = MAPPER.createObjectNode();
+        node.put("caseId", text(record.get("caseId")));
+        node.put("assigneeId", text(record.get("assigneeId")));
+        node.put("actorId", text(record.get("actorId")));
+        node.put("actorRole", text(record.get("actorRole")));
+        return MAPPER.writeValueAsString(node);
+    }
+
+    private String caseEscalatedJson(GenericRecord record) throws Exception {
+        ObjectNode node = MAPPER.createObjectNode();
+        node.put("caseId", text(record.get("caseId")));
+        node.put("actorId", text(record.get("actorId")));
+        node.put("actorRole", text(record.get("actorRole")));
+        node.put("reason", text(record.get("reason")));
+        return MAPPER.writeValueAsString(node);
+    }
+
+    private String caseClosedJson(GenericRecord record) throws Exception {
+        ObjectNode node = MAPPER.createObjectNode();
+        node.put("caseId", text(record.get("caseId")));
+        node.put("actorId", text(record.get("actorId")));
+        node.put("actorRole", text(record.get("actorRole")));
+        node.put("outcome", text(record.get("outcome")));
+        return MAPPER.writeValueAsString(node);
+    }
+
     private String paymentJson(GenericRecord record, Headers headers) throws Exception {
         ObjectNode data = MAPPER.createObjectNode();
         data.put("paymentInstructionId", text(record.get("paymentInstructionId")));
@@ -278,7 +429,9 @@ public final class AvroPayloadCodec {
         node.put("entityId", text(record.get("entityId")));
         node.put("state", text(record.get("valueState")));
         node.put("valueType", text(record.get("valueType")));
-        if (record.get("integerValue") != null) {
+        if (record.get("decimalValue") instanceof BigDecimal decimal) {
+            node.put("valueNumeric", decimal.stripTrailingZeros().toPlainString());
+        } else if (record.get("integerValue") != null) {
             node.put("valueNumeric", Long.toString(((Number) record.get("integerValue")).longValue()));
         } else {
             node.putNull("valueNumeric");

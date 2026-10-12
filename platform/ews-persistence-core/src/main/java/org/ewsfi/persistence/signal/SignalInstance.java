@@ -74,6 +74,9 @@ public class SignalInstance {
     @Column(name = "data_quality_state", nullable = false)
     private String dataQualityState;
 
+    @Column(name = "case_id")
+    private String caseId;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "signal_instance_evidence", joinColumns = @JoinColumn(name = "signal_id"))
     @Column(name = "evidence_id", nullable = false)
@@ -192,6 +195,14 @@ public class SignalInstance {
 
     public Set<String> getEvidenceIds() {
         return evidenceIds;
+    }
+
+    public String getCaseId() {
+        return caseId;
+    }
+
+    public void setCaseId(String caseId) {
+        this.caseId = caseId;
     }
 
     public void addDispositionTag(String tag) {

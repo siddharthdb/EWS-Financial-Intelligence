@@ -65,6 +65,7 @@ public class FeatureProcessorTopology {
 
     public KStream<String, byte[]> build(StreamsBuilder builder) {
         new DpdFeatureBranch(avroPayloadCodec).attach(builder);
+        new UtilizationFeatureBranch(avroPayloadCodec).attach(builder);
         KStream<String, String> canonical =
                 builder.stream(CANONICAL_TOPIC, Consumed.with(Serdes.String(), Serdes.ByteArray()))
                         .process(AvroStreams.decode(avroPayloadCodec));

@@ -36,7 +36,12 @@ import org.springframework.test.annotation.DirtiesContext;
 @SpringBootTest
 @EmbeddedKafka(
         partitions = 1,
-        topics = {"ews.canonical.account-transaction", "ews.derived.feature"})
+        topics = {
+            "ews.canonical.account-transaction",
+            "ews.canonical.repayment",
+            "ews.canonical.facility",
+            "ews.derived.feature"
+        })
 @DirtiesContext
 class FeatureValuePersistenceListenerTest {
 

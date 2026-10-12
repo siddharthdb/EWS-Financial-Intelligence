@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "CaseClosedV1",
+  "namespace": "org.ewsfi.events.workflow.v1",
+  "doc": "A case was closed. Closure does not by itself approve or reject official EWS state.",
+  "fields": [
+    {"name": "caseId", "type": "string"},
+    {"name": "actorId", "type": "string"},
+    {"name": "actorRole", "type": "string"},
+    {"name": "outcome", "type": "string"}
+  ]
+}

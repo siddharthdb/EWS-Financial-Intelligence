@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "CaseOpenedV1",
+  "namespace": "org.ewsfi.events.workflow.v1",
+  "doc": "A case was opened for an accepted analytical signal. Opening a case does not approve official EWS state.",
+  "fields": [
+    {"name": "caseId", "type": "string"},
+    {"name": "signalId", "type": "string"},
+    {"name": "entityType", "type": "string"},
+    {"name": "entityId", "type": "string"},
+    {"name": "actorId", "type": "string"},
+    {"name": "actorRole", "type": "string"},
+    {"name": "reason", "type": ["null", "string"], "default": null}
+  ]
+}

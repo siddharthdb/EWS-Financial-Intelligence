@@ -22,6 +22,22 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-10-12 — Utilization, case lifecycle, and local-dev security
+
+**Roadmap items:** 0.11, 0.13, 1.14, 1.15, 1.16
+
+**What:** Recorded the four defaults: keep `org.ewsfi` until production publication, build the spine without a legacy system, defer Companies House, and gate the experience API and case workflow with HTTP Basic. Added `facility.limit.changed` and `facility.outstanding.changed` Avro contracts, ingestion stand-ins, and features `wc_utilization_ratio` and `wc_available_headroom`. A non-positive capacity is `INVALID`. `UTILIZATION_HIGH` fires when utilization crosses 0.90; `UTILIZATION_SPIKE` fires on an increase of at least 0.15 from the previous ratio. Cases open only for an accepted signal, then assign, escalate, and close. Escalate and close require `SUPERVISOR`. Each transition is an outbox event (`case.opened`, `case.assigned`, `case.escalated`, `case.closed`) with an Avro payload. Disposition `actorId` is the authenticated user.
+
+**Why:** Those four decisions were accepted so the next spine slices could proceed. Utilization follows the same pattern as DPD. The case model is the workflow beyond a single accept/reject. The security gate replaces the hard-coded `unauthenticated-analyst` actor for local development.
+
+**Files:** `schemas/events/payloads/facility-*.avsc`, `schemas/events/payloads/case-*.avsc`, `db/migration/V2__case_file.sql`, `platform/ews-local-security/**`, `UtilizationFeatureBranch`, `UtilizationSignalProcessor`, `CaseController`, `FacilityCapacityAdapter`.
+
+**Verification:** Utilization topology tests, case lifecycle MockMvc against Postgres (analyst forbidden to escalate; supervisor closes), disposition records actor `analyst`, experience API requires Basic auth, and the topic-registry contract test stayed green. `mvn -B -ntp -pl services/ews-case-workflow-service,services/ews-experience-api,test/ews-event-contracts-test -am test` succeeded after the earlier utilization and signal modules had already passed.
+
+**Follow-ups:** Companies House stays blocked on credentials. The Basic passwords are local defaults. Utilization uses sanctioned limit as applicable capacity, not drawing power. The spike baseline is the previous ratio, not a 30-day mean.
+
+---
+
 ## 2026-10-12 — Avro wire format on the Phase-1 spine
 
 **Roadmap items:** 1.17

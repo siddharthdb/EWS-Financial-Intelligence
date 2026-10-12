@@ -74,6 +74,8 @@ Phase-1 spine in `01-architecture-blueprint.md` §25:
 - Kafka values use Confluent-framed Avro. Schema ids are registered with Apicurio's Confluent-compatible API (ADR-011). The outbox row itself stays JSON.
 - Payment-return slice: ingestion → `returned_payment_count_30d` → `REPEATED_PAYMENT_RETURN` → human disposition → experience-api evidence drill-down.
 - DPD slice: `obligation.dpd.changed` → `current_dpd` / `max_dpd_30d` → `DPD_EMERGED` / `DPD_WORSENING`.
+- Utilization slice: facility limit and outstanding → `wc_utilization_ratio` / `wc_available_headroom` → `UTILIZATION_HIGH` / `UTILIZATION_SPIKE`.
+- Cases open from an accepted signal, then assign, escalate, and close. The experience API and case workflow use local HTTP Basic (`analyst`, `supervisor`).
 
 What is still open, including decisions that need a person, is tracked in
 `docs/architecture/08-roadmap-progress-tracker.md` and planned in

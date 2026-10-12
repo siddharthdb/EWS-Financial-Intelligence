@@ -10,6 +10,7 @@ import org.ewsfi.persistence.signal.SignalInstance;
 import org.ewsfi.persistence.signal.SignalInstanceRepository;
 import org.ewsfi.platform.outbox.OutboxEvent;
 import org.ewsfi.platform.outbox.OutboxEventRepository;
+import org.ewsfi.security.LocalActor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,9 +32,8 @@ import org.springframework.web.server.ResponseStatusException;
  * that event stream is this slice's audit trail for human decisions
  * (docs/architecture/01-architecture-blueprint.md Section 16's evidence drill-down chain).
  *
- * <p>{@code actorId}/{@code actorRole} are placeholders ({@code "unauthenticated-analyst"} /
- * {@code "ANALYST"}) pending real authentication (roadmap item 1.16, not started) -- a known,
- * documented gap, not a claim that dispositions are properly attributed yet.
+ * <p>The actor is the HTTP Basic user from the local-dev gate ({@code analyst} or
+ * {@code supervisor}). That gate is not an enterprise identity provider.
  */
 @RestController
 @RequestMapping("/api/v1/signals")
@@ -107,8 +107,8 @@ public class SignalDispositionController {
                         "ACCEPTED".equals(request.disposition()) ? "ACCEPT" : "REJECT",
                         request.disposition(),
                         request.reason(),
-                        "unauthenticated-analyst",
-                        "ANALYST",
+                        LocalActor.id(),
+                        LocalActor.role(),
                         Instant.now().toString());
         String payloadJson;
         try {
