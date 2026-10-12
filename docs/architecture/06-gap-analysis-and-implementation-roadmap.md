@@ -1,6 +1,12 @@
 # EWS 2.0 — Gap Analysis and Implementation Roadmap
 
-**Status:** Draft / Part IV — assessment
+**Status:** Historical assessment (written when the repository had no application code)
+
+> Current build status is `08-roadmap-progress-tracker.md`. The completion plan that replaces this
+> document's "zero implementation" conclusion is `09-completion-plan.md`. Do not treat Section 1
+> below as the current repository state.
+
+**Status at time of writing:** Draft / Part IV — assessment
 **Scope:** Current repository state (Parts I–III architecture docs, ADRs, executable schema contracts) assessed against the Level-0 end-state architecture defined in `01-architecture-blueprint.md`
 **Purpose:** Give an honest, file-referenced account of what exists, what is missing, and a phased path from the current documentation-only state to a running platform.
 

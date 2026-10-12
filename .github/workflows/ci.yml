@@ -24,28 +24,7 @@ jobs:
         run: pip install fastavro jsonschema
 
       - name: Parse every Avro contract under schemas/events
-        run: |
-          python - <<'PY'
-          import glob
-          import sys
-          from fastavro.schema import load_schema
-
-          files = sorted(glob.glob("schemas/events/**/*.avsc", recursive=True))
-          if not files:
-              print("No .avsc files found under schemas/events", file=sys.stderr)
-              sys.exit(1)
-
-          failed = False
-          for f in files:
-              try:
-                  load_schema(f)
-                  print(f"OK   {f}")
-              except Exception as e:
-                  print(f"FAIL {f}: {e}", file=sys.stderr)
-                  failed = True
-
-          sys.exit(1 if failed else 0)
-          PY
+        run: python test/schema-ci/validate_contracts.py
 
       - name: Parse every JSON Schema contract under schemas/
         run: |

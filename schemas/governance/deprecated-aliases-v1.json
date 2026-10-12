@@ -1,0 +1,137 @@
+{
+  "description": "Deprecated canonical names that new producers, policies and contracts must not emit. Historical records may still contain them. Sources: docs/architecture/04-signal-taxonomy.md Section 17, docs/architecture/03d-phase1-event-catalogue.md Section 2, and coherence review C-07.",
+  "aliases": [
+    {
+      "deprecatedName": "TOL_ATNW_DERIORATION",
+      "canonicalName": "LEVERAGE_DERIORATION",
+      "kind": "signal",
+      "treatment": "specialization"
+    },
+    {
+      "deprecatedName": "EMI_OR_INSTALLMENT_MISSED",
+      "canonicalName": "SCHEDULED_OBLIGATION_MISSED",
+      "kind": "signal",
+      "treatment": "subtype"
+    },
+    {
+      "deprecatedName": "BG_INVOCATION",
+      "canonicalName": "GUARANTEE_INVOCATION",
+      "kind": "signal",
+      "treatment": "rename"
+    },
+    {
+      "deprecatedName": "ADHOC_LIMIT_DEPENDENCY",
+      "canonicalName": "TEMPORARY_LIMIT_DEPENDENCY",
+      "kind": "signal",
+      "treatment": "rename"
+    },
+    {
+      "deprecatedName": "GROUP_ENTITY_TRANSFER_SPIKE",
+      "canonicalName": "RELATED_ENTITY_TRANSFER_SPIKE",
+      "kind": "signal",
+      "treatment": "rename"
+    },
+    {
+      "deprecatedName": "OUTSIDE_BANK_ROUTING_ANOMALY",
+      "canonicalName": "OUTSIDE_AGREED_ROUTING_ANOMALY",
+      "kind": "signal",
+      "treatment": "rename"
+    },
+    {
+      "deprecatedName": "STOCK_STATEMENT_DELAY",
+      "canonicalName": "REQUIRED_MONITORING_INFORMATION_DELAY",
+      "kind": "signal",
+      "treatment": "policy-subtype"
+    },
+    {
+      "deprecatedName": "STOCK_AUDIT_NON_COOPERATION",
+      "canonicalName": "BORROWER_MONITORING_NON_COOPERATION",
+      "kind": "signal",
+      "treatment": "subtype"
+    },
+    {
+      "deprecatedName": "SITE_VISIT_NON_COOPERATION",
+      "canonicalName": "BORROWER_MONITORING_NON_COOPERATION",
+      "kind": "signal",
+      "treatment": "subtype"
+    },
+    {
+      "deprecatedName": "DEBTOR_LIST_ANOMALY",
+      "canonicalName": "RECEIVABLE_OR_DEBTOR_DATA_ANOMALY",
+      "kind": "signal",
+      "treatment": "rename"
+    },
+    {
+      "deprecatedName": "STOCK_STATEMENT_INCONSISTENCY",
+      "canonicalName": "INVENTORY_OR_BORROWING_BASE_INCONSISTENCY",
+      "kind": "signal",
+      "treatment": "normalize"
+    },
+    {
+      "deprecatedName": "SANCTION_TERM_MISUSE_SUSPECTED",
+      "canonicalName": "FINANCING_TERM_MISUSE_SUSPECTED",
+      "kind": "signal",
+      "treatment": "rename"
+    },
+    {
+      "deprecatedName": "PROMOTER_EXIT_OR_STAKE_REDUCTION",
+      "canonicalName": "MATERIAL_OWNER_STAKE_REDUCTION",
+      "kind": "signal",
+      "treatment": "map"
+    },
+    {
+      "deprecatedName": "PROMOTER_PLEDGE_INCREASE",
+      "canonicalName": "CONTROLLING_OWNER_PLEDGE_INCREASE",
+      "kind": "signal",
+      "treatment": "map"
+    },
+    {
+      "deprecatedName": "PROMOTER_LINKED_DISTRESS",
+      "canonicalName": "CONTROLLING_OWNER_LINKED_DISTRESS",
+      "kind": "signal",
+      "treatment": "map"
+    },
+    {
+      "deprecatedName": "DIRECTOR_DEFAULT_ASSOCIATION",
+      "canonicalName": "MANAGEMENT_DEFAULT_ASSOCIATION",
+      "kind": "signal",
+      "treatment": "normalize"
+    },
+    {
+      "deprecatedName": "INSOLVENCY_PROCEEDING_FILED",
+      "canonicalName": "FORMAL_INSOLVENCY_PROCEEDING",
+      "kind": "signal",
+      "treatment": "normalize"
+    },
+    {
+      "deprecatedName": "BANKRUPTCY_FILED",
+      "canonicalName": "FORMAL_INSOLVENCY_PROCEEDING",
+      "kind": "signal",
+      "treatment": "normalize"
+    },
+    {
+      "deprecatedName": "trade_finance.bg.invoked",
+      "canonicalName": "trade_finance.guarantee.invoked",
+      "kind": "event",
+      "treatment": "rename"
+    }
+  ],
+  "prefixRules": [
+    {
+      "deprecatedPrefix": "PROMOTER_",
+      "kind": "signal",
+      "treatment": "India policy or source alias of globally portable owner/controller semantics. Not a canonical global signal name."
+    }
+  ],
+  "prohibitedSignalTypes": [
+    "ANALYTICAL_EWS",
+    "IN_SMA_NPA",
+    "US_SUPERVISORY_CLASSIFICATION",
+    "US_ACCRUAL_STATUS",
+    "US_CECL",
+    "UK_SICR",
+    "UK_IFRS9_STAGE",
+    "UK_PRUDENTIAL_DEFAULT",
+    "UK_IRB"
+  ]
+}

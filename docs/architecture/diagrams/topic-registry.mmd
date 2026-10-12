@@ -1,0 +1,89 @@
+%% Generated from schemas/topics/topic-registry-v1.json. Do not edit by hand.
+flowchart TB
+  subgraph ews_canonical_account_transaction [ews.canonical.account-transaction]
+    ews_canonical_account_transaction_0["payment.instruction.returned"]
+    ews_canonical_account_transaction_1["transaction.posted"]
+  end
+  subgraph ews_canonical_collateral [ews.canonical.collateral]
+    ews_canonical_collateral_0["collateral.valuation.updated"]
+  end
+  subgraph ews_canonical_counterparty [ews.canonical.counterparty]
+    ews_canonical_counterparty_0["monitoring.requirement.status.changed"]
+  end
+  subgraph ews_canonical_external_intelligence [ews.canonical.external-intelligence]
+    ews_canonical_external_intelligence_0["covenant.waiver.disclosed"]
+    ews_canonical_external_intelligence_1["credit.facility.amended"]
+    ews_canonical_external_intelligence_2["debt.acceleration.disclosed"]
+    ews_canonical_external_intelligence_3["debt.default.disclosed"]
+    ews_canonical_external_intelligence_4["facility.maturity.extended"]
+    ews_canonical_external_intelligence_5["facility.pricing.changed"]
+    ews_canonical_external_intelligence_6["financial.reporting.non_reliance.disclosed"]
+    ews_canonical_external_intelligence_7["insolvency.proceeding.started"]
+    ews_canonical_external_intelligence_8["insolvency.proceeding.status.changed"]
+    ews_canonical_external_intelligence_9["internal.control.weakness.disclosed"]
+    ews_canonical_external_intelligence_10["management.position.changed"]
+    ews_canonical_external_intelligence_11["ownership.control.changed"]
+    ews_canonical_external_intelligence_12["security.interest.created"]
+    ews_canonical_external_intelligence_13["security.interest.released"]
+  end
+  subgraph ews_canonical_facility [ews.canonical.facility]
+    ews_canonical_facility_0["covenant.measurement.updated"]
+    ews_canonical_facility_1["facility.drawing_power.changed"]
+    ews_canonical_facility_2["facility.limit.changed"]
+    ews_canonical_facility_3["facility.outstanding.changed"]
+  end
+  subgraph ews_canonical_financial_statement [ews.canonical.financial-statement]
+    ews_canonical_financial_statement_0["financial.statement.received"]
+    ews_canonical_financial_statement_1["financial.statement.restated"]
+    ews_canonical_financial_statement_2["financial.statement.validated"]
+  end
+  subgraph ews_canonical_market [ews.canonical.market]
+    ews_canonical_market_0["market.bond.trade.observed"]
+    ews_canonical_market_1["market.security.reference.changed"]
+  end
+  subgraph ews_canonical_rating [ews.canonical.rating]
+    ews_canonical_rating_0["rating.action.published"]
+  end
+  subgraph ews_canonical_relationship [ews.canonical.relationship]
+    ews_canonical_relationship_0["relationship.changed"]
+  end
+  subgraph ews_canonical_repayment [ews.canonical.repayment]
+    ews_canonical_repayment_0["obligation.dpd.changed"]
+  end
+  subgraph ews_canonical_trade_finance [ews.canonical.trade-finance]
+    ews_canonical_trade_finance_0["trade_finance.guarantee.invoked"]
+    ews_canonical_trade_finance_1["trade_finance.lc.devolved"]
+  end
+  subgraph ews_derived_case [ews.derived.case]
+    ews_derived_case_0["case.assigned"]
+    ews_derived_case_1["case.closed"]
+    ews_derived_case_2["case.escalated"]
+    ews_derived_case_3["case.opened"]
+  end
+  subgraph ews_derived_classification [ews.derived.classification]
+    ews_derived_classification_0["classification.state.approved"]
+    ews_derived_classification_1["classification.state.changed"]
+    ews_derived_classification_2["classification.state.proposed"]
+  end
+  subgraph ews_derived_decision [ews.derived.decision]
+    ews_derived_decision_0["signal.disposition.recorded"]
+  end
+  subgraph ews_derived_feature [ews.derived.feature]
+    ews_derived_feature_0["feature.value.updated"]
+  end
+  subgraph ews_derived_risk [ews.derived.risk]
+    ews_derived_risk_0["risk.assessment.approved"]
+    ews_derived_risk_1["risk.assessment.proposed"]
+  end
+  subgraph ews_derived_signal [ews.derived.signal]
+    ews_derived_signal_0["signal.accepted"]
+    ews_derived_signal_1["signal.detected"]
+    ews_derived_signal_2["signal.proposed"]
+    ews_derived_signal_3["signal.rejected"]
+    ews_derived_signal_4["signal.reopened"]
+    ews_derived_signal_5["signal.resolved"]
+    ews_derived_signal_6["signal.updated"]
+  end
+  subgraph ews_state_feature_current [ews.state.feature-current]
+    ews_state_feature_current_none["(no catalogued events)"]
+  end

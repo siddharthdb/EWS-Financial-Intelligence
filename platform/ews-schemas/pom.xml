@@ -54,6 +54,12 @@
               <includes>
                 <include>**/*.avsc</include>
               </includes>
+              <excludes>
+                <exclude>common/**</exclude>
+              </excludes>
+              <imports>
+                <import>${project.basedir}/../../schemas/events/common</import>
+              </imports>
               <outputDirectory>${project.build.directory}/generated-sources/avro</outputDirectory>
               <stringType>String</stringType>
             </configuration>

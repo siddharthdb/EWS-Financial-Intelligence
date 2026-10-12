@@ -28,12 +28,25 @@ class AvroSchemaParseTest {
         List<Path> avscFiles = findAvscFiles();
         assertFalse(avscFiles.isEmpty(), "Expected at least one .avsc file under " + SCHEMAS_ROOT);
 
+        List<Path> common = avscFiles.stream().filter(AvroSchemaParseTest::isSharedType).toList();
+        List<Path> rest = avscFiles.stream().filter(path -> !isSharedType(path)).toList();
+        assertFalse(common.isEmpty(), "Expected shared envelope types under schemas/events/common");
+
         Schema.Parser parser = new Schema.Parser();
-        for (Path file : avscFiles) {
+        for (Path file : common) {
+            assertDoesNotThrow(
+                    () -> parser.parse(file.toFile()),
+                    () -> "Failed to parse shared Avro type: " + file);
+        }
+        for (Path file : rest) {
             assertDoesNotThrow(
                     () -> parser.parse(file.toFile()),
                     () -> "Failed to parse Avro schema: " + file);
         }
+    }
+
+    private static boolean isSharedType(Path file) {
+        return file.toString().replace('\\', '/').contains("/schemas/events/common/");
     }
 
     private static List<Path> findAvscFiles() throws IOException {
@@ -41,7 +54,7 @@ class AvroSchemaParseTest {
             fail("Expected schemas directory at " + SCHEMAS_ROOT);
         }
         try (Stream<Path> paths = Files.walk(SCHEMAS_ROOT)) {
-            return paths.filter(p -> p.toString().endsWith(".avsc")).toList();
+            return paths.filter(p -> p.toString().endsWith(".avsc")).sorted().toList();
         } catch (UncheckedIOException e) {
             throw e.getCause();
         }

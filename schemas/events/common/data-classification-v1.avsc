@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "DataClassificationV1",
+  "namespace": "org.ewsfi.events.v1",
+  "doc": "Data-handling classification for an event. This is not a prudential, accounting or EWS classification.",
+  "fields": [
+    {
+      "name": "sensitivity",
+      "type": {"type": "enum", "name": "SensitivityV1", "symbols": ["PUBLIC", "INTERNAL", "CONFIDENTIAL", "RESTRICTED"]}
+    },
+    {"name": "containsPii", "type": "boolean", "default": false},
+    {"name": "retentionClass", "type": ["null", "string"], "default": null}
+  ]
+}
