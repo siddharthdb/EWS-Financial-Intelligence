@@ -1,0 +1,14 @@
+{
+  "policyId": "POL-CORP-REPEATED-PAYMENT-RETURN-001",
+  "policyKey": "REPEATED_PAYMENT_RETURN",
+  "version": 1,
+  "name": "Repeated Payment Return",
+  "description": "Detect repeated returned payment instructions using an institution-approved threshold over the governed 30-day feature.",
+  "scope": {"semanticScope":"INSTITUTION_POLICY_SPECIFIC","institutionId":"REFERENCE_INSTITUTION","entityTypes":["COUNTERPARTY"]},
+  "lifecycle": "VALIDATION",
+  "effectivePeriod": {"effectiveFrom":"2026-09-17T00:00:00Z","effectiveTo":null},
+  "evaluation": {"engine":"NATIVE","mode":"ALL_MATCHES","missingValuePolicy":"INSUFFICIENT_EVIDENCE","externalArtifactRef":null,"externalArtifactVersion":null},
+  "parameters": [{"name":"PAYMENT_RETURN_COUNT_THRESHOLD","type":"INTEGER","value":3,"unit":"count","institutionConfigurable":true,"allowedRange":{"minimum":1,"maximum":20},"allowedValues":null,"rationale":"Reference simulation value only; institution must approve its threshold."}],
+  "rules": [{"ruleId":"R-PPR-001","name":"Returned payment count reaches threshold","enabled":true,"priority":100,"condition":{"left":{"feature":"returned_payment_count_30d"},"operator":"GTE","right":{"parameter":"PAYMENT_RETURN_COUNT_THRESHOLD"}},"outcome":{"type":"SIGNAL_CANDIDATE","code":"REPEATED_PAYMENT_RETURN","severity":"HIGH","riskDimensions":["REPAYMENT_CONDUCT","LIQUIDITY"],"attributes":{}}}],
+  "governance": {"createdBy":"architecture","createdAt":"2026-09-17T00:00:00Z","makerCheckerRequired":true,"approvedBy":null,"approvedAt":null,"changeReason":"Phase-1 executable reference policy","supersedesPolicyId":null,"simulationRunId":null}
+}

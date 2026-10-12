@@ -1,0 +1,6 @@
+{
+  "evaluationId":"EVAL-DPD-STALE-001","policy":{"policyId":"POL-CORP-DPD-DETERIORATION-001","version":1},"entity":{"type":"COUNTERPARTY","id":"CP-TEST-001"},
+  "institutionId":"REFERENCE_INSTITUTION","jurisdiction":null,"knowledgeTime":"2026-09-17T10:00:00Z","executionMode":"COUNTERFACTUAL_BACKTEST","runId":"TEST-RUN-002",
+  "features":[{"featureName":"current_dpd","featureValueId":"FV-DPD-STALE-001","state":"STALE","value":null,"knowledgeTime":"2026-09-01T00:00:00Z","qualityState":"STALE"}],
+  "observationIds":[],"evidenceIds":[],"requestedAt":"2026-09-17T10:00:01Z","correlationId":"CORR-TEST-002","traceId":"TRACE-TEST-002"
+}

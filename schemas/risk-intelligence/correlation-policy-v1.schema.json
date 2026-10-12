@@ -1,0 +1,432 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ews-financial-intelligence/schemas/risk-intelligence/correlation-policy-v1.schema.json",
+  "title": "EWS Correlation Policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "policyId",
+    "policyKey",
+    "version",
+    "hypothesisType",
+    "scope",
+    "lifecycle",
+    "effectivePeriod",
+    "window",
+    "minimumIndependentContributorFamilies",
+    "contributors",
+    "sourceIndependence",
+    "contradictionPolicy",
+    "output",
+    "governance"
+  ],
+  "properties": {
+    "policyId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "policyKey": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]+$"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hypothesisType": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]+$"
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "institutionId",
+        "entityTypes"
+      ],
+      "properties": {
+        "institutionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jurisdictions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          }
+        },
+        "productTypes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "portfolioSegments": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "entityTypes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "COUNTERPARTY",
+              "FACILITY",
+              "ACCOUNT",
+              "GROUP",
+              "LEGAL_ENTITY",
+              "RELATIONSHIP"
+            ]
+          }
+        }
+      }
+    },
+    "lifecycle": {
+      "type": "string",
+      "enum": [
+        "DRAFT",
+        "VALIDATION",
+        "PENDING_APPROVAL",
+        "APPROVED",
+        "ACTIVE",
+        "SUSPENDED",
+        "RETIRED"
+      ]
+    },
+    "effectivePeriod": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "effectiveFrom"
+      ],
+      "properties": {
+        "effectiveFrom": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "effectiveTo": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "duration",
+        "institutionConfigurable",
+        "guardrail"
+      ],
+      "properties": {
+        "duration": {
+          "type": "string",
+          "pattern": "^P(?!$).+"
+        },
+        "institutionConfigurable": {
+          "type": "boolean"
+        },
+        "guardrail": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "minimum",
+            "maximum"
+          ],
+          "properties": {
+            "minimum": {
+              "type": "string",
+              "pattern": "^P(?!$).+"
+            },
+            "maximum": {
+              "type": "string",
+              "pattern": "^P(?!$).+"
+            }
+          }
+        }
+      }
+    },
+    "minimumIndependentContributorFamilies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "institutionConfigurable",
+        "minimum",
+        "maximum"
+      ],
+      "properties": {
+        "value": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "institutionConfigurable": {
+          "type": "boolean"
+        },
+        "minimum": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maximum": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "contributors": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "analyticalType",
+          "acceptedInputTypes",
+          "family",
+          "role"
+        ],
+        "properties": {
+          "analyticalType": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]+$"
+          },
+          "acceptedInputTypes": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "SIGNAL",
+                "EPISODE"
+              ]
+            }
+          },
+          "family": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]+$"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "SUPPORTING",
+              "CONTRADICTING",
+              "CONTEXTUAL"
+            ]
+          },
+          "required": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    },
+    "sourceIndependence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "collapseSharedLineage",
+        "requireLineageForSupporting"
+      ],
+      "properties": {
+        "collapseSharedLineage": {
+          "const": true
+        },
+        "requireLineageForSupporting": {
+          "const": true
+        }
+      }
+    },
+    "qualityGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "excludedSignalStatuses": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "excludedDispositionTags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "excludeStale": {
+          "type": "boolean"
+        },
+        "excludeInsufficient": {
+          "type": "boolean"
+        }
+      }
+    },
+    "contradictionPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "retainContradictions",
+        "mode"
+      ],
+      "properties": {
+        "retainContradictions": {
+          "const": true
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "REDUCE_CONFIDENCE",
+            "BLOCK_ACTIVATION",
+            "REQUIRE_HUMAN_REVIEW"
+          ]
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requiresHumanValidation",
+        "defaultMateriality"
+      ],
+      "properties": {
+        "requiresHumanValidation": {
+          "const": true
+        },
+        "defaultMateriality": {
+          "type": "string",
+          "enum": [
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "CRITICAL"
+          ]
+        },
+        "confidenceMethod": {
+          "type": "string",
+          "enum": [
+            "BOUNDED_RULE",
+            "WEIGHTED_CONTRIBUTORS",
+            "MINIMUM_CONTRIBUTOR_CONFIDENCE"
+          ]
+        }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "createdBy",
+        "createdAt",
+        "makerCheckerRequired"
+      ],
+      "properties": {
+        "createdBy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "makerCheckerRequired": {
+          "type": "boolean"
+        },
+        "approvedBy": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "approvedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "simulationRunId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "changeReason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "lifecycle": {
+            "enum": [
+              "APPROVED",
+              "ACTIVE"
+            ]
+          }
+        },
+        "required": [
+          "lifecycle"
+        ]
+      },
+      "then": {
+        "properties": {
+          "governance": {
+            "required": [
+              "approvedBy",
+              "approvedAt",
+              "simulationRunId"
+            ],
+            "properties": {
+              "approvedBy": {
+                "type": "string",
+                "minLength": 1
+              },
+              "approvedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "simulationRunId": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "minimumIndependentContributorFamilies": {
+            "properties": {
+              "value": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "then": {}
+    }
+  ]
+}

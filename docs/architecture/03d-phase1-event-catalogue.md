@@ -101,7 +101,14 @@ A feature update may cause no signal.
 
 New signal instances use normalized global signal names. Historical aliases are not silently rewritten.
 
-## 7. Decision, risk and classification events
+## 7. Episode and correlation events
+
+- `signal.episode.changed` — immutable revision event for continuity of one governed signal condition; transition includes OPENED, UPDATED, RESOLVED, REOPENED or SUPERSEDED while durable episode state remains compact.
+- `risk.correlation.hypothesis.changed` — immutable revision event for a governed multi-signal hypothesis such as `EMERGING_LIQUIDITY_STRESS`; includes contributor families, lineage references and independent-contributor count.
+
+These are analytical state changes. Neither event approves EWS state or creates jurisdiction/accounting/prudential classification.
+
+## 8. Decision, risk and classification events
 
 - `signal.disposition.recorded` — immutable human disposition.
 - `risk.assessment.proposed` — analytical/policy assessment.
@@ -110,7 +117,7 @@ New signal instances use normalized global signal names. Historical aliases are 
 
 Machine risk output and jurisdiction classification remain independently auditable.
 
-## 8. Example — returned payment
+## 9. Example — returned payment
 
 ```text
 payment.instruction.returned
@@ -128,7 +135,7 @@ risk.assessment.approved
 
 Threshold/window is policy, not event semantics.
 
-## 9. Example — utilization
+## 10. Example — utilization
 
 ```text
 facility.limit.changed
@@ -143,7 +150,7 @@ UTILIZATION_HIGH / UTILIZATION_SPIKE
 
 This prevents working-capital/drawing-power mechanics from defining the global utilization ontology.
 
-## 10. Example — US/UK security-interest activity
+## 11. Example — US/UK security-interest activity
 
 ```text
 US authorised UCC record --------+
@@ -161,7 +168,7 @@ UK Companies House charge -------+           |
 
 The legal subtype remains distinct in evidence.
 
-## 11. Example — refinancing stress
+## 12. Example — refinancing stress
 
 ```text
 credit.facility.amended
@@ -180,7 +187,7 @@ MARKET_IMPLIED_CREDIT_STRESS
 REFINANCING_STRESS hypothesis
 ```
 
-## 12. Example — insolvency
+## 13. Example — insolvency
 
 ```text
 court / insolvency registry
@@ -197,15 +204,15 @@ EWS correlation
                        where separately applicable
 ```
 
-## 13. Example — suspected diversion
+## 14. Example — suspected diversion
 
 Transactions + relationship + financing-purpose evidence produce features and `FUND_DIVERSION_SUSPECTED`; human investigation remains mandatory. No event, graph engine or LLM emits a confirmed legal/fraud conclusion autonomously.
 
-## 14. Schema evolution
+## 15. Schema evolution
 
 Additive optional fields use compatible defaults. Semantic reinterpretation requires new event contract/version. Aliases are permitted only where meaning is unchanged. `eventVersion` is semantic and independent of registry schema ID.
 
-## 15. Implementation waves
+## 16. Implementation waves
 
 ### Wave A — internal operational spine
 `obligation.dpd.changed`, `payment.instruction.returned`, facility capacity/outstanding, trade finance, covenant, monitoring.

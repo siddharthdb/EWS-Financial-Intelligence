@@ -1,0 +1,19 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://ews-financial-intelligence/schemas/policies/policy-validation-result-v1.schema.json",
+  "title":"EWS Policy Validation Result v1",
+  "type":"object","additionalProperties":false,
+  "required":["validationId","policy","policyArtifactHash","schemaValidation","semanticValidation","publishable","validatedAt","validatorVersion"],
+  "properties":{
+    "validationId":{"type":"string","minLength":1},
+    "policy":{"type":"object","additionalProperties":false,"required":["policyId","version"],"properties":{"policyId":{"type":"string"},"version":{"type":"integer","minimum":1}}},
+    "policyArtifactHash":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+    "schemaValidation":{"type":"object","additionalProperties":false,"required":["valid","schemaRef"],"properties":{"valid":{"type":"boolean"},"schemaRef":{"type":"string"},"errors":{"type":"array","items":{"$ref":"#/$defs/finding"}}}},
+    "semanticValidation":{"type":"object","additionalProperties":false,"required":["valid","registrySnapshot","findings"],"properties":{"valid":{"type":"boolean"},"registrySnapshot":{"type":"object","additionalProperties":{"type":"string"}},"findings":{"type":"array","items":{"$ref":"#/$defs/finding"}}}},
+    "publishable":{"type":"boolean"},
+    "validatedAt":{"type":"string","format":"date-time"},
+    "validatorVersion":{"type":"string","minLength":1},
+    "traceId":{"type":["string","null"]}
+  },
+  "$defs":{"finding":{"type":"object","additionalProperties":false,"required":["ruleId","severity","code","message"],"properties":{"ruleId":{"type":"string"},"severity":{"type":"string","enum":["ERROR","WARNING","INFO"]},"code":{"type":"string"},"message":{"type":"string"},"jsonPointer":{"type":["string","null"]},"reference":{"type":["string","null"]}}}}
+}

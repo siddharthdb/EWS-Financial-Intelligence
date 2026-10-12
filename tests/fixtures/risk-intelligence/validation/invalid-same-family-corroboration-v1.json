@@ -1,0 +1,97 @@
+{
+  "hypothesisId": "HYP-LIQ-CP-001-INVALID-SAME-FAMILY",
+  "hypothesisType": "EMERGING_LIQUIDITY_STRESS",
+  "entity": {
+    "type": "COUNTERPARTY",
+    "id": "CP-001"
+  },
+  "status": "PROPOSED",
+  "policy": {
+    "id": "CORR-POL-EMERGING-LIQUIDITY-STRESS",
+    "version": "1"
+  },
+  "executionMode": "LIVE",
+  "runId": null,
+  "knowledgeTime": "2026-09-18T06:10:00Z",
+  "asOf": "2026-09-18T06:10:00Z",
+  "window": {
+    "from": "2026-08-19T06:10:00Z",
+    "to": "2026-09-18T06:10:00Z"
+  },
+  "contributors": [
+    {
+      "type": "EPISODE",
+      "id": "EP-UTL-FAC-1001-001",
+      "analyticalType": "UTILIZATION_HIGH",
+      "entity": {
+        "type": "FACILITY",
+        "id": "FAC-1001"
+      },
+      "role": "SUPPORTING",
+      "effectiveAt": "2026-09-18T06:00:00Z",
+      "knowledgeTime": "2026-09-18T06:05:01Z",
+      "evidenceIds": [
+        "EVD-FAC-1001-LIMIT",
+        "EVD-FAC-1001-OUTSTANDING"
+      ],
+      "featureSnapshotIds": [
+        "FV-utilization_ratio-FAC-1001-20260918T0605Z"
+      ],
+      "lineageGroupIds": [
+        "LIN-FAC-1001-UTILIZATION"
+      ],
+      "contributionStrength": 0.78,
+      "contributorFamily": "UTILIZATION_PRESSURE"
+    },
+    {
+      "type": "EPISODE",
+      "id": "EP-UTL-FAC-1002-001",
+      "analyticalType": "UTILIZATION_SPIKE",
+      "contributorFamily": "UTILIZATION_PRESSURE",
+      "entity": {
+        "type": "FACILITY",
+        "id": "FAC-1002"
+      },
+      "role": "SUPPORTING",
+      "effectiveAt": "2026-09-18T05:30:00Z",
+      "knowledgeTime": "2026-09-18T05:31:00Z",
+      "evidenceIds": [
+        "EVD-FAC-1002-UTILIZATION"
+      ],
+      "featureSnapshotIds": [
+        "FV-utilization_ratio-FAC-1002-20260918T0530Z"
+      ],
+      "lineageGroupIds": [
+        "LIN-FAC-1002-UTILIZATION"
+      ],
+      "contributionStrength": 0.7
+    }
+  ],
+  "independentContributorCount": 2,
+  "lineageCollapse": {
+    "rawSupportingCount": 2,
+    "independentSupportingCount": 2,
+    "collapsedLineageGroupIds": []
+  },
+  "evidenceIds": [
+    "EVD-FAC-1001-LIMIT",
+    "EVD-FAC-1001-OUTSTANDING",
+    "EVD-FAC-1002-UTILIZATION"
+  ],
+  "featureSnapshotIds": [
+    "FV-utilization_ratio-FAC-1001-20260918T0605Z",
+    "FV-utilization_ratio-FAC-1002-20260918T0530Z"
+  ],
+  "confidence": 0.76,
+  "materiality": "HIGH",
+  "contradiction": {
+    "present": false,
+    "summaryRef": null
+  },
+  "revision": 1,
+  "previousRevisionRef": null,
+  "createdAt": "2026-09-18T06:10:01Z",
+  "resolvedAt": null,
+  "correlationId": "CORR-LIQ-CP-001",
+  "traceId": "TRACE-LIQ-CP-001"
+}
