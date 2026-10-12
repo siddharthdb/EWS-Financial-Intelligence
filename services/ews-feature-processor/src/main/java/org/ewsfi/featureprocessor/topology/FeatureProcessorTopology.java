@@ -21,7 +21,9 @@ import org.ewsfi.contracts.interim.JsonFeatureValue;
 import org.springframework.stereotype.Component;
 
 /**
- * Builds the Kafka Streams topology that computes {@code returned_payment_count_30d}
+ * Builds the Kafka Streams topology that computes {@code returned_payment_count_30d} and, via
+ * {@link DpdFeatureBranch}, {@code current_dpd} / {@code max_dpd_30d}. The payment-return branch
+ * computes {@code returned_payment_count_30d}
  * (docs/architecture/02d-phase1-feature-catalogue.md Section 1) from
  * {@code ews.canonical.account-transaction} into {@code ews.derived.feature}
  * (docs/architecture/03c-topic-and-partition-strategy.md Section 2), per the "operational feature
@@ -55,6 +57,7 @@ public class FeatureProcessorTopology {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public KStream<String, String> build(StreamsBuilder builder) {
+        new DpdFeatureBranch().attach(builder);
         KStream<String, String> canonical =
                 builder.stream(CANONICAL_TOPIC, Consumed.with(Serdes.String(), Serdes.String()));
 

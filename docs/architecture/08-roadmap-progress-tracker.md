@@ -26,11 +26,11 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 | 0.5 | Schema CI (parse every Avro/JSON Schema contract) | DONE | 2026-09-24 (session: ADRs + skeleton) — `.github/workflows/ci.yml` |
 | 0.6 | JVM-native schema round-trip tests | DONE | 2026-09-24 (session: ADRs + skeleton) — `ews-event-contracts-test` |
 | 0.7 | Fix pre-existing malformed JSON in `source-registry-v1.schema.json` | DONE | 2026-09-24 (session: ADRs + skeleton) |
-| 0.8 | Machine-readable topic registry (event type → schema → topic → key → owner → retention) | NOT_STARTED | |
-| 0.9 | Shared schema artifacts/references for repeated envelope types | NOT_STARTED | |
-| 0.10 | Automated terminology checks for deprecated signal aliases | NOT_STARTED | |
+| 0.8 | Machine-readable topic registry (event type → schema → topic → key → owner → retention) | DONE | 2026-10-12 — topic registry, shared envelope types, DPD slice |
+| 0.9 | Shared schema artifacts/references for repeated envelope types | DONE | 2026-10-12 — topic registry, shared envelope types, DPD slice |
+| 0.10 | Automated terminology checks for deprecated signal aliases | DONE | 2026-10-12 — topic registry, shared envelope types, DPD slice |
 | 0.11 | Decide permanent owned schema namespace (replace draft `org.ewsfi`) | NOT_STARTED | needs a human decision — do not resolve autonomously |
-| 0.12 | Architecture diagrams generated from the normalized model | NOT_STARTED | |
+| 0.12 | Architecture diagrams generated from the normalized model | DONE | 2026-10-12 — topic registry, shared envelope types, DPD slice |
 | 0.13 | Legacy Spring Boot EWS discovery/capability assessment | NOT_STARTED | needs access to a system not in this repo — flag to user, do not fabricate |
 
 ## Phase 1 — The spine
@@ -49,7 +49,7 @@ build next, and the reference a periodic user check-in is measured against. Mirr
 | 1.9 | Case workflow: real disposition endpoints (accept/reject) | DONE | 2026-09-24 — case-workflow disposition endpoints |
 | 1.10 | Experience API: real proposed-signal query + evidence drill-down | DONE | 2026-09-24 — experience-api evidence drill-down |
 | 1.11 | Integration tests for the full payment-return slice (embedded Kafka + Postgres) | DONE | covered incrementally by each step's own tests (19 tests total across the slice) rather than one combined end-to-end test — see 2026-09-24 experience-api entry |
-| 1.12 | `current_dpd` / `max_dpd_30d` features + `DPD_EMERGED` (P01) / `DPD_WORSENING` (P02) signals | NOT_STARTED | second Phase-1 signal family, after payment-return slice proves the pattern |
+| 1.12 | `current_dpd` / `max_dpd_30d` features + `DPD_EMERGED` (P01) / `DPD_WORSENING` (P02) signals | DONE | 2026-10-12 — topic registry, shared envelope types, DPD slice |
 | 1.13 | UK Companies House source adapter (real HTTP integration) | NOT_STARTED | needs an API key/credential decision — flag to user |
 | 1.14 | `wc_utilization_ratio` / `wc_available_headroom` features + `UTILIZATION_HIGH` (P05) / `UTILIZATION_SPIKE` (P06) signals | NOT_STARTED | |
 | 1.15 | Minimal case/decision model beyond single disposition (case open/assign/escalate/close) | NOT_STARTED | |

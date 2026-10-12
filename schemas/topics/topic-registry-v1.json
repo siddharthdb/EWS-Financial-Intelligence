@@ -1,0 +1,604 @@
+{
+  "registryVersion": "1",
+  "status": "DRAFT",
+  "schemaNamespace": "org.ewsfi",
+  "schemaNamespaceNote": "Draft namespace. A permanent owned reverse-DNS namespace is an open human decision (roadmap 0.11) and must be made before the first production schema-registry publication.",
+  "sources": [
+    "docs/architecture/03-event-architecture.md Section 8",
+    "docs/architecture/03c-topic-and-partition-strategy.md Sections 2 and 3",
+    "docs/architecture/03d-phase1-event-catalogue.md",
+    "docs/architecture/03i-production-kafka-topology-and-resilience.md Section 7"
+  ],
+  "envelopeSchema": "schemas/events/canonical-event-envelope-v1.avsc",
+  "sharedTypes": [
+    "schemas/events/common/producer-identity-v1.avsc",
+    "schemas/events/common/entity-reference-v1.avsc",
+    "schemas/events/common/source-reference-v1.avsc",
+    "schemas/events/common/data-classification-v1.avsc",
+    "schemas/events/common/execution-metadata-v1.avsc"
+  ],
+  "topics": [
+    {
+      "name": "ews.canonical.counterparty",
+      "primaryKey": "counterpartyId",
+      "owner": "ews-core-registry-service",
+      "retentionClass": "R2",
+      "retentionMode": "delete",
+      "retentionDaysMin": 7,
+      "retentionDaysMax": 14,
+      "securityClass": "CONFIDENTIAL",
+      "containsPii": true,
+      "provisioned": true
+    },
+    {
+      "name": "ews.canonical.facility",
+      "primaryKey": "facilityId",
+      "owner": "ews-core-registry-service",
+      "retentionClass": "R2",
+      "retentionMode": "delete",
+      "retentionDaysMin": 7,
+      "retentionDaysMax": 14,
+      "securityClass": "CONFIDENTIAL",
+      "containsPii": false,
+      "provisioned": true
+    },
+    {
+      "name": "ews.canonical.account-transaction",
+      "primaryKey": "accountId",
+      "owner": "ews-ingestion-service",
+      "retentionClass": "R1",
+      "retentionMode": "delete",
+      "retentionDaysMin": 3,
+      "retentionDaysMax": 7,
+      "securityClass": "CONFIDENTIAL",
+      "containsPii": true,
+      "provisioned": true
+    },
+    {
+      "name": "ews.canonical.repayment",
+      "primaryKey": "facilityId",
+      "owner": "ews-ingestion-service",
+      "retentionClass": "R2",
+      "retentionMode": "delete",
+      "retentionDaysMin": 7,
+      "retentionDaysMax": 14,
+      "securityClass": "CONFIDENTIAL",
+      "containsPii": false,
+      "provisioned": true
+    },
+    {
+      "name": "ews.canonical.trade-finance",
+      "primaryKey": "facilityId",
+      "owner": "ews-ingestion-service",
+      "retentionClass": "R2",
+      "retentionMode": "delete",
+      "retentionDaysMin": 7,
+      "retentionDaysMax": 14,
+      "securityClass": "CONFIDENTIAL",
+      "containsPii": false,
+      "provisioned": true
+    },
+    {
+      "name": "ews.canonical.financial-statement",
+      "primaryKey": "counterpartyId",
+      "owner": "ews-ingestion-service",
+      "retentionClass": "R2",
+      "retentionMode": "delete",
+      "retentionDaysMin": 7,
+      "retentionDaysMax": 14,
+      "securityClass": "CONFIDENTIAL",
+      "containsPii": false,
+      "provisioned": true
+    },
+    {
+      "name": "ews.canonical.collateral",
+      "primaryKey": "collateralId",
+      "owner": "ews-ingestion-service",
+      "retentionClass": "R2",
+      "retentionMode": "delete",
+      "retentionDaysMin": 7,
+      "retentionDaysMax": 14,
+      "securityClass": "CONFIDENTIAL",
+      "containsPii": false,
+      "provisioned": true
+    },
+    {
+      "name": "ews.canonical.rating",
+      "primaryKey": "counterpartyId",
+      "owner": "ews-ingestion-service",
+      "retentionClass": "R2",
+      "retentionMode": "delete",
+      "retentionDaysMin": 7,
+      "retentionDaysMax": 14,
+      "securityClass": "CONFIDENTIAL",
+      "containsPii": false,
+      "provisioned": true
+    },
+    {
+      "name": "ews.canonical.relationship",
+      "primaryKey": "sourcePartyId",
+      "owner": "ews-core-registry-service",
+      "retentionClass": "R2",
+      "retentionMode": "delete",
+      "retentionDaysMin": 7,
+      "retentionDaysMax": 14,
+      "securityClass": "CONFIDENTIAL",
+      "containsPii": true,
+      "provisioned": true
+    },
+    {
+      "name": "ews.canonical.external-intelligence",
+      "primaryKey": "entityId",
+      "owner": "ews-ingestion-service",
+      "retentionClass": "R2",
+      "retentionMode": "delete",
+      "retentionDaysMin": 7,
+      "retentionDaysMax": 14,
+      "securityClass": "CONFIDENTIAL",
+      "containsPii": true,
+      "provisioned": true
+    },
+    {
+      "name": "ews.canonical.market",
+      "primaryKey": "securityId",
+      "owner": "ews-ingestion-service",
+      "retentionClass": "R1",
+      "retentionMode": "delete",
+      "retentionDaysMin": 3,
+      "retentionDaysMax": 7,
+      "securityClass": "RESTRICTED",
+      "containsPii": false,
+      "provisioned": true
+    },
+    {
+      "name": "ews.derived.feature",
+      "primaryKey": "entityId",
+      "owner": "ews-feature-processor",
+      "retentionClass": "R3",
+      "retentionMode": "delete",
+      "retentionDaysMin": 14,
+      "retentionDaysMax": 30,
+      "securityClass": "CONFIDENTIAL",
+      "containsPii": false,
+      "provisioned": true
+    },
+    {
+      "name": "ews.derived.signal",
+      "primaryKey": "counterpartyId",
+      "owner": "ews-signal-policy-engine",
+      "retentionClass": "R3",
+      "retentionMode": "delete",
+      "retentionDaysMin": 14,
+      "retentionDaysMax": 30,
+      "securityClass": "CONFIDENTIAL",
+      "containsPii": false,
+      "provisioned": true,
+      "notes": "Phase-1 producers still key records by the feature entity id (account or facility). Repartition to counterpartyId is not implemented."
+    },
+    {
+      "name": "ews.derived.risk",
+      "primaryKey": "counterpartyId",
+      "owner": "risk-assessment",
+      "retentionClass": "R3",
+      "retentionMode": "delete",
+      "retentionDaysMin": 14,
+      "retentionDaysMax": 30,
+      "securityClass": "CONFIDENTIAL",
+      "containsPii": false,
+      "provisioned": true,
+      "notes": "Logical owner. No risk-assessment module exists yet."
+    },
+    {
+      "name": "ews.derived.classification",
+      "primaryKey": "entityId",
+      "owner": "classification-adapter",
+      "retentionClass": "R3",
+      "retentionMode": "delete",
+      "retentionDaysMin": 14,
+      "retentionDaysMax": 30,
+      "securityClass": "CONFIDENTIAL",
+      "containsPii": false,
+      "provisioned": true,
+      "notes": "Logical owner. No classification-adapter module exists yet."
+    },
+    {
+      "name": "ews.derived.decision",
+      "primaryKey": "caseId",
+      "owner": "ews-case-workflow-service",
+      "retentionClass": "R3",
+      "retentionMode": "delete",
+      "retentionDaysMin": 14,
+      "retentionDaysMax": 30,
+      "securityClass": "CONFIDENTIAL",
+      "containsPii": false,
+      "provisioned": true
+    },
+    {
+      "name": "ews.derived.case",
+      "primaryKey": "caseId",
+      "owner": "ews-case-workflow-service",
+      "retentionClass": "R3",
+      "retentionMode": "delete",
+      "retentionDaysMin": 14,
+      "retentionDaysMax": 30,
+      "securityClass": "CONFIDENTIAL",
+      "containsPii": false,
+      "provisioned": true
+    },
+    {
+      "name": "ews.state.feature-current",
+      "primaryKey": "entityId",
+      "owner": "ews-feature-processor",
+      "retentionClass": "R4",
+      "retentionMode": "compact",
+      "securityClass": "CONFIDENTIAL",
+      "containsPii": false,
+      "provisioned": false,
+      "notes": "Latest-value projection pattern from 03c Section 3. Not provisioned in Phase 1; immutable history stays on ews.derived.feature."
+    }
+  ],
+  "events": [
+    {
+      "eventType": "payment.instruction.returned",
+      "topic": "ews.canonical.account-transaction",
+      "keyStrategy": "accountId",
+      "owner": "ews-ingestion-service",
+      "schemaArtifact": "schemas/events/payloads/payment-instruction-returned-v1.avsc",
+      "schemaRecord": "org.ewsfi.events.payment.v1.PaymentInstructionReturnedV1",
+      "status": "WIRED"
+    },
+    {
+      "eventType": "obligation.dpd.changed",
+      "topic": "ews.canonical.repayment",
+      "keyStrategy": "facilityId",
+      "owner": "ews-ingestion-service",
+      "schemaArtifact": "schemas/events/payloads/obligation-dpd-changed-v1.avsc",
+      "schemaRecord": "org.ewsfi.events.repayment.v1.ObligationDpdChangedV1",
+      "status": "WIRED"
+    },
+    {
+      "eventType": "facility.limit.changed",
+      "topic": "ews.canonical.facility",
+      "keyStrategy": "facilityId",
+      "owner": "ews-core-registry-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "facility.drawing_power.changed",
+      "topic": "ews.canonical.facility",
+      "keyStrategy": "facilityId",
+      "owner": "ews-core-registry-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "facility.outstanding.changed",
+      "topic": "ews.canonical.facility",
+      "keyStrategy": "facilityId",
+      "owner": "ews-core-registry-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "covenant.measurement.updated",
+      "topic": "ews.canonical.facility",
+      "keyStrategy": "facilityId",
+      "owner": "ews-core-registry-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "trade_finance.lc.devolved",
+      "topic": "ews.canonical.trade-finance",
+      "keyStrategy": "facilityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "trade_finance.guarantee.invoked",
+      "topic": "ews.canonical.trade-finance",
+      "keyStrategy": "facilityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "financial.statement.received",
+      "topic": "ews.canonical.financial-statement",
+      "keyStrategy": "counterpartyId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "financial.statement.validated",
+      "topic": "ews.canonical.financial-statement",
+      "keyStrategy": "counterpartyId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "financial.statement.restated",
+      "topic": "ews.canonical.financial-statement",
+      "keyStrategy": "counterpartyId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "monitoring.requirement.status.changed",
+      "topic": "ews.canonical.counterparty",
+      "keyStrategy": "counterpartyId",
+      "owner": "ews-core-registry-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "collateral.valuation.updated",
+      "topic": "ews.canonical.collateral",
+      "keyStrategy": "collateralId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "relationship.changed",
+      "topic": "ews.canonical.relationship",
+      "keyStrategy": "sourcePartyId",
+      "owner": "ews-core-registry-service",
+      "status": "CATALOGUED",
+      "notes": "03d names the event key relationshipId. The topic primary key in 03c is sourcePartyId, and the topic key is what producers must use."
+    },
+    {
+      "eventType": "transaction.posted",
+      "topic": "ews.canonical.account-transaction",
+      "keyStrategy": "accountId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "rating.action.published",
+      "topic": "ews.canonical.rating",
+      "keyStrategy": "counterpartyId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "management.position.changed",
+      "topic": "ews.canonical.external-intelligence",
+      "keyStrategy": "entityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "ownership.control.changed",
+      "topic": "ews.canonical.external-intelligence",
+      "keyStrategy": "entityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "security.interest.created",
+      "topic": "ews.canonical.external-intelligence",
+      "keyStrategy": "entityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "security.interest.released",
+      "topic": "ews.canonical.external-intelligence",
+      "keyStrategy": "entityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "credit.facility.amended",
+      "topic": "ews.canonical.external-intelligence",
+      "keyStrategy": "entityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "covenant.waiver.disclosed",
+      "topic": "ews.canonical.external-intelligence",
+      "keyStrategy": "entityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "facility.maturity.extended",
+      "topic": "ews.canonical.external-intelligence",
+      "keyStrategy": "entityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "facility.pricing.changed",
+      "topic": "ews.canonical.external-intelligence",
+      "keyStrategy": "entityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "debt.default.disclosed",
+      "topic": "ews.canonical.external-intelligence",
+      "keyStrategy": "entityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "debt.acceleration.disclosed",
+      "topic": "ews.canonical.external-intelligence",
+      "keyStrategy": "entityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "insolvency.proceeding.started",
+      "topic": "ews.canonical.external-intelligence",
+      "keyStrategy": "entityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "insolvency.proceeding.status.changed",
+      "topic": "ews.canonical.external-intelligence",
+      "keyStrategy": "entityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "financial.reporting.non_reliance.disclosed",
+      "topic": "ews.canonical.external-intelligence",
+      "keyStrategy": "entityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "internal.control.weakness.disclosed",
+      "topic": "ews.canonical.external-intelligence",
+      "keyStrategy": "entityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "market.bond.trade.observed",
+      "topic": "ews.canonical.market",
+      "keyStrategy": "securityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "market.security.reference.changed",
+      "topic": "ews.canonical.market",
+      "keyStrategy": "securityId",
+      "owner": "ews-ingestion-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "feature.value.updated",
+      "topic": "ews.derived.feature",
+      "keyStrategy": "entityId",
+      "owner": "ews-feature-processor",
+      "schemaArtifact": "schemas/events/payloads/feature-value-updated-v1.avsc",
+      "schemaRecord": "org.ewsfi.events.feature.v1.FeatureValueUpdatedV1",
+      "status": "WIRED"
+    },
+    {
+      "eventType": "signal.detected",
+      "topic": "ews.derived.signal",
+      "keyStrategy": "counterpartyId",
+      "owner": "ews-signal-policy-engine",
+      "schemaArtifact": "schemas/events/payloads/signal-detected-v1.avsc",
+      "schemaRecord": "org.ewsfi.events.signal.v1.SignalDetectedV1",
+      "status": "WIRED",
+      "notes": "Phase-1 producers emit signal.detected already in PROPOSED status. Separate signal.proposed is catalogued and not yet produced."
+    },
+    {
+      "eventType": "signal.proposed",
+      "topic": "ews.derived.signal",
+      "keyStrategy": "counterpartyId",
+      "owner": "ews-signal-policy-engine",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "signal.updated",
+      "topic": "ews.derived.signal",
+      "keyStrategy": "counterpartyId",
+      "owner": "ews-signal-policy-engine",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "signal.accepted",
+      "topic": "ews.derived.signal",
+      "keyStrategy": "counterpartyId",
+      "owner": "ews-signal-policy-engine",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "signal.rejected",
+      "topic": "ews.derived.signal",
+      "keyStrategy": "counterpartyId",
+      "owner": "ews-signal-policy-engine",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "signal.resolved",
+      "topic": "ews.derived.signal",
+      "keyStrategy": "counterpartyId",
+      "owner": "ews-signal-policy-engine",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "signal.reopened",
+      "topic": "ews.derived.signal",
+      "keyStrategy": "counterpartyId",
+      "owner": "ews-signal-policy-engine",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "signal.disposition.recorded",
+      "topic": "ews.derived.decision",
+      "keyStrategy": "caseId",
+      "owner": "ews-case-workflow-service",
+      "schemaArtifact": "schemas/events/payloads/signal-disposition-recorded-v1.avsc",
+      "schemaRecord": "org.ewsfi.events.decision.v1.SignalDispositionRecordedV1",
+      "status": "WIRED"
+    },
+    {
+      "eventType": "risk.assessment.proposed",
+      "topic": "ews.derived.risk",
+      "keyStrategy": "counterpartyId",
+      "owner": "risk-assessment",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "risk.assessment.approved",
+      "topic": "ews.derived.risk",
+      "keyStrategy": "counterpartyId",
+      "owner": "risk-assessment",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "classification.state.proposed",
+      "topic": "ews.derived.classification",
+      "keyStrategy": "entityId",
+      "owner": "classification-adapter",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "classification.state.approved",
+      "topic": "ews.derived.classification",
+      "keyStrategy": "entityId",
+      "owner": "classification-adapter",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "classification.state.changed",
+      "topic": "ews.derived.classification",
+      "keyStrategy": "entityId",
+      "owner": "classification-adapter",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "case.opened",
+      "topic": "ews.derived.case",
+      "keyStrategy": "caseId",
+      "owner": "ews-case-workflow-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "case.assigned",
+      "topic": "ews.derived.case",
+      "keyStrategy": "caseId",
+      "owner": "ews-case-workflow-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "case.escalated",
+      "topic": "ews.derived.case",
+      "keyStrategy": "caseId",
+      "owner": "ews-case-workflow-service",
+      "status": "CATALOGUED"
+    },
+    {
+      "eventType": "case.closed",
+      "topic": "ews.derived.case",
+      "keyStrategy": "caseId",
+      "owner": "ews-case-workflow-service",
+      "status": "CATALOGUED"
+    }
+  ]
+}

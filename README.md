@@ -56,27 +56,27 @@ Evidence -> Observation/Event -> Feature -> Signal -> Risk Assessment
 - Architecture Decision Records: see [docs/adr/README.md](docs/adr/README.md) for the full index (ADR-001, 002, 003, 004, 005, 011 written; ADR-006–010 planned)
 
 ### Part IV — assessment and ongoing build tracking
-- [Gap Analysis and Implementation Roadmap](docs/architecture/06-gap-analysis-and-implementation-roadmap.md)
+- [Gap Analysis and Implementation Roadmap](docs/architecture/06-gap-analysis-and-implementation-roadmap.md) — historical baseline, written before implementation
 - [Build Log](docs/architecture/07-build-log.md) — dated record of every implementation session
 - [Roadmap Progress Tracker](docs/architecture/08-roadmap-progress-tracker.md) — what's done, what's next
+- [Completion Plan](docs/architecture/09-completion-plan.md) — current gaps and the path that remains
 
-## Phase-1 spine skeleton
+## Phase-1 spine
 
-A structural, no-business-logic scaffold now exists for the Phase-1 spine described in
-`01-architecture-blueprint.md` §25 and the gap-analysis roadmap's §7:
+A Java 21 / Spring Boot 3 Maven multi-module project implements the first vertical slices of the
+Phase-1 spine in `01-architecture-blueprint.md` §25:
 
-- Java 21 / Spring Boot 3 Maven multi-module project (`pom.xml`, `platform/`, `services/`, `test/`) --
-  see each module's own description in its `pom.xml` for what it stands in for architecturally.
-- `platform/ews-schemas` generates Java classes directly from the contracts under `schemas/`.
-- `platform/ews-platform-outbox-starter` implements the shape (not yet the logic) of ADR-003's
-  application-managed transactional outbox.
-- `db/migration/V1__init_phase1_baseline.sql` -- Postgres DDL derived from the `schemas/` contracts.
-- `docker-compose.yml` -- local dev stack matching the Phase-1 storage baseline (`01-architecture-blueprint.md` §9).
-- `.github/workflows/ci.yml` -- validates every schema contract parses and that the Maven build succeeds.
+- `platform/ews-schemas` generates Java classes from the contracts under `schemas/`.
+- `platform/ews-platform-outbox-starter` claims outbox rows with `SKIP LOCKED` and publishes them to Kafka.
+- `db/migration/V1__init_phase1_baseline.sql` — Postgres DDL derived from the `schemas/` contracts.
+- `docker-compose.yml` — local dev stack matching the Phase-1 storage baseline (`01-architecture-blueprint.md` §9).
+- `.github/workflows/ci.yml` — validates every schema contract, the topic registry, and the Maven build.
+- Payment-return slice: ingestion → `returned_payment_count_30d` → `REPEATED_PAYMENT_RETURN` → human disposition → experience-api evidence drill-down.
+- DPD slice: `obligation.dpd.changed` → `current_dpd` / `max_dpd_30d` → `DPD_EMERGED` / `DPD_WORSENING`.
 
-No feature computation, signal detection, or source-adapter logic is implemented yet -- every service
-module is an empty, buildable shell. See `docs/architecture/06-gap-analysis-and-implementation-roadmap.md`
-§7 for what comes next.
+What is still open, including decisions that need a person, is tracked in
+`docs/architecture/08-roadmap-progress-tracker.md` and planned in
+`docs/architecture/09-completion-plan.md`.
 
 ## Executable contracts
 
@@ -92,4 +92,4 @@ The repository will progressively add implementation POCs, model cards, scoring 
 
 ## Status
 
-Parts I–III: **Draft / coherence-reviewed**. Production implementation and schema publication have not yet established backward-compatibility obligations for the draft contracts.
+Parts I–III: **Draft / coherence-reviewed**. Contracts remain **DRAFT / PRE-PUBLICATION**. The Phase-1 spine has two working signal families (payment return and DPD). The full platform described in Parts I–III is not built; see `docs/architecture/09-completion-plan.md`.

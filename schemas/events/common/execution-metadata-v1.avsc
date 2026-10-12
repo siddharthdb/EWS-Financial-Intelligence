@@ -1,0 +1,25 @@
+{
+  "type": "record",
+  "name": "ExecutionMetadataV1",
+  "namespace": "org.ewsfi.events.v1",
+  "doc": "Whether an event was produced by live processing or by a named replay, rebuild or backfill run.",
+  "fields": [
+    {
+      "name": "mode",
+      "type": {
+        "type": "enum",
+        "name": "ExecutionModeV1",
+        "symbols": [
+          "LIVE",
+          "RECOVERY_REPLAY",
+          "PROJECTION_REBUILD",
+          "FEATURE_REBUILD",
+          "COUNTERFACTUAL_BACKTEST",
+          "SOURCE_BACKFILL"
+        ]
+      },
+      "default": "LIVE"
+    },
+    {"name": "runId", "type": ["null", "string"], "default": null}
+  ]
+}

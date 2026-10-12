@@ -25,6 +25,9 @@ public class JsonFeatureValue {
     private String qualityState;
     private String lineageTransformationVersion;
 
+    /** Prior numeric observation copied from the source event when the feature is a transition, such as DPD. */
+    private String priorValueNumeric;
+
     public JsonFeatureValue() {
         // Jackson
     }
@@ -180,5 +183,13 @@ public class JsonFeatureValue {
 
     public void setLineageTransformationVersion(String lineageTransformationVersion) {
         this.lineageTransformationVersion = lineageTransformationVersion;
+    }
+
+    public String getPriorValueNumeric() {
+        return priorValueNumeric;
+    }
+
+    public void setPriorValueNumeric(String priorValueNumeric) {
+        this.priorValueNumeric = priorValueNumeric;
     }
 }

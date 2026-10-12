@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "EntityReferenceV1",
+  "namespace": "org.ewsfi.events.v1",
+  "doc": "Entity a canonical event is about. resolutionRef and resolutionConfidence apply to external observations that require entity resolution.",
+  "fields": [
+    {"name": "type", "type": "string"},
+    {"name": "id", "type": "string"},
+    {"name": "resolutionRef", "type": ["null", "string"], "default": null},
+    {"name": "resolutionConfidence", "type": ["null", "double"], "default": null}
+  ]
+}

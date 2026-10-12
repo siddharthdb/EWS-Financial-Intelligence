@@ -9,26 +9,27 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.state.KeyValueStore;
+import org.apache.kafka.streams.state.StoreBuilder;
+import org.apache.kafka.streams.state.Stores;
 import org.ewsfi.contracts.interim.JsonFeatureValue;
 import org.ewsfi.contracts.interim.JsonSignalDetected;
+import org.ewsfi.signalpolicy.policy.DpdSignalPolicy;
 import org.ewsfi.signalpolicy.policy.SignalPolicyLoader;
 import org.springframework.stereotype.Component;
 
 /**
- * Builds the Kafka Streams topology evaluating the P03 REPEATED_PAYMENT_RETURN policy
- * (docs/architecture/02a-priority-signal-contracts.md, {@link SignalPolicyLoader}) against
- * {@code returned_payment_count_30d} values on {@code ews.derived.feature}, producing
- * {@code signal.detected} events on {@code ews.derived.signal}
- * (docs/architecture/03c-topic-and-partition-strategy.md Section 2), per the "signal policy engine"
- * role named in ADR-004.
+ * Builds the Kafka Streams topology evaluating rule-method policies against
+ * {@code ews.derived.feature} and producing {@code signal.detected} events on
+ * {@code ews.derived.signal}. P03 {@code REPEATED_PAYMENT_RETURN} is stateless
+ * ({@link SignalPolicyLoader}). P01 {@code DPD_EMERGED} and P02 {@code DPD_WORSENING} are stateful
+ * ({@link DpdSignalProcessor}) so an unchanged DPD does not open another proposed signal.
  *
- * <p>Emits a signal on every window where the threshold is met, not only on the first crossing --
- * P02's guidance ("Do not emit unchanged daily duplicates") applies to DPD_WORSENING, a different
- * signal not yet implemented; deduplication/episode-tracking for repeated
- * REPEATED_PAYMENT_RETURN detections is a follow-up, not implemented in this slice. The signal
- * {@code signalId} is deterministically derived from the triggering {@code featureValueId}, so
- * re-processing the same feature value (Kafka at-least-once delivery) produces the same signal row
- * rather than a duplicate -- see {@link org.ewsfi.signalpolicy.persistence.SignalInstancePersistenceListener}.
+ * <p>The payment-return branch emits a signal on every window where the threshold is met.
+ * Deduplication of repeated {@code REPEATED_PAYMENT_RETURN} detections is still open. DPD signals
+ * suppress unchanged and within-band increases via {@link DpdSignalPolicy}. Each signal id is
+ * deterministic from the triggering feature value so at-least-once redelivery does not create a
+ * second proposed row.
  */
 @Component
 public class SignalPolicyTopology {
@@ -40,17 +41,25 @@ public class SignalPolicyTopology {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public KStream<String, String> build(StreamsBuilder builder) {
-        KStream<String, String> features =
-                builder.stream(FEATURE_TOPIC, Consumed.with(Serdes.String(), Serdes.String()));
+        KStream<String, JsonFeatureValue> features =
+                builder.stream(FEATURE_TOPIC, Consumed.with(Serdes.String(), Serdes.String()))
+                        .mapValues(this::tryParse);
 
-        KStream<String, String> signals =
-                features
-                        .mapValues(this::tryParse)
-                        .filter((key, featureValue) -> matchesPolicy(featureValue))
+        KStream<String, String> paymentSignals =
+                features.filter((key, featureValue) -> matchesPaymentPolicy(featureValue))
                         .mapValues(this::toSignalDetectedJson);
+        paymentSignals.to(SIGNAL_TOPIC, Produced.with(Serdes.String(), Serdes.String()));
 
-        signals.to(SIGNAL_TOPIC, Produced.with(Serdes.String(), Serdes.String()));
-        return signals;
+        StoreBuilder<KeyValueStore<String, Integer>> lastDpd =
+                Stores.keyValueStoreBuilder(
+                        Stores.persistentKeyValueStore(DpdSignalPolicy.LAST_DPD_STORE),
+                        Serdes.String(),
+                        Serdes.Integer());
+        builder.addStateStore(lastDpd);
+        features.filter((key, featureValue) -> isTrackableDpd(featureValue))
+                .process(DpdSignalProcessor::new, DpdSignalPolicy.LAST_DPD_STORE)
+                .to(SIGNAL_TOPIC, Produced.with(Serdes.String(), Serdes.String()));
+        return paymentSignals;
     }
 
     private JsonFeatureValue tryParse(String json) {
@@ -61,7 +70,14 @@ public class SignalPolicyTopology {
         }
     }
 
-    private boolean matchesPolicy(JsonFeatureValue featureValue) {
+    private boolean isTrackableDpd(JsonFeatureValue featureValue) {
+        return featureValue != null
+                && "current_dpd".equals(featureValue.getFeatureName())
+                && ("VALUE".equals(featureValue.getState()) || "ZERO".equals(featureValue.getState()))
+                && featureValue.getValueNumeric() != null;
+    }
+
+    private boolean matchesPaymentPolicy(JsonFeatureValue featureValue) {
         if (featureValue == null || !TARGET_FEATURE_NAME.equals(featureValue.getFeatureName())) {
             return false;
         }

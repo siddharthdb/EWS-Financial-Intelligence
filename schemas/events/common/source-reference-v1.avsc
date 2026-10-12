@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "SourceReferenceV1",
+  "namespace": "org.ewsfi.events.v1",
+  "doc": "Provenance of a canonical event: source system, authority tier, evidence and source-rights reference.",
+  "fields": [
+    {"name": "system", "type": "string"},
+    {"name": "provider", "type": ["null", "string"], "default": null},
+    {"name": "recordId", "type": ["null", "string"], "default": null},
+    {
+      "name": "authorityTier",
+      "type": ["null", {"type": "enum", "name": "SourceAuthorityTierV1", "symbols": ["T1", "T2", "T3", "T4"]}],
+      "default": null
+    },
+    {"name": "evidenceIds", "type": {"type": "array", "items": "string"}, "default": []},
+    {"name": "sourceRightsRef", "type": ["null", "string"], "default": null},
+    {
+      "name": "sourcePublishedAt",
+      "type": ["null", {"type": "long", "logicalType": "timestamp-micros"}],
+      "default": null
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "ProducerIdentityV1",
+  "namespace": "org.ewsfi.events.v1",
+  "doc": "Service that produced a canonical event. Shared envelope type; referenced by CanonicalEventEnvelopeV1 rather than redefined per payload.",
+  "fields": [
+    {"name": "service", "type": "string"},
+    {"name": "instance", "type": ["null", "string"], "default": null},
+    {"name": "version", "type": ["null", "string"], "default": null}
+  ]
+}

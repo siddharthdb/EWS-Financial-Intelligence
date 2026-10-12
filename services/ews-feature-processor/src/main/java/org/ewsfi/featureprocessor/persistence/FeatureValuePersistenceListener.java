@@ -44,16 +44,30 @@ public class FeatureValuePersistenceListener {
                             json.getEntityId(),
                             json.getState(),
                             json.getValueType(),
-                            new BigDecimal(json.getValueNumeric()),
+                            decimalOrNull(json.getValueNumeric()),
                             OffsetDateTime.parse(json.getKnowledgeTime()),
                             OffsetDateTime.parse(json.getCalculatedAt()),
-                            OffsetDateTime.parse(json.getWindowStart()),
-                            OffsetDateTime.parse(json.getWindowEnd()),
+                            timeOrNull(json.getWindowStart()),
+                            timeOrNull(json.getWindowEnd()),
                             json.getQualityState(),
                             json.getLineageTransformationVersion());
             featureValueRepository.save(entity);
         } catch (Exception e) {
             log.warn("Failed to persist feature value from payload {}: {}", payload, e.getMessage());
         }
+    }
+
+    private static BigDecimal decimalOrNull(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        return new BigDecimal(raw);
+    }
+
+    private static OffsetDateTime timeOrNull(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        return OffsetDateTime.parse(raw);
     }
 }

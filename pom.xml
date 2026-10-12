@@ -11,9 +11,9 @@
 
   <name>EWS Financial Intelligence Platform</name>
   <description>
-    Phase-1 spine skeleton for the EWS Financial Intelligence Platform. Structural scaffold only,
-    matching docs/architecture/01-architecture-blueprint.md Section 25 and
-    docs/architecture/06-gap-analysis-and-implementation-roadmap.md Section 7. No business logic.
+    Phase-1 spine for the EWS Financial Intelligence Platform, matching
+    docs/architecture/01-architecture-blueprint.md Section 25. See
+    docs/architecture/09-completion-plan.md for what is implemented and what remains.
   </description>
 
   <properties>
@@ -80,6 +80,11 @@
           <groupId>org.jsonschema2pojo</groupId>
           <artifactId>jsonschema2pojo-maven-plugin</artifactId>
           <version>${jsonschema2pojo.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.2.5</version>
         </plugin>
       </plugins>
     </pluginManagement>

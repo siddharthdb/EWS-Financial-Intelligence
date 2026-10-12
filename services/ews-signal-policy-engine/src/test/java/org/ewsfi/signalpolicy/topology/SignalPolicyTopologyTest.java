@@ -3,6 +3,7 @@ package org.ewsfi.signalpolicy.topology;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.file.Files;
 import java.time.Instant;
 import java.util.List;
 import java.util.Properties;
@@ -33,10 +34,11 @@ class SignalPolicyTopologyTest {
     private TestOutputTopic<String, String> outputTopic;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         Properties props = new Properties();
-        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "signal-policy-topology-test");
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "signal-policy-topology-test-" + UUID.randomUUID());
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "dummy:1234");
+        props.put(StreamsConfig.STATE_DIR_CONFIG, Files.createTempDirectory("signal-policy-test").toString());
 
         StreamsBuilder builder = new StreamsBuilder();
         new SignalPolicyTopology().build(builder);
@@ -91,7 +93,7 @@ class SignalPolicyTopologyTest {
                 new JsonFeatureValue(
                         UUID.randomUUID().toString(),
                         "FD-OTHER",
-                        "current_dpd",
+                        "current_ratio",
                         "1.0",
                         "ACCOUNT",
                         "acct-3",

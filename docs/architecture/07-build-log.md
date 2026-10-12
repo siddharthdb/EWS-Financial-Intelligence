@@ -22,6 +22,22 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-10-12 — Topic registry, shared envelope types, and the DPD slice
+
+**Roadmap items:** 0.8, 0.9, 0.10, 0.12, 1.12
+
+**What:** Added `schemas/topics/topic-registry-v1.json` (event type, schema artifact, topic, key, owner, retention class, security class) and a Mermaid diagram generated from it. Extracted the canonical envelope's repeated records into `schemas/events/common/` and referenced them by name. Added `schemas/governance/deprecated-aliases-v1.json` and tests that fail if production Java or a contract emits a deprecated signal/event name or a classification namespace as a signal. Implemented the second Phase-1 signal family: `POST /api/v1/internal/obligation-dpd` stages `obligation.dpd.changed` on `ews.canonical.repayment`; the feature processor emits `current_dpd` (INVALID, with no numeric value, when the schedule is not reconciled) and `max_dpd_30d`; the signal policy proposes `DPD_EMERGED` when DPD leaves zero and `DPD_WORSENING` when it crosses a higher institution band (1/30/60/90). Unchanged and within-band values do not open another signal. Wrote `09-completion-plan.md` so the historical gap analysis is no longer the current-state description.
+
+**Why:** The coherence-review backlog (`05` §5 items 3–5 and 7) was the next unfinished Phase-0 work, and `08` names the DPD family as the next spine slice after payment returns. P01/P02 and the feature catalogue already specified the behavior. The band thresholds are institution policy placeholders; they are not SMA/NPA or IFRS 9 stages.
+
+**Files:** `schemas/topics/topic-registry-v1.json`, `schemas/events/common/*.avsc`, `schemas/events/canonical-event-envelope-v1.avsc`, `schemas/governance/deprecated-aliases-v1.json`, `docs/architecture/diagrams/topic-registry.mmd`, `docs/architecture/09-completion-plan.md`, `services/ews-feature-processor/.../DpdFeatureBranch.java`, `services/ews-signal-policy-engine/.../DpdSignalPolicy.java`, `services/ews-signal-policy-engine/.../DpdSignalProcessor.java`, `services/ews-ingestion-service/.../repayment/*`.
+
+**Verification:** `python3 test/schema-ci/validate_contracts.py` parsed every Avro contract (shared types first) and matched the committed diagram. `mvn -B -ntp verify` was green: 30 tests, 0 failures. That includes the new DPD topology tests (unreconciled DPD stays non-numeric and out of the rolling max; band crossings propose `DPD_EMERGED` / `DPD_WORSENING`; a first observation already inside a band does not), `ObligationDpdChangedAdapterTest` against local Postgres 16, and the governance contract tests. Root `pluginManagement` now pins Surefire 3.2.5; Maven's default 2.12.4 was reporting zero tests for the JUnit 5 service modules.
+
+**Follow-ups:** JSON remains the Kafka wire format (1.17). The DPD trigger is a stand-in REST endpoint, not an LMS feed. Feature windows still use the Kafka record timestamp. Utilization (1.14), case lifecycle (1.15), and the four human decisions in `09-completion-plan.md` §4 are still open.
+
+---
+
 ## 2026-09-24 — Autonomous continuation Routine established
 
 **Roadmap items:** none (process/infrastructure, not a build item)
