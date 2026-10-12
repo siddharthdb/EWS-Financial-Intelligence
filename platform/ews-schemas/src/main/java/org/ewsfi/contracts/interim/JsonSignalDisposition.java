@@ -2,9 +2,8 @@ package org.ewsfi.contracts.interim;
 
 /**
  * Interim JSON wire shape for {@code signal.disposition.recorded} events, mirroring the fields of
- * schemas/events/payloads/signal-disposition-recorded-v1.avsc that this Phase-1 slice uses. See
- * {@link JsonEventEnvelope}'s Javadoc for why JSON rather than Avro binary is used on the wire for
- * this slice (roadmap item 1.17).
+ * schemas/events/payloads/signal-disposition-recorded-v1.avsc. Kafka carries the Avro record; this
+ * type is the logical document stored in the outbox.
  */
 public class JsonSignalDisposition {
 

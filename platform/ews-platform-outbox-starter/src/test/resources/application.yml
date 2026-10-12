@@ -11,5 +11,8 @@ spring:
     bootstrap-servers: ${spring.embedded.kafka.brokers}
 
 ews:
+  schema:
+    registry:
+      url: mock://ews-phase1
   outbox:
     publish-interval-ms: 3600000

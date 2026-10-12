@@ -12,6 +12,8 @@ import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
+import org.ewsfi.avro.AvroPayloadCodec;
+import org.ewsfi.avro.AvroStreams;
 import org.ewsfi.contracts.interim.JsonFeatureValue;
 import org.ewsfi.contracts.interim.JsonSignalDetected;
 import org.ewsfi.signalpolicy.policy.DpdSignalPolicy;
@@ -39,16 +41,23 @@ public class SignalPolicyTopology {
     private static final String TARGET_FEATURE_NAME = "returned_payment_count_30d";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final AvroPayloadCodec avroPayloadCodec;
 
-    public KStream<String, String> build(StreamsBuilder builder) {
+    public SignalPolicyTopology(AvroPayloadCodec avroPayloadCodec) {
+        this.avroPayloadCodec = avroPayloadCodec;
+    }
+
+    public KStream<String, byte[]> build(StreamsBuilder builder) {
         KStream<String, JsonFeatureValue> features =
-                builder.stream(FEATURE_TOPIC, Consumed.with(Serdes.String(), Serdes.String()))
+                builder.stream(FEATURE_TOPIC, Consumed.with(Serdes.String(), Serdes.ByteArray()))
+                        .process(AvroStreams.decode(avroPayloadCodec))
                         .mapValues(this::tryParse);
 
-        KStream<String, String> paymentSignals =
+        KStream<String, byte[]> paymentSignals =
                 features.filter((key, featureValue) -> matchesPaymentPolicy(featureValue))
-                        .mapValues(this::toSignalDetectedJson);
-        paymentSignals.to(SIGNAL_TOPIC, Produced.with(Serdes.String(), Serdes.String()));
+                        .mapValues(this::toSignalDetectedJson)
+                        .process(AvroStreams.encode(avroPayloadCodec, "signal.detected"));
+        paymentSignals.to(SIGNAL_TOPIC, Produced.with(Serdes.String(), Serdes.ByteArray()));
 
         StoreBuilder<KeyValueStore<String, Integer>> lastDpd =
                 Stores.keyValueStoreBuilder(
@@ -58,7 +67,8 @@ public class SignalPolicyTopology {
         builder.addStateStore(lastDpd);
         features.filter((key, featureValue) -> isTrackableDpd(featureValue))
                 .process(DpdSignalProcessor::new, DpdSignalPolicy.LAST_DPD_STORE)
-                .to(SIGNAL_TOPIC, Produced.with(Serdes.String(), Serdes.String()));
+                .process(AvroStreams.encode(avroPayloadCodec, "signal.detected"))
+                .to(SIGNAL_TOPIC, Produced.with(Serdes.String(), Serdes.ByteArray()));
         return paymentSignals;
     }
 

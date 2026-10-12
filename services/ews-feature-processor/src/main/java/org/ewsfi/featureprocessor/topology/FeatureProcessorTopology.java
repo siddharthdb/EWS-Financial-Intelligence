@@ -16,6 +16,8 @@ import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.kstream.SlidingWindows;
 import org.apache.kafka.streams.kstream.Windowed;
+import org.ewsfi.avro.AvroPayloadCodec;
+import org.ewsfi.avro.AvroStreams;
 import org.ewsfi.contracts.interim.JsonEventEnvelope;
 import org.ewsfi.contracts.interim.JsonFeatureValue;
 import org.springframework.stereotype.Component;
@@ -55,11 +57,17 @@ public class FeatureProcessorTopology {
     private static final String PAYMENT_RETURN_EVENT_TYPE = "payment.instruction.returned";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final AvroPayloadCodec avroPayloadCodec;
 
-    public KStream<String, String> build(StreamsBuilder builder) {
-        new DpdFeatureBranch().attach(builder);
+    public FeatureProcessorTopology(AvroPayloadCodec avroPayloadCodec) {
+        this.avroPayloadCodec = avroPayloadCodec;
+    }
+
+    public KStream<String, byte[]> build(StreamsBuilder builder) {
+        new DpdFeatureBranch(avroPayloadCodec).attach(builder);
         KStream<String, String> canonical =
-                builder.stream(CANONICAL_TOPIC, Consumed.with(Serdes.String(), Serdes.String()));
+                builder.stream(CANONICAL_TOPIC, Consumed.with(Serdes.String(), Serdes.ByteArray()))
+                        .process(AvroStreams.decode(avroPayloadCodec));
 
         KStream<String, String> paymentReturns = canonical.filter(this::isCountablePaymentReturn);
 
@@ -79,8 +87,10 @@ public class FeatureProcessorTopology {
                                         KeyValue.pair(
                                                 windowedKey.key(), toFeatureValueJson(windowedKey, count)));
 
-        featureValues.to(FEATURE_TOPIC, Produced.with(Serdes.String(), Serdes.String()));
-        return featureValues;
+        KStream<String, byte[]> avroFeatures =
+                featureValues.process(AvroStreams.encode(avroPayloadCodec, "feature.value.updated"));
+        avroFeatures.to(FEATURE_TOPIC, Produced.with(Serdes.String(), Serdes.ByteArray()));
+        return avroFeatures;
     }
 
     private boolean isCountablePaymentReturn(String key, String value) {

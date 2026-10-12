@@ -5,9 +5,8 @@ import java.util.List;
 /**
  * Interim JSON wire shape for {@code signal.detected} events published to
  * {@code ews.derived.signal}, mirroring the fields of
- * schemas/events/payloads/signal-detected-v1.avsc and schemas/signals/signal-instance-v1.schema.json
- * that the Phase-1 payment-return slice actually uses. See {@link JsonEventEnvelope}'s Javadoc for
- * why JSON rather than Avro binary is used on the wire for this slice (roadmap item 1.17).
+ * schemas/events/payloads/signal-detected-v1.avsc. Kafka carries the Avro record; this type is the
+ * logical document around it.
  */
 public class JsonSignalDetected {
 

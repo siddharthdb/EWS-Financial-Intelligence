@@ -13,7 +13,9 @@ import java.util.Map;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.ewsfi.avro.AvroPayloadCodec;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +64,10 @@ class OutboxPublisherWorkerTest {
 
     @Test
     void claimsAndPublishesAnOutboxEventThenMarksItPublished() throws Exception {
-        String payloadJson = "{\"paymentInstructionId\":\"pi-001\",\"accountId\":\"acct-001\"}";
+        String payloadJson =
+                """
+                {"eventId":"evt-001","eventType":"payment.instruction.returned","eventTime":"2026-09-24T00:00:00Z","entityType":"ACCOUNT","entityId":"acct-001","data":{"paymentInstructionId":"pi-001","accountId":"acct-001","amount":"10.00","currency":"GBP","returnReasonCode":"R01","returnReasonCategory":"FINANCIAL","returnDate":"2026-09-24"}}
+                """;
         OutboxEvent event =
                 OutboxEvent.newEvent(
                         "PaymentInstruction",
@@ -81,24 +86,26 @@ class OutboxPublisherWorkerTest {
         Map<String, Object> consumerProps =
                 KafkaTestUtils.consumerProps("outbox-test-group", "true", embeddedKafkaBroker);
         consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class);
         consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
-        try (Consumer<String, String> consumer =
+        try (Consumer<String, byte[]> consumer =
                 new org.apache.kafka.clients.consumer.KafkaConsumer<>(consumerProps)) {
             embeddedKafkaBroker.consumeFromAnEmbeddedTopic(consumer, TOPIC);
-            ConsumerRecord<String, String> record =
+            ConsumerRecord<String, byte[]> record =
                     KafkaTestUtils.getSingleRecord(consumer, TOPIC, Duration.ofSeconds(10));
             assertThat(record.key()).isEqualTo("acct-001");
-            // Compared as parsed JSON, not raw strings: Postgres's jsonb column type canonicalizes
-            // the stored payload (reorders object keys, normalizes whitespace) between the insert
-            // and the claim-query read-back, so the published bytes are semantically but not
-            // byte-for-byte identical to what was originally saved -- expected jsonb behavior, not
-            // a bug in the outbox pipeline itself.
+            assertThat(record.value()[0]).isEqualTo((byte) 0);
+            // The outbox stores JSON. Postgres jsonb canonicalizes it before publish. The Kafka
+            // value is the governed Avro payload, not that JSON document.
             ObjectMapper mapper = new ObjectMapper();
-            JsonNode expected = mapper.readTree(payloadJson);
-            JsonNode actual = mapper.readTree(record.value());
-            assertThat(actual).isEqualTo(expected);
+            JsonNode actual =
+                    mapper.readTree(
+                            AvroPayloadCodec.forTests().toInterimJson(record.value(), record.headers()));
+            assertThat(actual.get("eventType").asText()).isEqualTo("payment.instruction.returned");
+            assertThat(actual.get("data").get("paymentInstructionId").asText()).isEqualTo("pi-001");
+            assertThat(actual.get("data").get("accountId").asText()).isEqualTo("acct-001");
+            assertThat(actual.get("data").get("returnReasonCategory").asText()).isEqualTo("FINANCIAL");
         }
 
         OutboxEvent reloaded = repository.findById(saved.getEventId()).orElseThrow();

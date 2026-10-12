@@ -3,6 +3,8 @@ package org.ewsfi.featureprocessor.persistence;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.ewsfi.avro.AvroPayloadCodec;
 import org.ewsfi.contracts.interim.JsonFeatureValue;
 import org.ewsfi.persistence.feature.FeatureValue;
 import org.ewsfi.persistence.feature.FeatureValueRepository;
@@ -24,15 +26,19 @@ public class FeatureValuePersistenceListener {
     private static final Logger log = LoggerFactory.getLogger(FeatureValuePersistenceListener.class);
 
     private final FeatureValueRepository featureValueRepository;
+    private final AvroPayloadCodec avroPayloadCodec;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public FeatureValuePersistenceListener(FeatureValueRepository featureValueRepository) {
+    public FeatureValuePersistenceListener(
+            FeatureValueRepository featureValueRepository, AvroPayloadCodec avroPayloadCodec) {
         this.featureValueRepository = featureValueRepository;
+        this.avroPayloadCodec = avroPayloadCodec;
     }
 
     @KafkaListener(topics = "ews.derived.feature", groupId = "ews-feature-processor-persistence")
-    public void onFeatureValue(String payload) {
+    public void onFeatureValue(ConsumerRecord<String, byte[]> record) {
         try {
+            String payload = avroPayloadCodec.toInterimJson(record.value(), record.headers());
             JsonFeatureValue json = objectMapper.readValue(payload, JsonFeatureValue.class);
             FeatureValue entity =
                     new FeatureValue(
@@ -53,7 +59,7 @@ public class FeatureValuePersistenceListener {
                             json.getLineageTransformationVersion());
             featureValueRepository.save(entity);
         } catch (Exception e) {
-            log.warn("Failed to persist feature value from payload {}: {}", payload, e.getMessage());
+            log.warn("Failed to persist feature value at offset {}: {}", record.offset(), e.getMessage());
         }
     }
 

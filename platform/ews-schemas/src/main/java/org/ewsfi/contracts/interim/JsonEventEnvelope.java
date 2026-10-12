@@ -4,17 +4,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.Map;
 
 /**
- * Interim JSON wire envelope shared by the outbox publisher and Kafka Streams consumers for the
- * Phase-1 payment-return slice, while the platform's Kafka wire format is JSON rather than the
- * documented Avro + Schema Registry target (docs/architecture/03-event-architecture.md Section 10,
- * ADR-011). Tracked as roadmap item 1.17 in docs/architecture/08-roadmap-progress-tracker.md.
+ * Logical JSON document stored in the outbox and rebuilt after Avro decode. The Kafka value is the
+ * governed Avro payload ({@code AvroPayloadCodec}); this type is not the wire format.
  *
  * <p>Deliberately much smaller than the full canonical envelope in
- * schemas/events/canonical-event-envelope-v1.avsc -- only the fields the current slice's feature
- * and signal topologies actually need (entity identity, event time, and the domain payload) are
- * carried on the wire; the durable {@code canonical_event_envelope} table (populated at ingestion
- * time by {@code ews-persistence-core}) remains the source of the full governed envelope for
- * replay/audit.
+ * schemas/events/canonical-event-envelope-v1.avsc. Event time and entity type travel in Kafka
+ * headers beside the Avro payload. The durable {@code canonical_event_envelope} table remains the
+ * source of the full governed envelope for replay and audit.
  */
 public class JsonEventEnvelope {
 

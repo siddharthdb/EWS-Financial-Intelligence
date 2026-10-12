@@ -3,9 +3,8 @@ package org.ewsfi.contracts.interim;
 /**
  * Interim JSON wire shape for {@code feature.value.updated} events published to
  * {@code ews.derived.feature}, mirroring the fields of
- * schemas/events/payloads/feature-value-updated-v1.avsc that the Phase-1 payment-return slice
- * actually uses. See {@link JsonEventEnvelope}'s Javadoc for why JSON rather than Avro binary is
- * used on the wire for this slice (roadmap item 1.17).
+ * schemas/events/payloads/feature-value-updated-v1.avsc. Kafka carries the Avro record;
+ * this type is the logical document around it.
  */
 public class JsonFeatureValue {
 

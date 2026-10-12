@@ -33,7 +33,7 @@ public class KafkaStreamsConfig {
     }
 
     @Bean
-    public KStream<String, String> signalPolicyStream(
+    public KStream<String, byte[]> signalPolicyStream(
             StreamsBuilder streamsBuilder, SignalPolicyTopology topology) {
         return topology.build(streamsBuilder);
     }

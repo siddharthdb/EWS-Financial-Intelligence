@@ -13,7 +13,9 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.TestInputTopic;
 import org.apache.kafka.streams.TestOutputTopic;
+import org.apache.kafka.streams.test.TestRecord;
 import org.apache.kafka.streams.TopologyTestDriver;
+import org.ewsfi.avro.AvroPayloadCodec;
 import org.ewsfi.contracts.interim.JsonFeatureValue;
 import org.ewsfi.contracts.interim.JsonSignalDetected;
 import org.ewsfi.signalpolicy.policy.DpdSignalPolicy;
@@ -24,10 +26,11 @@ import org.junit.jupiter.api.Test;
 class DpdSignalTopologyTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private final AvroPayloadCodec codec = AvroPayloadCodec.forTests();
 
     private TopologyTestDriver driver;
-    private TestInputTopic<String, String> inputTopic;
-    private TestOutputTopic<String, String> outputTopic;
+    private TestInputTopic<String, byte[]> inputTopic;
+    private TestOutputTopic<String, byte[]> outputTopic;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -37,18 +40,18 @@ class DpdSignalTopologyTest {
         props.put(StreamsConfig.STATE_DIR_CONFIG, Files.createTempDirectory("dpd-signal-test").toString());
 
         StreamsBuilder builder = new StreamsBuilder();
-        new SignalPolicyTopology().build(builder);
+        new SignalPolicyTopology(codec).build(builder);
         driver = new TopologyTestDriver(builder.build(), props);
         inputTopic =
                 driver.createInputTopic(
                         SignalPolicyTopology.FEATURE_TOPIC,
                         Serdes.String().serializer(),
-                        Serdes.String().serializer());
+                        Serdes.ByteArray().serializer());
         outputTopic =
                 driver.createOutputTopic(
                         SignalPolicyTopology.SIGNAL_TOPIC,
                         Serdes.String().deserializer(),
-                        Serdes.String().deserializer());
+                        Serdes.ByteArray().deserializer());
     }
 
     @AfterEach
@@ -66,8 +69,7 @@ class DpdSignalTopologyTest {
         pipe("fac-1", feature("fv-5", "fac-1", "0", "ZERO", "45"));
         pipe("fac-1", feature("fv-6", "fac-1", "8", "VALUE", "0"));
 
-        List<JsonSignalDetected> signals =
-                outputTopic.readValuesToList().stream().map(DpdSignalTopologyTest::parse).toList();
+        List<JsonSignalDetected> signals = signals();
         assertThat(signals).extracting(JsonSignalDetected::getSignalType)
                 .containsExactly(DpdSignalPolicy.EMERGED, DpdSignalPolicy.WORSENING, DpdSignalPolicy.EMERGED);
         assertThat(signals).allSatisfy(signal -> {
@@ -93,13 +95,18 @@ class DpdSignalTopologyTest {
         pipe("fac-3", feature("fv-b", "fac-3", null, "INVALID", "10"));
         pipe("fac-3", feature("fv-c", "fac-3", "15", "VALUE", null));
 
-        List<JsonSignalDetected> signals =
-                outputTopic.readValuesToList().stream().map(DpdSignalTopologyTest::parse).toList();
+        List<JsonSignalDetected> signals = signals();
         assertThat(signals).extracting(JsonSignalDetected::getSignalType).containsExactly(DpdSignalPolicy.EMERGED);
     }
 
     private void pipe(String key, String json) {
-        inputTopic.pipeInput(key, json, Instant.parse("2026-09-01T00:00:00Z"));
+        AvroPayloadCodec.Encoded encoded = codec.encode("feature.value.updated", json);
+        inputTopic.pipeInput(
+                new TestRecord<>(key, encoded.payload(), encoded.headers(), Instant.parse("2026-09-01T00:00:00Z")));
+    }
+
+    private List<JsonSignalDetected> signals() {
+        return outputTopic.readRecordsToList().stream().map(this::parse).toList();
     }
 
     private static String feature(
@@ -129,9 +136,9 @@ class DpdSignalTopologyTest {
         }
     }
 
-    private static JsonSignalDetected parse(String json) {
+    private JsonSignalDetected parse(TestRecord<String, byte[]> record) {
         try {
-            return MAPPER.readValue(json, JsonSignalDetected.class);
+            return MAPPER.readValue(codec.toInterimJson(record.value(), record.headers()), JsonSignalDetected.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

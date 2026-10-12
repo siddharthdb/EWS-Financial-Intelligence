@@ -34,7 +34,7 @@ public class KafkaStreamsConfig {
     }
 
     @Bean
-    public KStream<String, String> featureProcessorStream(
+    public KStream<String, byte[]> featureProcessorStream(
             StreamsBuilder streamsBuilder, FeatureProcessorTopology topology) {
         // Spring Kafka builds the actual Topology/KafkaStreams instance from the shared
         // StreamsBuilder bean after all @Bean methods that touch it have run.

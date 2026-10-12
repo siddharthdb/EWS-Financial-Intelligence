@@ -3,6 +3,8 @@ package org.ewsfi.signalpolicy.persistence;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashSet;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.ewsfi.avro.AvroPayloadCodec;
 import org.ewsfi.contracts.interim.JsonSignalDetected;
 import org.ewsfi.persistence.signal.SignalInstance;
 import org.ewsfi.persistence.signal.SignalInstanceRepository;
@@ -28,15 +30,19 @@ public class SignalInstancePersistenceListener {
     private static final Logger log = LoggerFactory.getLogger(SignalInstancePersistenceListener.class);
 
     private final SignalInstanceRepository signalInstanceRepository;
+    private final AvroPayloadCodec avroPayloadCodec;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public SignalInstancePersistenceListener(SignalInstanceRepository signalInstanceRepository) {
+    public SignalInstancePersistenceListener(
+            SignalInstanceRepository signalInstanceRepository, AvroPayloadCodec avroPayloadCodec) {
         this.signalInstanceRepository = signalInstanceRepository;
+        this.avroPayloadCodec = avroPayloadCodec;
     }
 
     @KafkaListener(topics = "ews.derived.signal", groupId = "ews-signal-policy-engine-persistence")
-    public void onSignalDetected(String payload) {
+    public void onSignalDetected(ConsumerRecord<String, byte[]> record) {
         try {
+            String payload = avroPayloadCodec.toInterimJson(record.value(), record.headers());
             JsonSignalDetected json = objectMapper.readValue(payload, JsonSignalDetected.class);
             if (signalInstanceRepository.existsById(json.getSignalId())) {
                 // Idempotent re-delivery: the row already exists from an earlier processing of the
@@ -64,7 +70,7 @@ public class SignalInstancePersistenceListener {
                             new LinkedHashSet<>(json.getEvidenceIds()));
             signalInstanceRepository.save(entity);
         } catch (Exception e) {
-            log.warn("Failed to persist signal instance from payload {}: {}", payload, e.getMessage());
+            log.warn("Failed to persist signal instance at offset {}: {}", record.offset(), e.getMessage());
         }
     }
 }

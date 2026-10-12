@@ -52,6 +52,11 @@
       </dependency>
       <dependency>
         <groupId>org.ewsfi</groupId>
+        <artifactId>ews-avro-wire</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ewsfi</groupId>
         <artifactId>ews-platform-outbox-starter</artifactId>
         <version>${project.version}</version>
       </dependency>

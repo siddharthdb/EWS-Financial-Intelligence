@@ -13,8 +13,10 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.TestInputTopic;
 import org.apache.kafka.streams.TestOutputTopic;
+import org.apache.kafka.streams.test.TestRecord;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.TopologyTestDriver;
+import org.ewsfi.avro.AvroPayloadCodec;
 import org.ewsfi.contracts.interim.JsonFeatureValue;
 import org.ewsfi.contracts.interim.JsonSignalDetected;
 import org.junit.jupiter.api.AfterEach;
@@ -28,10 +30,11 @@ import org.junit.jupiter.api.Test;
 class SignalPolicyTopologyTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private final AvroPayloadCodec codec = AvroPayloadCodec.forTests();
 
     private TopologyTestDriver driver;
-    private TestInputTopic<String, String> inputTopic;
-    private TestOutputTopic<String, String> outputTopic;
+    private TestInputTopic<String, byte[]> inputTopic;
+    private TestOutputTopic<String, byte[]> outputTopic;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -41,7 +44,7 @@ class SignalPolicyTopologyTest {
         props.put(StreamsConfig.STATE_DIR_CONFIG, Files.createTempDirectory("signal-policy-test").toString());
 
         StreamsBuilder builder = new StreamsBuilder();
-        new SignalPolicyTopology().build(builder);
+        new SignalPolicyTopology(codec).build(builder);
         Topology topology = builder.build();
 
         driver = new TopologyTestDriver(topology, props);
@@ -49,12 +52,12 @@ class SignalPolicyTopologyTest {
                 driver.createInputTopic(
                         SignalPolicyTopology.FEATURE_TOPIC,
                         Serdes.String().serializer(),
-                        Serdes.String().serializer());
+                        Serdes.ByteArray().serializer());
         outputTopic =
                 driver.createOutputTopic(
                         SignalPolicyTopology.SIGNAL_TOPIC,
                         Serdes.String().deserializer(),
-                        Serdes.String().deserializer());
+                        Serdes.ByteArray().deserializer());
     }
 
     @AfterEach
@@ -65,14 +68,12 @@ class SignalPolicyTopologyTest {
     @Test
     void thresholdMetProducesAProposedRepeatedPaymentReturnSignal() throws Exception {
         String featureValueId = UUID.randomUUID().toString();
-        inputTopic.pipeInput(
-                "acct-1", featureValueJson(featureValueId, "acct-1", 3), Instant.now());
+        pipe("acct-1", featureValueJson(featureValueId, "acct-1", 3));
 
-        List<org.apache.kafka.streams.KeyValue<String, String>> outputs =
-                outputTopic.readKeyValuesToList();
+        List<TestRecord<String, byte[]>> outputs = outputTopic.readRecordsToList();
 
         assertThat(outputs).hasSize(1);
-        JsonSignalDetected signal = MAPPER.readValue(outputs.get(0).value, JsonSignalDetected.class);
+        JsonSignalDetected signal = signal(outputs.get(0));
         assertThat(signal.getSignalType()).isEqualTo("REPEATED_PAYMENT_RETURN");
         assertThat(signal.getStatus()).isEqualTo("PROPOSED");
         assertThat(signal.getEntityId()).isEqualTo("acct-1");
@@ -81,8 +82,7 @@ class SignalPolicyTopologyTest {
 
     @Test
     void belowThresholdProducesNoSignal() {
-        inputTopic.pipeInput(
-                "acct-2", featureValueJson(UUID.randomUUID().toString(), "acct-2", 2), Instant.now());
+        pipe("acct-2", featureValueJson(UUID.randomUUID().toString(), "acct-2", 2));
 
         assertThat(outputTopic.isEmpty()).isTrue();
     }
@@ -106,9 +106,18 @@ class SignalPolicyTopologyTest {
                         Instant.now().toString(),
                         "COMPLETE",
                         "1.0");
-        inputTopic.pipeInput("acct-3", MAPPER.writeValueAsString(other), Instant.now());
+        pipe("acct-3", MAPPER.writeValueAsString(other));
 
         assertThat(outputTopic.isEmpty()).isTrue();
+    }
+
+    private void pipe(String key, String featureJson) {
+        AvroPayloadCodec.Encoded encoded = codec.encode("feature.value.updated", featureJson);
+        inputTopic.pipeInput(new TestRecord<>(key, encoded.payload(), encoded.headers(), Instant.now()));
+    }
+
+    private JsonSignalDetected signal(TestRecord<String, byte[]> record) throws Exception {
+        return MAPPER.readValue(codec.toInterimJson(record.value(), record.headers()), JsonSignalDetected.class);
     }
 
     private static String featureValueJson(String featureValueId, String accountId, long count) {

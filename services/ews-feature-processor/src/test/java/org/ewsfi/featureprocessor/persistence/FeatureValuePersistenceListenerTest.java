@@ -14,7 +14,9 @@ import java.util.UUID;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.ewsfi.avro.AvroPayloadCodec;
 import org.ewsfi.persistence.feature.FeatureValue;
 import org.ewsfi.persistence.feature.FeatureValueRepository;
 import org.junit.jupiter.api.BeforeAll;
@@ -82,13 +84,15 @@ class FeatureValuePersistenceListenerTest {
                 """
                         .formatted(featureValueId);
 
+        AvroPayloadCodec.Encoded encoded = AvroPayloadCodec.forTests().encode("feature.value.updated", json);
         Map<String, Object> producerProps = KafkaTestUtils.producerProps(embeddedKafkaBroker);
         producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        try (KafkaProducer<String, String> producer = new KafkaProducer<>(producerProps)) {
-            producer
-                    .send(new ProducerRecord<>("ews.derived.feature", "acct-listener-test", json))
-                    .get(10, java.util.concurrent.TimeUnit.SECONDS);
+        producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
+        try (KafkaProducer<String, byte[]> producer = new KafkaProducer<>(producerProps)) {
+            ProducerRecord<String, byte[]> record =
+                    new ProducerRecord<>("ews.derived.feature", "acct-listener-test", encoded.payload());
+            encoded.headers().forEach(header -> record.headers().add(header.key(), header.value()));
+            producer.send(record).get(10, java.util.concurrent.TimeUnit.SECONDS);
         }
 
         Optional<FeatureValue> found = Optional.empty();

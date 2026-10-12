@@ -19,6 +19,8 @@ import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.kstream.SlidingWindows;
 import org.apache.kafka.streams.kstream.Windowed;
 import org.apache.kafka.streams.state.WindowStore;
+import org.ewsfi.avro.AvroPayloadCodec;
+import org.ewsfi.avro.AvroStreams;
 import org.ewsfi.contracts.interim.JsonEventEnvelope;
 import org.ewsfi.contracts.interim.JsonFeatureValue;
 
@@ -44,15 +46,22 @@ public class DpdFeatureBranch {
     private static final String MAX_STORE = "max-dpd-30d-store";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final AvroPayloadCodec avroPayloadCodec;
+
+    public DpdFeatureBranch(AvroPayloadCodec avroPayloadCodec) {
+        this.avroPayloadCodec = avroPayloadCodec;
+    }
 
     public void attach(StreamsBuilder builder) {
         KStream<String, DpdObservation> observations =
-                builder.stream(REPAYMENT_TOPIC, Consumed.with(Serdes.String(), Serdes.String()))
+                builder.stream(REPAYMENT_TOPIC, Consumed.with(Serdes.String(), Serdes.ByteArray()))
+                        .process(AvroStreams.decode(avroPayloadCodec))
                         .flatMapValues(this::parse);
 
         observations
                 .mapValues(this::toCurrentDpdJson)
-                .to(FeatureProcessorTopology.FEATURE_TOPIC, Produced.with(Serdes.String(), Serdes.String()));
+                .process(AvroStreams.encode(avroPayloadCodec, "feature.value.updated"))
+                .to(FeatureProcessorTopology.FEATURE_TOPIC, Produced.with(Serdes.String(), Serdes.ByteArray()));
 
         observations
                 .filter((key, observation) -> observation.usable())
@@ -68,7 +77,8 @@ public class DpdFeatureBranch {
                                 .withValueSerde(Serdes.Long()))
                 .toStream()
                 .map(this::toMaxDpdJson)
-                .to(FeatureProcessorTopology.FEATURE_TOPIC, Produced.with(Serdes.String(), Serdes.String()));
+                .process(AvroStreams.encode(avroPayloadCodec, "feature.value.updated"))
+                .to(FeatureProcessorTopology.FEATURE_TOPIC, Produced.with(Serdes.String(), Serdes.ByteArray()));
     }
 
     private List<DpdObservation> parse(String json) {

@@ -2,6 +2,8 @@ package org.ewsfi.platform.outbox;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.ewsfi.avro.AvroPayloadCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -28,15 +30,18 @@ public class OutboxPublisherWorker {
 
     private final OutboxClaimStrategy claimStrategy;
     private final OutboxEventRepository repository;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, byte[]> kafkaTemplate;
+    private final AvroPayloadCodec avroPayloadCodec;
 
     public OutboxPublisherWorker(
             OutboxClaimStrategy claimStrategy,
             OutboxEventRepository repository,
-            KafkaTemplate<String, String> kafkaTemplate) {
+            KafkaTemplate<String, byte[]> kafkaTemplate,
+            AvroPayloadCodec avroPayloadCodec) {
         this.claimStrategy = claimStrategy;
         this.repository = repository;
         this.kafkaTemplate = kafkaTemplate;
+        this.avroPayloadCodec = avroPayloadCodec;
     }
 
     @Scheduled(fixedDelayString = "${ews.outbox.publish-interval-ms:1000}")
@@ -49,10 +54,17 @@ public class OutboxPublisherWorker {
 
     private void publishOne(OutboxEvent event) {
         try {
-            SendResult<String, String> result =
-                    kafkaTemplate
-                            .send(event.getKafkaTopic(), event.getPartitionKey(), event.getPayload())
-                            .get(SEND_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            AvroPayloadCodec.Encoded encoded =
+                    avroPayloadCodec.encode(event.getEventType(), event.getPayload());
+            ProducerRecord<String, byte[]> record =
+                    new ProducerRecord<>(
+                            event.getKafkaTopic(),
+                            null,
+                            event.getPartitionKey(),
+                            encoded.payload(),
+                            encoded.headers());
+            SendResult<String, byte[]> result =
+                    kafkaTemplate.send(record).get(SEND_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             markPublished(
                     event.getEventId(),
                     result.getRecordMetadata().partition(),

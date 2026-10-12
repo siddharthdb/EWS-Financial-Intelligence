@@ -71,6 +71,7 @@ Phase-1 spine in `01-architecture-blueprint.md` §25:
 - `db/migration/V1__init_phase1_baseline.sql` — Postgres DDL derived from the `schemas/` contracts.
 - `docker-compose.yml` — local dev stack matching the Phase-1 storage baseline (`01-architecture-blueprint.md` §9).
 - `.github/workflows/ci.yml` — validates every schema contract, the topic registry, and the Maven build.
+- Kafka values use Confluent-framed Avro. Schema ids are registered with Apicurio's Confluent-compatible API (ADR-011). The outbox row itself stays JSON.
 - Payment-return slice: ingestion → `returned_payment_count_30d` → `REPEATED_PAYMENT_RETURN` → human disposition → experience-api evidence drill-down.
 - DPD slice: `obligation.dpd.changed` → `current_dpd` / `max_dpd_30d` → `DPD_EMERGED` / `DPD_WORSENING`.
 

@@ -22,6 +22,22 @@ a change without re-deriving it from the diff alone.
 
 ---
 
+## 2026-10-12 — Avro wire format on the Phase-1 spine
+
+**Roadmap items:** 1.17
+
+**What:** Kafka values for the payment-return and DPD slices are now Confluent-framed Avro (magic byte, schema id, Avro binary) using the governed payload records: `PaymentInstructionReturnedV1`, `ObligationDpdChangedV1`, `FeatureValueUpdatedV1`, `SignalDetectedV1`, and `SignalDispositionRecordedV1`. The outbox still stores the logical JSON document; `OutboxPublisherWorker` encodes it on publish. Streams topologies and the persistence listeners decode that frame back into the interim DTOs. Schema ids use the record full name as the subject, not the topic name, because the canonical topics carry more than one record. `ews.schema.registry.url` defaults to Apicurio's ccompat endpoint `http://localhost:8081/apis/ccompat/v7`. Tests use `mock://ews-phase1`, an in-process registry, plus one JDK HTTP server test that checks the ccompat register and fetch paths.
+
+**Why:** `03-event-architecture.md` §10 and ADR-011 require Avro plus Apicurio. The earlier slices used JSON so they could be tested without a registry. Fields the Avro records do not carry (event time, feature windows, signal timestamps, prior DPD) travel in `ews.*` headers. `counterpartyId` on a signal is still the feature entity id when the slice has no separate counterparty.
+
+**Files:** `platform/ews-avro-wire/**`, outbox publisher, feature-processor and signal-policy topologies and listeners, their tests and `application.yml` files.
+
+**Verification:** `mvn -B -ntp -pl platform/ews-avro-wire,platform/ews-platform-outbox-starter,services/ews-feature-processor,services/ews-signal-policy-engine,services/ews-ingestion-service,services/ews-case-workflow-service,services/ews-experience-api -am test` green. The codec tests cover payment, DPD, feature (including a null numeric and prior DPD), signal, schema-id reuse, and the HTTP ccompat client. `OutboxPublisherWorkerTest` asserts the Kafka value starts with the Avro magic byte and decodes to the payment-return fields.
+
+**Follow-ups:** Schemas are registered on first use (`auto` registration through the client). A production registry should be pre-loaded and backed by Postgres, which ADR-011 already calls out. Header-carried fields should move into the contracts if they become part of the governed payload.
+
+---
+
 ## 2026-10-12 — Topic registry, shared envelope types, and the DPD slice
 
 **Roadmap items:** 0.8, 0.9, 0.10, 0.12, 1.12
