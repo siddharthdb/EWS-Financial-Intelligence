@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ews-financial-intelligence/schemas/policies/policy-simulation-result-v1.schema.json",
+  "title": "EWS Policy Simulation Result v1",
+  "description": "Evidence for maker-checker approval showing the impact of a candidate policy against a governed historical point-in-time population.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["simulationRunId", "candidatePolicy", "population", "timeRange", "executionMode", "startedAt", "completedAt", "summary"],
+  "properties": {
+    "simulationRunId": {"type": "string", "minLength": 1},
+    "candidatePolicy": {"type": "object", "additionalProperties": false, "required": ["policyId", "version"], "properties": {"policyId": {"type": "string"}, "version": {"type": "integer", "minimum": 1}}},
+    "baselinePolicy": {"type": ["object", "null"], "additionalProperties": false, "properties": {"policyId": {"type": "string"}, "version": {"type": "integer", "minimum": 1}}},
+    "institutionId": {"type": "string", "minLength": 1},
+    "population": {"type": "object", "additionalProperties": false, "required": ["populationRef", "entityCount"], "properties": {"populationRef": {"type": "string"}, "description": {"type": ["string", "null"]}, "entityCount": {"type": "integer", "minimum": 0}, "portfolioSegments": {"type": "array", "items": {"type": "string"}}, "jurisdictions": {"type": "array", "items": {"type": "string", "pattern": "^[A-Z]{2}$"}}}},
+    "timeRange": {"type": "object", "additionalProperties": false, "required": ["from", "to"], "properties": {"from": {"type": "string", "format": "date-time"}, "to": {"type": "string", "format": "date-time"}}},
+    "executionMode": {"const": "COUNTERFACTUAL_BACKTEST"},
+    "startedAt": {"type": "string", "format": "date-time"},
+    "completedAt": {"type": "string", "format": "date-time"},
+    "summary": {"type": "object", "additionalProperties": false, "required": ["evaluations", "matched", "notMatched", "insufficientEvidence", "failed"], "properties": {
+      "evaluations": {"type": "integer", "minimum": 0}, "matched": {"type": "integer", "minimum": 0}, "notMatched": {"type": "integer", "minimum": 0}, "insufficientEvidence": {"type": "integer", "minimum": 0}, "failed": {"type": "integer", "minimum": 0},
+      "signalCandidates": {"type": "integer", "minimum": 0}, "uniqueEntitiesFlagged": {"type": "integer", "minimum": 0}, "baselineUniqueEntitiesFlagged": {"type": ["integer", "null"], "minimum": 0}, "deltaUniqueEntitiesFlagged": {"type": ["integer", "null"]}
+    }},
+    "ruleImpact": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["ruleId", "matchedCount"], "properties": {"ruleId": {"type": "string"}, "matchedCount": {"type": "integer", "minimum": 0}, "baselineMatchedCount": {"type": ["integer", "null"], "minimum": 0}, "deltaMatchedCount": {"type": ["integer", "null"]}}}},
+    "segmentImpact": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["segment", "entityCount", "flaggedCount"], "properties": {"segment": {"type": "string"}, "entityCount": {"type": "integer", "minimum": 0}, "flaggedCount": {"type": "integer", "minimum": 0}, "baselineFlaggedCount": {"type": ["integer", "null"], "minimum": 0}}}},
+    "quality": {"type": "object", "additionalProperties": false, "properties": {"pointInTimeReconstructionComplete": {"type": "boolean"}, "missingFeatureEvaluations": {"type": "integer", "minimum": 0}, "notes": {"type": "array", "items": {"type": "string"}}}},
+    "artifactRefs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "requestedBy": {"type": ["string", "null"]},
+    "traceId": {"type": ["string", "null"]}
+  }
+}

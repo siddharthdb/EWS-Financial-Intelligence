@@ -1,0 +1,7 @@
+{
+  "evaluationId":"EVAL-DPD-STALE-001","policy":{"policyId":"POL-CORP-DPD-DETERIORATION-001","version":1},"entity":{"type":"COUNTERPARTY","id":"CP-TEST-001"},
+  "status":"INSUFFICIENT_EVIDENCE","knowledgeTime":"2026-09-17T10:00:00Z","executionMode":"COUNTERFACTUAL_BACKTEST","runId":"TEST-RUN-002",
+  "engine":{"type":"NATIVE","version":"policy-evaluator-v1","artifactRef":null},"inputFeatureValueIds":["FV-DPD-STALE-001"],
+  "ruleResults":[{"ruleId":"R-DPD-001","matched":false,"outcomeCode":null,"severity":null,"evaluatedOperands":[{"name":"current_dpd","value":null,"source":"FEATURE"}],"reason":"Required feature is STALE"},{"ruleId":"R-DPD-002","matched":false,"outcomeCode":null,"severity":null,"evaluatedOperands":[{"name":"current_dpd","value":null,"source":"FEATURE"}],"reason":"Required feature is STALE"}],
+  "outcomes":[],"evidenceIds":[],"evaluatedAt":"2026-09-17T10:00:01Z","durationMs":1,"failure":null,"correlationId":"CORR-TEST-002","traceId":"TRACE-TEST-002"
+}

@@ -1,0 +1,7 @@
+{
+  "fixtureId":"VAL-UTL-INVALID-ORDER-001",
+  "description":"Institution configuration is structurally valid but semantically invalid because high threshold exceeds critical threshold.",
+  "policyKey":"UTILIZATION_HIGH",
+  "parameterOverrides":{"UTILIZATION_HIGH_THRESHOLD":0.97,"CRITICAL_UTILIZATION_THRESHOLD":0.95},
+  "expected":{"schemaValid":true,"semanticValid":false,"publishable":false,"findings":[{"ruleId":"PSV-006","severity":"ERROR","code":"PARAMETER_RELATION_VIOLATION","constraintId":"UTL-C-001"}]}
+}

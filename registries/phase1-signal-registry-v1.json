@@ -1,0 +1,26 @@
+{
+  "registryId": "PHASE1_SIGNAL_REGISTRY_V1",
+  "version": "1",
+  "signals": [
+    {
+      "signalCode": "REPEATED_PAYMENT_RETURN",
+      "status": "ACTIVE",
+      "semanticScope": "GLOBAL_CORE"
+    },
+    {
+      "signalCode": "DPD_DERIORATION",
+      "status": "ACTIVE",
+      "semanticScope": "GLOBAL_PRODUCT_SPECIFIC"
+    },
+    {
+      "signalCode": "UTILIZATION_HIGH",
+      "status": "ACTIVE",
+      "semanticScope": "GLOBAL_CORE"
+    },
+    {
+      "signalCode": "UTILIZATION_SPIKE",
+      "status": "ACTIVE",
+      "semanticScope": "GLOBAL_CORE"
+    }
+  ]
+}
